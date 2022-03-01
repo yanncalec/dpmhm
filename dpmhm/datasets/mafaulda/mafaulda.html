@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<!--
+# ******************************************************************************
+#
+# page_01.html
+#
+# ******************************************************************************
+#
+# Created.: Thu Nov 08 2016
+# Modified: Wed Jun 16 2021
+#
+# ******************************************************************************
+-->
+<html>
+
+<head>
+  <title>MAFAULDA :: Machinery Fault Database [Online]</title>
+
+  <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+
+  <link rel="shortcut icon" href="figs/www/page_01.png">
+  <link rel="stylesheet" type="text/css" href="css/mfs.css">
+
+  <script type="text/javascript" src="js/clock.js"></script>
+  <script type="text/javascript" src="js/common.js"></script>
+
+  <script type="text/javascript" src="js/page_01.js"></script>
+</head>
+
+<body>
+
+<!--
+# ******************************************************************************
+# Header
+# ******************************************************************************
+-->
+<hr>
+
+<table class="infobar">
+<tr>
+  <td>
+    <h1>MAFAULDA</h1>
+
+    <h3>Machinery Fault Database [Online]</h3>
+  </td>
+  <td class="logosection"><img alt="Database" src="figs/sec/page_01.png"></td>
+</tr>
+</table>
+
+<hr>
+
+<table class="infobar">
+  <tr>
+    <td class="navicon">
+      <a href="index.html#TOC1"><img alt="Main" src="figs/on/home.png"></a>
+    </td>
+    <td class="navicon">
+      <img alt="Previous" src="figs/off/prev.png">
+    </td>
+    <td class="navicon">
+      <img alt="Next" src="figs/off/next.png">
+    </td>
+
+    <td class="right"> <em>MAFAULDA</em> </td>
+  </tr>
+</table>
+
+<hr>
+
+<table class="infobar">
+<tr>
+  <td class="left">
+    <b id="CURDATE">&nbsp;</b>
+  </td>
+</tr>
+</table>
+
+<hr>
+
+<!--
+# ******************************************************************************
+# SECTION - Database Description
+# ******************************************************************************
+-->
+<h2><a id="SEC1">1.</a>
+Database Description</h2>
+
+<!--
+# ******************************************************************************
+# SUBSECTION - Introduction
+# ******************************************************************************
+-->
+<h3><a id="SEC1.1">1.1.</a>
+Introduction</h3>
+
+<p>
+This database is composed of 1951 multivariate time-series acquired by sensors
+on a SpectraQuest's Machinery Fault Simulator (MFS) Alignment-Balance-Vibration
+(ABVT). The 1951 comprises six different simulated states: normal function,
+imbalance fault, horizontal and vertical misalignment faults and, inner and
+outer bearing faults. This section describes the database.</p>
+
+<p>
+For more information please contact <b>Felipe M. L. Ribeiro</b> (<a
+href="mailto:felipe.ribeiro@smt.ufrj.br">felipe.ribeiro@smt.ufrj.br</a>).</p>
+
+
+<!--
+# ******************************************************************************
+# SUBSECTION - Experimental Bench Specifications
+# ******************************************************************************
+-->
+<h3><a id="SEC1.2">1.2.</a>
+Experimental Bench Specifications</h3>
+
+<p>
+The used SpectraQuest Inc. Alignment/Balance Vibration Trainer (ABVT) Machinery
+Fault Simulator (MFS).</b>
+
+<!--
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TABLE
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-->
+<table class="half">
+  <tbody>
+  <tr class="header">
+    <th class="data width40">Specification</th>
+    <th class="data width40 right">Value</th>
+    <th class="data">Unit</th>
+  </tr>
+
+  <tr class="odrow"><td class="data">Motor            </td><td class="data right">     1/4</td><td class="data">CV DC</td></tr>
+  <tr class="evrow"><td class="data">Frequency range  </td><td class="data right">700-3600</td><td class="data">rpm</td></tr>
+  <tr class="odrow"><td class="data">System weight    </td><td class="data right">      22</td><td class="data">kg</td></tr>
+  <tr class="evrow"><td class="data">Axis diameter    </td><td class="data right">      16</td><td class="data">mm</td></tr>
+  <tr class="odrow"><td class="data">Axis length      </td><td class="data right">     520</td><td class="data">mm</td></tr>
+  <tr class="evrow"><td class="data">Rotor            </td><td class="data right">   15.24</td><td class="data">cm</td></tr>
+  <tr class="odrow"><td class="data">Bearings distance</td><td class="data right">     390</td><td class="data">mm</td></tr>
+  </tbody>
+</table>
+
+<!--
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TABLE
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-->
+<table class="half">
+  <tbody>
+  <tr class="header">
+    <th class="data width40">Specification</th>
+    <th class="data width40 right">Value</th>
+    <th class="data">Unit</th>
+  </tr>
+
+  <tr class="odrow"><td class="data">Number of balls</td><td class="data right">     8</td><td class="data">       </td></tr>
+  <tr class="evrow"><td class="data">Balls diameter </td><td class="data right">0.7145</td><td class="data">cm     </td></tr>
+  <tr class="odrow"><td class="data">Cage diameter  </td><td class="data right">2.8519</td><td class="data">cm     </td></tr>
+  <tr class="evrow"><td class="data">FTF            </td><td class="data right">0.3750</td><td class="data">CPM/rpm</td></tr>
+  <tr class="odrow"><td class="data">BPFO           </td><td class="data right">2.9980</td><td class="data">CPM/rpm</td></tr>
+  <tr class="evrow"><td class="data">BPFI           </td><td class="data right">5.0020</td><td class="data">CPM/rpm</td></tr>
+  <tr class="odrow"><td class="data">BSF            </td><td class="data right">1.8710</td><td class="data">CPM/rpm</td></tr>
+  </tbody>
+</table>
+
+
+<!--
+# ******************************************************************************
+# SUBSECTION - Data Acquisition System
+# ******************************************************************************
+-->
+<h3><a id="SEC1.3">1.3.</a>
+Data Acquisition System</h3>
+
+<ul>
+  <li><p>
+  Three <b>Industrial IMI Sensors, Model 601A01</b> accelerometers on the
+  radial, axial and tangencial directions:
+
+  <ul>
+    <li><p>
+      <b>Sensibility</b><br>
+      (&pm;20%) 100&nbsp;mV per g (10.2&nbsp;mV per m/s<sup>2</sup>);
+    </p></li>
+
+    <li><p>
+      <b>Frequency range</b><br>
+      (&pm;3&nbsp;dB) 16-600000&nbsp;CPM (0.27-10.000&nbsp;Hz);
+    </p></li>
+
+    <li><p>
+      <b>Measurement range</b><br>
+      &pm;50&nbsp;g (&pm;490 m/s<sup>2</sup>).
+    </p></li>
+  </ul>
+  </p></li>
+
+  <li><p>
+  One <b>IMI Sensors triaxial accelerometer, Model 604B31</b>, returning data
+  over the radial, axial and tangencial directions:
+
+  <ul>
+    <li><p>
+      <b>Sensibility</b><br>
+      (&pm;20%) 100&nbsp;mV per g (10.2&nbsp;mV per m/s<sup>2</sup>);
+    </p></li>
+
+    <li><p>
+      <b>Frequency range</b><br>
+      (&pm;3&nbsp;dB) 30-300000&nbsp;CPM (0.5-5.000&nbsp;Hz);
+    </p></li>
+
+    <li><p>
+      <b>Measurement range</b><br>
+      &pm;50&nbsp;g (&pm;490 m/s<sup>2</sup>)
+    </p></li>
+  </ul>
+  </p></li>
+
+  <li><p>
+    <b>Monarch Instrument MT-190</b> analog tachometer
+  </p></li>
+
+  <li><p>
+    <b>Shure SM81</b> microphone with frequency range of 20-20.000&nbsp;Hz
+  </p></li>
+
+  <li><p>
+    Two <b>National Instruments NI 9234</b> 4 channel analog acquisition
+    modules, with sample rate of 51.2&nbsp;kHz
+  </p></li>
+</ul>
+
+
+<!--
+# ******************************************************************************
+# SUBSECTION - Sequences
+# ******************************************************************************
+-->
+<h3><a id="SEC1.4">1.4.</a>
+Sequences</h3>
+
+<p>
+Each sequence was generated at a 50&nbsp;kHz sampling rate during 5&nbsp;s,
+totaling 250.000 samples. Below its a summary of each type of sequence:</p>
+
+<!--
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TABLE
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-->
+<table class="half">
+  <tbody>
+    <tr class="header">
+      <th class="data width40">Sequence</th>
+      <th class="data right">Measurements</th>
+    </tr>
+
+    <tr class="odrow"><td class="data">Normal                 </td><td class="data right"> 49</td></tr>
+    <tr class="evrow"><td class="data">Horizontal misalignment</td><td class="data right">197</td></tr>
+    <tr class="odrow"><td class="data">Vertical misalignment  </td><td class="data right">301</td></tr>
+    <tr class="evrow"><td class="data">Imbalance              </td><td class="data right">333</td></tr>
+
+    <tr class="header">
+      <th class="data center" colspan="2">Underhang bearing</th>
+    </tr>
+
+    <tr class="odrow"><td class="data">Cage fault</td><td class="data right">188</td></tr>
+    <tr class="evrow"><td class="data">Outer race</td><td class="data right">184</td></tr>
+    <tr class="odrow"><td class="data">Ball fault</td><td class="data right">186</td></tr>
+
+    <tr class="header">
+      <th class="data center" colspan="2">Overhang bearing</th>
+    </tr>
+
+    <tr class="odrow"><td class="data">Cage fault</td><td class="data right">188</td></tr>
+    <tr class="evrow"><td class="data">Outer race</td><td class="data right">188</td></tr>
+    <tr class="odrow"><td class="data">Ball fault</td><td class="data right">137</td></tr>
+
+    <tr class="header"><th class="data">Total</th><th class="data right">1951</th></tr>
+  </tbody>
+</table>
+
+<!--
+# ******************************************************************************
+# SUBSUBSECTION - Normal Sequences
+# ******************************************************************************
+-->
+<h4><a id="SEC1.4.1">1.4.1.</a> Normal Sequences</h4>
+
+There are 49 sequences without any fault, each with a fixed rotation speed
+within the range from 737&nbsp;rpm to 3686&nbsp;rpm with steps of approximately
+60&nbsp;rpm.</p>
+
+<!--
+# ******************************************************************************
+# SUBSUBSECTION - Imbalance Faults
+# ******************************************************************************
+-->
+<h4><a id="SEC1.4.2">1.4.2.</a> Imbalance Faults</h4>
+
+<p>
+Simulated with load values within the range from 6&nbsp;g to 35&nbsp;g. For each
+load value below 30&nbsp;g, the rotation frequency assumed in the same 49 values
+employed in the normal operation case. For loads equal to or above 30&nbsp;g,
+however, the resulting vibration makes impracticable for the system to achieve
+rotation frequencies above 3300&nbsp;rpm, limiting the number of distinct
+rotation frequencies. The table below presents the number of sequences per
+weight.</p>
+
+<!--
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TABLE
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-->
+<table class="half">
+  <tbody>
+  <tr class="header">
+    <th class="data width40">Weight (g)</th>
+    <th class="data right">Measurements</th>
+  </tr>
+
+  <tr class="odrow"><td class="data"> 6</td><td class="data right">49</td></tr>
+  <tr class="evrow"><td class="data">10</td><td class="data right">48</td></tr>
+  <tr class="odrow"><td class="data">15</td><td class="data right">48</td></tr>
+  <tr class="evrow"><td class="data">20</td><td class="data right">49</td></tr>
+  <tr class="odrow"><td class="data">25</td><td class="data right">47</td></tr>
+  <tr class="evrow"><td class="data">30</td><td class="data right">47</td></tr>
+  <tr class="odrow"><td class="data">35</td><td class="data right">45</td></tr>
+
+  <tr class="header">
+    <th class="data">Total</th>
+    <th class="data right">333</th>
+  </tr>
+  </tbody>
+</table>
+
+<!--
+# ******************************************************************************
+# SUBSUBSECTION - Horizontal Parallel Misalignment
+# ******************************************************************************
+-->
+<h4><a id="SEC1.4.3">1.4.3.</a> Horizontal Parallel Misalignment</h4>
+
+<p>
+This type of fault was induced into the MFS by shifting the motor shaft
+horizontally of 0.5&nbsp;mm, 1.0&nbsp;mm, 1.5&nbsp;mm, and 2.0&nbsp;mm. Using
+the same range for the rotation frequency as in the normal operation for each
+horizontal shift, the table below presents the number of sequences per degree
+of misalignment.</p>
+
+<!--
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TABLE
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-->
+<table class="half">
+  <tbody>
+  <tr class="header">
+    <th class="data width40">Misalignment (mm)</th>
+    <th class="data right">Measurements</th>
+  </tr>
+
+  <tr class="odrow"><td class="data">0.50</td><td class="data right">50</td></tr>
+  <tr class="evrow"><td class="data">1.00</td><td class="data right">49</td></tr>
+  <tr class="odrow"><td class="data">1.50</td><td class="data right">49</td></tr>
+  <tr class="evrow"><td class="data">2.00</td><td class="data right">49</td></tr>
+
+  <tr class="header">
+    <th class="data">Total</th>
+    <th class="data right">197</th>
+  </tr>
+  </tbody>
+</table>
+
+<!--
+# ******************************************************************************
+# SUBSUBSECTION - Vertical Parallel Misalignment
+# ******************************************************************************
+-->
+<h4><a id="SEC1.4.4">1.4.4.</a> Vertical Parallel Misalignment</h4>
+
+<p>
+This type of fault was induced into the MFS by shifting the motor shaft
+horizontally of 0.51&nbsp;mm, 0.63&nbsp;mm, 1.27&nbsp;mm, 1.40&nbsp;mm,
+17.8&nbsp;mm and 1.90&nbsp;mm. Using the same range for the rotation frequency
+as in the normal operation for each vertical shift, the table below presents the
+number of sequences per degree of misalignment.</p>
+
+<!--
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TABLE
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-->
+<table class="half">
+  <tbody>
+  <tr class="header">
+    <th class="data width40">Misalignment (mm)</th>
+    <th class="data right">Measurements</th>
+  </tr>
+
+  <tr class="odrow"><td class="data">0.51</td><td class="data right">51</td></tr>
+  <tr class="evrow"><td class="data">0.63</td><td class="data right">50</td></tr>
+  <tr class="odrow"><td class="data">1.27</td><td class="data right">50</td></tr>
+  <tr class="evrow"><td class="data">1.40</td><td class="data right">50</td></tr>
+  <tr class="odrow"><td class="data">1.78</td><td class="data right">50</td></tr>
+  <tr class="evrow"><td class="data">1.90</td><td class="data right">50</td></tr>
+
+  <tr class="header">
+    <th class="data">Total</th>
+    <th class="data right">301</th>
+  </tr>
+  </tbody>
+</table>
+
+<!--
+# ******************************************************************************
+# SUBSUBSECTION - Bearing Faults
+# ******************************************************************************
+-->
+<h4><a id="SEC1.4.5">1.4.5.</a> Bearing Faults</h4>
+
+<p>
+As one of the most complex elements of the machine, the rolling bearings are the
+most susceptible elements to fault occurrence. The ABVT manufacturer provided
+three defective bearing, each one with a distinct defective element (outer
+track, rolling elements, and inner track), that were placed one at a time in two
+different positions in the MFS experimental stand: between the rotor and the
+motor (underhang position), or in the external position, having the rotor
+between the bearing and the motor (overhang position). Bearing faults are
+practically imperceptible when there is no imbalance. So, three masses of
+6&nbsp;g, 20&nbsp;g, and 35&nbsp;g were added to induce a detectable effect,
+with different rotation frequencies as before.</p>
+
+<!--
+# ******************************************************************************
+# SUBSUBSECTION - Underhang
+# ******************************************************************************
+-->
+<h4>Underhang</h4>
+
+<p>
+The table below presents the underhang cases with outer track faults.</p>
+
+<!--
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TABLE
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-->
+<table class="half">
+  <tbody>
+  <tr class="header">
+    <th class="data width40">Weight (g)</th>
+    <th class="data right">Measurements</th>
+  </tr>
+
+  <tr class="odrow"><td class="data"> 0</td><td class="data right">49</td></tr>
+  <tr class="evrow"><td class="data"> 6</td><td class="data right">48</td></tr>
+  <tr class="odrow"><td class="data">20</td><td class="data right">49</td></tr>
+  <tr class="evrow"><td class="data">35</td><td class="data right">42</td></tr>
+
+  <tr class="header">
+    <th class="data">Total</th>
+    <th class="data right">188</th>
+  </tr>
+  <tbody>
+</table>
+
+<p>
+The table below presents the underhang cases with rolling elements faults.</p>
+
+<!--
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TABLE
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-->
+<table class="half">
+  <tbody>
+  <tr class="header">
+    <th class="data width40">Weight (g)</th>
+    <th class="data right">Measurements</th>
+  </tr>
+
+  <tr class="odrow"><td class="data"> 0</td><td class="data right">49</td></tr>
+  <tr class="evrow"><td class="data"> 6</td><td class="data right">49</td></tr>
+  <tr class="odrow"><td class="data">20</td><td class="data right">49</td></tr>
+  <tr class="evrow"><td class="data">35</td><td class="data right">37</td></tr>
+
+  <tr class="header">
+    <th class="data">Total</th>
+    <th class="data right">184</th>
+  </tr>
+  </tbody>
+</table>
+
+<p>
+The table below presents the underhang cases with inner track faults.</p>
+
+<!--
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TABLE
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-->
+<table class="half">
+  <tbody>
+  <tr class="header">
+    <th class="data width40">Weight (g)</th>
+    <th class="data right">Measurements</th>
+  </tr>
+
+  <tr class="odrow"><td class="data"> 0</td><td class="data right">50</td></tr>
+  <tr class="evrow"><td class="data"> 6</td><td class="data right">49</td></tr>
+  <tr class="odrow"><td class="data">20</td><td class="data right">49</td></tr>
+  <tr class="evrow"><td class="data">35</td><td class="data right">38</td></tr>
+
+  <tr class="header">
+    <th class="data">Total</th>
+    <th class="data right">186</th>
+  </tr>
+  </tbody>
+</table>
+
+<p>
+The underhang has a total of <b>558</b> sequences.</p>
+
+<!--
+# ******************************************************************************
+# SUBSUBSECTION - Overhang
+# ******************************************************************************
+-->
+<h4>Overhang</h4>
+
+<p>
+The table below presents the overhang cases with outer track faults.</p>
+
+<!--
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TABLE
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-->
+<table class="half">
+  <tbody>
+  <tr class="header">
+    <th class="data width40">Weight (g)</th>
+    <th class="data right">Measurements</th>
+  </tr>
+
+  <tr class="odrow"><td class="data"> 0</td><td class="data right">49</td></tr>
+  <tr class="evrow"><td class="data"> 6</td><td class="data right">49</td></tr>
+  <tr class="odrow"><td class="data">20</td><td class="data right">49</td></tr>
+  <tr class="evrow"><td class="data">35</td><td class="data right">41</td></tr>
+
+  <tr class="header">
+    <th class="data">Total</th>
+    <th class="data right">188</th>
+  </tr>
+  </tbody>
+</table>
+
+<p>
+The table below presents the overhang cases with rolling elements faults.</p>
+
+<!--
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TABLE
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-->
+<table class="half">
+  <tbody>
+  <tr class="header">
+    <th class="data width40">Weight (g)</th>
+    <th class="data right">Measurements</th>
+  </tr>
+
+  <tr class="odrow"><td class="data"> 0</td><td class="data right">49</td></tr>
+  <tr class="evrow"><td class="data"> 6</td><td class="data right">49</td></tr>
+  <tr class="odrow"><td class="data">20</td><td class="data right">49</td></tr>
+  <tr class="evrow"><td class="data">35</td><td class="data right">41</td></tr>
+
+  <tr class="header">
+    <th class="data">Total</th>
+    <th class="data right">188</th>
+  </tr>
+  </tbody>
+</table>
+
+<p>
+The table below presents the overhang cases with inner track faults.</p>
+
+<!--
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TABLE
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-->
+<table class="half">
+  <tbody>
+  <tr class="header">
+    <th class="data">Weight (g)</th>
+    <th class="data right">Measurements</th>
+  </tr>
+
+  <tr class="odrow"><td class="data"> 0</td><td class="data right">49</td></tr>
+  <tr class="evrow"><td class="data"> 6</td><td class="data right">43</td></tr>
+  <tr class="odrow"><td class="data">20</td><td class="data right">25</td></tr>
+  <tr class="evrow"><td class="data">35</td><td class="data right">20</td></tr>
+
+  <tr class="header">
+    <th class="data">Total</th>
+    <th class="data right">137</th>
+  </tr>
+  </tbody>
+</table>
+
+<p>
+The overhang sequences totaling <b>513</b>.</p>
+
+<!--
+# ******************************************************************************
+# SECTION - Machinery Fault Database [Online]
+# ******************************************************************************
+-->
+<h2><a id="SEC2">2.</a> Machinery Fault Database [Online]</h2>
+
+<p>
+The following table contains links to entire parts of this database, joined in
+as a single package.</p>
+
+<!--
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TABLE
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+-->
+<table class="data">
+  <tbody>
+  <tr class="header">
+    <th class="data">Description</th>
+
+    <th class="data">Tgz File</th>
+    <th class="data right">Size (GB)</th>
+
+    <th class="data">Zip File</th>
+    <th class="data right">Size (GB)</th>
+  </tr>
+
+  <tr class="odrow">
+    <td class="data"><b>All Data</b></td>
+
+    <td class="data"><a download href="database/mafaulda/full.tgz">Download</a></td>
+    <td class="data right">13.0</td>
+
+    <td class="data"><a download href="database/mafaulda/full.zip">Download</a></td>
+    <td class="data right">13.0</td>
+  </tr>
+
+  <tr class="evrow">
+    <td class="data"><b>Normal (No fault)</b></td>
+
+    <td class="data"><a download href="database/mafaulda/normal.tgz">Download</a></td>
+    <td class="data right">0.3</td>
+
+    <td class="data"><a download href="database/mafaulda/normal.zip">Download</a></td>
+    <td class="data right">0.3</td>
+  </tr>
+
+  <tr class="odrow">
+    <td class="data"><b>Horizontal Misalignment</b></td>
+
+    <td class="data"><a download href="database/mafaulda/horizontal-misalignment.tgz">Download</a></td>
+    <td class="data right">1.4</td>
+
+    <td class="data"><a download href="database/mafaulda/horizontal-misalignment.zip">Download</a></td>
+    <td class="data right">1.4</td>
+  </tr>
+
+  <tr class="evrow">
+    <td class="data"><b>Vertical Misalignment</b></td>
+
+    <td class="data"><a download href="database/mafaulda/vertical-misalignment.tgz">Download</a></td>
+    <td class="data right">2.1</td>
+
+    <td class="data"><a download href="database/mafaulda/vertical-misalignment.zip">Download</a></td>
+    <td class="data right">2.1</td>
+  </tr>
+
+  <tr class="odrow">
+    <td class="data"><b>Imbalance</b></td>
+
+    <td class="data"><a download href="database/mafaulda/imbalance.tgz">Download</a></td>
+    <td class="data right">2.3</td>
+
+    <td class="data"><a download href="database/mafaulda/imbalance.zip">Download</a></td>
+    <td class="data right">2.3</td>
+  </tr>
+
+  <tr class="evrow">
+    <td class="data"><b>Underhang Bearing</b></td>
+
+    <td class="data"><a download href="database/mafaulda/underhang.tgz">Download</a></td>
+    <td class="data right">3.7</td>
+
+    <td class="data"><a download href="database/mafaulda/underhang.zip">Download</a></td>
+    <td class="data right">3.7</td>
+  </tr>
+
+  <tr class="odrow">
+    <td class="data"><b>Overhang Bearing</b></td>
+
+    <td class="data"><a download href="database/mafaulda/overhang.tgz">Download</a></td>
+    <td class="data right">3.4</td>
+
+    <td class="data"><a download href="database/mafaulda/overhang.zip">Download</a></td>
+    <td class="data right">3.4</td>
+  </tr>
+  </tbody>
+</table>
+
+<p>
+The database is composed by several <b>CSV</b> (<em>Comma-Separated Values</em>)
+files, each one with 8 columns, one column for each sensor, according to:</p>
+
+<ul>
+  <li><p><b>column 1</b><br>
+    tachometer signal that allows to estimate rotation frequency;
+  </p></li>
+
+  <li><p><b>columns 2 to 4</b><br>
+    underhang bearing accelerometer (axial, radiale tangential direction);
+  </p></li>
+
+  <li><p><b>columns 5 to 7</b><br>
+    overhang bearing accelerometer (axial, radiale tangential direction);
+  </p></li>
+
+  <li><p><b>column 8</b><br>
+    microphone.
+  </p></li>
+</ul>
+
+<!--
+# ******************************************************************************
+# Footer
+# ******************************************************************************
+-->
+<hr>
+
+<table class="infobar">
+  <tr>
+    <td class="navicon">
+      <a href="index.html#TOC1"><img alt="Main" src="figs/on/home.png"></a>
+    </td>
+    <td class="navicon">
+      <img alt="Previous" src="figs/off/prev.png">
+    </td>
+    <td class="navicon">
+      <img alt="Next" src="figs/off/next.png">
+    </td>
+
+    <td class="right"> <em>MAFAULDA</em> </td>
+  </tr>
+</table>
+
+<hr>
+
+<table class="infobar">
+  <tr>
+    <td class="logoleft">
+      <a href="http://www.smt.ufrj.br" target="_blank"><img alt="SMT" src="figs/logo/smt.png"></a>
+    </td>
+    <td class="center">
+      <h2>Signals, Multimedia, and Telecommunications Laboratory</h2>
+
+      <h3>COPPE/Poli/UFRJ</h3>
+    </td>
+    <td class="logoright">
+      <a href="http://www.ufrj.br" target="_blank"><img alt="UFRJ" src="figs/logo/ufrj.png"></a>
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+</body>
+</html>
+

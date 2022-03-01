@@ -1,0 +1,33 @@
+Bearing Code,FaultComponent,FaultExtend,DamageMethod,FaultType,Combination,Arrangement,Characteristic
+K001,None,0,Healthy,None,,,
+K002,None,0,Healthy,None,,,
+K003,None,0,Healthy,None,,,
+K004,None,0,Healthy,None,,,
+K005,None,0,Healthy,None,,,
+K006,None,0,Healthy,None,,,
+KA01,Outer Ring,1,Artificial,Electrical Discharge Machining,,,
+KA03,Outer Ring,2,Artificial,Electric Engraver,,,
+KA04,Outer Ring,1,Lifetime,Fatigue: Pitting,Single,No Repetition,Single Point
+KA05,Outer Ring,1,Artificial,Electric Engraver,,,
+KA06,Outer Ring,2,Artificial,Electric Engraver,,,
+KA07,Outer Ring,1,Artificial,Drilling,,,
+KA08,Outer Ring,2,Artificial,Drilling,,,
+KA09,Outer Ring,2,Artificial,Drilling,,,
+KA15,Outer Ring,1,Lifetime,Fatigue: Pitting,Single,No Repetition,Single Point
+KA16,Outer Ring,2,Lifetime,Fatigue: Pitting,Repetitive,Random,Single Point
+KA22,Outer Ring,1,Lifetime,Fatigue: Pitting,Single,No Repetition,Single Point
+KA30,Outer Ring,1,Lifetime,Fatigue: Pitting,Repetitive,Random,Distributed
+KB23,Inner Ring+Outer Ring,2,Lifetime,Fatigue: Pitting,Multiple,Random,Single Point
+KB24,Inner Ring+Outer Ring,3,Lifetime,Fatigue: Pitting,Multiple,No Repetition,Distributed
+KB27,Outer Ring+Inner Ring,1,Lifetime,Fatigue: Pitting,Multiple,Random,Distributed
+KI01,Inner Ring,1,Artificial,Electrical Discharge Machining,,,
+KI03,Inner Ring,1,Artificial,Electric Engraver,,,
+KI04,Inner Ring,1,Lifetime,Fatigue: Pitting,Multiple,No Repetition,Single Point
+KI05,Inner Ring,1,Artificial,Electric Engraver,,,
+KI07,Inner Ring,2,Artificial,Electric Engraver,,,
+KI08,Inner Ring,2,Artificial,Electric Engraver,,,
+KI14,Inner Ring,1,Lifetime,Fatigue: Pitting,Multiple,No Repetition,Single Point
+KI16,Inner Ring,3,Lifetime,Fatigue: Pitting,Single,No Repetition,Single Point
+KI17,Inner Ring,1,Lifetime,Fatigue: Pitting,Repetitive,Random,Single Point
+KI18,Inner Ring,2,Lifetime,Fatigue: Pitting,Single,No Repetition,Single Point
+KI21,Inner Ring,1,Lifetime,Fatigue: Pitting,Single,No Repetition,Single Point
