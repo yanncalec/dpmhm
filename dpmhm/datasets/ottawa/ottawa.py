@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import pandas as pd
-from scipy.io import loadmat
+# from scipy.io import loadmat
 
 
 _DESCRIPTION = """
@@ -122,11 +122,13 @@ class Ottawa(tfds.core.GeneratorBasedBuilder):
     assert path.exists()
 
     for fp in path.glob('*.mat'):
-      print(fp)
-      dm = tfds.core.lazy_imports.scipy.io.loadmat(fp)
-      # dm = loadmat(fp)
-      x = np.stack([dm['Channel_1'].squeeze(), dm['Channel_2'].squeeze()]).T
+      try:
+        dm = tfds.core.lazy_imports.scipy.io.loadmat(fp)
+        # dm = loadmat(fp)
+      except Exception as msg:
+        raise Exception(f"Error in processing {fp}: {msg}")
 
+      x = np.stack([dm['Channel_1'].squeeze(), dm['Channel_2'].squeeze()]).T
       metadata = {
         'RotatingSpeed': _PARSER_MATCH_SPEED[fp.name[2]],
         'OriginalSplit': _PARSER_MATCH_TYPE[fp.name[0]],

@@ -9,7 +9,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import pandas as pd
-from scipy.io import loadmat
+# from scipy.io import loadmat
 
 
 _DESCRIPTION = """
@@ -143,6 +143,12 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
   def _generate_examples(self, path):
     """Yields examples."""
     for fname0, fobj in tfds.download.iter_archive(path, tfds.download.ExtractMethod.ZIP):
+      try:
+        dm = tfds.core.lazy_imports.scipy.io.loadmat(fobj)
+        # dm = loadmat(fp)
+      except Exception as msg:
+        raise Exception(f"Error in processing {fobj}: {msg}")
+
       fname = Path(fname0).parts[1]
       if fname.upper()[0] == 'C':
         ss = fname.upper().split('_')
@@ -172,9 +178,6 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
           'OriginalSplit': _datalabel,
           'FileName': fname
       }
-
-      dm = tfds.core.lazy_imports.scipy.io.loadmat(fobj)
-      # dm = loadmat(fp)
 
       yield hash(frozenset(metadata.items())), {
         'signal': dm[fname[:-4]],

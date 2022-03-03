@@ -25,12 +25,13 @@ import os
 import pathlib
 import itertools
 import json
-from attr import frozen
+# from attr import frozen
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import pandas as pd
-from scipy.io import loadmat
+# import scipy
+# import mat4py
 
 
 _DESCRIPTION = """
@@ -161,8 +162,13 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 
   def _generate_examples(self, fp_dict):
     for fp, metadata in fp_dict.items():
-      dm = tfds.core.lazy_imports.scipy.io.loadmat(fp)
-      # dm = loadmat(fp)
+      try:
+        dm = {k: np.asarray(v).squeeze() for k,v in tfds.core.lazy_imports.scipy.io.loadmat(fp).items() if k[:2]!='__'}
+        # using mat4py.loadmat
+        # dm = {k:np.asarray(v).squeeze() for k,v in mat4py.loadmat(fp).items()}
+      except Exception as msg:
+        raise Exception(f"Error in processing {fp}: {msg}")
+        # continue
 
       # If filename is e.g. `112.mat`, then the matlab file  contains some of the fields `X112_DE_time` (always), `X112RPM`, as well as `X112_FE_time` and `X112_BA_time`.
       # Exception: the datafiles `300?.mat`` do not contain fields starting with `X300?` nor the field `RPM`.
@@ -170,15 +176,20 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
       fn = f"{int(metadata['FileName'].split('.mat')[0]):03d}"
       if f'X{fn}_DE_time' in dm:  # find regular fields
         kde = f'X{fn}_DE_time'
-        xde = dm[kde].squeeze()
+        # xde = dm[kde].squeeze()
+        xde = dm[kde]
         kfe = f'X{fn}_FE_time'
-        xfe = dm[kfe].squeeze() if kfe in dm else []
+        # xfe = dm[kfe].squeeze() if kfe in dm else []
+        xfe = dm[kfe] if kfe in dm else []
         kba = f'X{fn}_BA_time'
-        xba = dm[kba].squeeze() if kba in dm else []
+        # xba = dm[kba].squeeze() if kba in dm else []
+        xba = dm[kba] if kba in dm else []
         krpm = f'X{fn}RPM'
       else:   # datafiles 300x.mat are special
+        # print(dm.keys())
         kde = [k for k in dm.keys() if k[0]=='X'][0]
-        xde, xfe, xba = dm[kde].squeeze(), [], []
+        # xde, xfe, xba = dm[kde].squeeze(), [], []
+        xde, xfe, xba = dm[kde], [], []
 
       # Use nan if the real value is not given.
       rpm = float(dm[krpm]) if krpm in dm else np.nan # metadata['RPM']

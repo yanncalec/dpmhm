@@ -141,8 +141,12 @@ class TEMPLATE(tfds.core.GeneratorBasedBuilder):
     for fp in path.glob('*.xxx'):  # do not use `rglob` if path has no subfolders
       # print(fp)
       dm = pd.read_csv(fp)  # csv file
-      dm = tfds.core.lazy_imports.scipy.io.loadmat(fp)
-      # dm = loadmat(fp)
+      try:
+        dm = tfds.core.lazy_imports.scipy.io.loadmat(fp)
+      except Exception as msg:
+        raise Exception()(f'Error in processing {fp}: {msg}')
+        # print(f'Error in processing {fp}: {msg}')
+        pass
 
       x = np.stack([dm['Channel_1'].squeeze(), dm['Channel_2'].squeeze()]).T
 

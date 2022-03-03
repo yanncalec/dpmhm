@@ -68,7 +68,7 @@ https://www.iso.org/standard/59619.html
 
 Notes
 =====
-For unknown reasons the file `KA08/N15_M01_F10_KA08_2.mats` cannot be processed by `scipy.io.loadmat` from the inside of `tfds` framework. However it seems to be a normal file and can be loaded manually.
+The file `KA08/N15_M01_F10_KA08_2.mat` seems corrupted and cannot be loaded by `scipy.io.loadmat`.
 """
 
 _CITATION = """
@@ -183,24 +183,21 @@ class Paderborn(tfds.core.GeneratorBasedBuilder):
                       mat_dtype=True,
                       squeeze_me=True,
                       )
-          xd = {}
-          for dd in np.atleast_1d(dm[fp.name.split('.mat')[0]])[0][2]:
-            xd[dd[0]] = dd[2]
-
-          # for k, v in sorted(xd.items()):
-          #   print(k,v.shape)
-          # x = np.stack([v for _, v in sorted(xd.items())])
-
-          yield hash(frozenset(metadata.items())), {
-            'signal': xd,
-            'label': 'Healthy' if metadata['DamageMethod']=='Healthy' else 'Faulty',
-            'metadata': metadata
-          }
         except Exception as msg:
           # The file KA08/N15_M01_F10_KA08_2.mat
           # cannot be processed for unknown reasons.
-          print(msg, fp)
+          print(f'Error in processing {fp}: {msg}')
           pass
+
+        xd = {}
+        for dd in np.atleast_1d(dm[fp.name.split('.mat')[0]])[0][2]:
+          xd[dd[0]] = dd[2]
+
+        yield hash(frozenset(metadata.items())), {
+          'signal': xd,
+          'label': 'Healthy' if metadata['DamageMethod']=='Healthy' else 'Faulty',
+          'metadata': metadata
+        }
 
   @staticmethod
   def get_references():

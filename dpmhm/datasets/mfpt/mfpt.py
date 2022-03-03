@@ -134,8 +134,11 @@ class MFPT(tfds.core.GeneratorBasedBuilder):
     for fp in path.rglob('*.mat'):
       # print(fp)
       if fp.parent.name[0] in ['1', '2', '3', '4', '6']:
-        dm = tfds.core.lazy_imports.scipy.io.loadmat(fp)
-        # dm = loadmat(fp)
+        try:
+          dm = tfds.core.lazy_imports.scipy.io.loadmat(fp)
+          # dm = loadmat(fp)
+        except Exception as msg:
+          raise Exception(f"Error in processing {fp}: {msg}")
 
         metadata = {}
         for nn,vv in zip (dm['bearing'][0].dtype.names, dm['bearing'][0][0]):
