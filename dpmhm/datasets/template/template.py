@@ -18,6 +18,9 @@ Description
 ===========
 A short summary of the dataset.
 
+Further information
+-------------------
+
 Homepage
 --------
 
@@ -35,6 +38,14 @@ Recording duration:
 Recording period:
 
 Download
+--------
+
+Processed data
+==============
+
+Split:
+
+Features
 --------
 
 Notes
@@ -94,6 +105,7 @@ class TEMPLATE(tfds.core.GeneratorBasedBuilder):
             'SensorName': tf.string,  # name of sensor
             'SensorLocation': tf.string,  # Location of the sensor, e.g. {'Gearbox', 'Bearing'}
             'FaultName': tf.string,  # Name of the fault, e.g. {'Unbalance', 'Lossness'}
+            'FaultLocation': tf.string,  # Location of the fault, e.g. {'FanEnd', 'DriveEnd'}
             'FaultComponent': tf.string, # Component of the fault, e.g. {'Ball', 'Cage' ,'InnerRace', 'OuterRace'}
             'FaultSize': tf.float32,  # Size of the fault
             'FaultExtend': tf.int32,  # Extend of the fault, e.g. mild, severe etc

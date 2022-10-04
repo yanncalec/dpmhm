@@ -41,7 +41,7 @@ https://fordatis.fraunhofer.de/bitstream/fordatis/151.2/3/README.md
 
 Notes
 =====
-The original record consists of two periods where the rotation speed increases linearly. In this package these two periods are separated. Moreover, the first 5 seconds of record seemlingly correspond to initialization hence are removed.
+The original record consists of two periods where the rotation speed increases linearly. In this package these two periods are separated. Moreover, the first 5 seconds of record seem to correspond to initialization hence are removed.
 """
 
 _CITATION = """
@@ -116,7 +116,7 @@ class Fraunhofer151(tfds.core.GeneratorBasedBuilder):
     fpaths = path.glob('*D.csv') if split=='train' else path.glob('*E.csv')
 
     for fp in fpaths:
-      print(fp)
+      # print(fp)
 
       metadata = {
         'FaultExtend': int(fp.name[0]),

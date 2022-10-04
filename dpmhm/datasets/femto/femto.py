@@ -1,4 +1,9 @@
-"""FEMTO dataset."""
+"""FEMTO dataset.
+
+Instruction
+-----------
+If manually downloaded the data file need first to be unzipped.
+"""
 
 import os
 from pathlib import Path
@@ -31,7 +36,7 @@ Actual RULs (in second) of Test set
 -----------------------------------
 - Bearing1_3: 5730
 - Bearing1_4: 339
-- Bearing1_5: 1619
+- Bearing1_5: 1610
 - Bearing1_6: 1460
 - Bearing1_7: 7570
 - Bearing2_3: 7530
@@ -49,37 +54,52 @@ http://www.femto-st.fr/
 
 https://github.com/Lucky-Loek/ieee-phm-2012-data-challenge-dataset
 
+Further Information
+-------------------
+Monitoring data of the 11 test bearings were truncated so that participants were supposed to predict the remaining life, and thereby perform RUL estimates. Also, no assumption on the type of failure to be occurred was given (nothing known about the nature and the origin of the degradation: balls, inner or outer races, cage...)
+
 Original data
 =============
 Format: CSV files
-Number of channels: not fixed, up to 3
-Vibration signals (horizontal and vertical)
-- Sampling frequency: 25.6 kHz
-- Recordings: 2560 (i.e. 1/10 s) are recorded each 10 seconds
-Temperature signals
-- Sampling frequency: 10 Hz
-- Recordings: 600 samples are recorded each minute
+Channels: not fixed, up to 3 (2 vibrations and 1 temperature)
+  Vibration signals (horizontal and vertical)
+    - Sampling frequency: 25.6 kHz
+    - Recordings: 2560 (i.e. 1/10 s) are recorded each 10 seconds
+  Temperature signals
+    - Sampling frequency: 10 Hz
+    - Recordings: 600 samples are recorded each minute
+Split: ['Learning_set', 'Test_set', 'Full_Test_Set']
+Label: None
 
 Download
 --------
 https://github.com/Lucky-Loek/ieee-phm-2012-data-challenge-dataset
+
+Processed data
+==============
+Split: ['train', 'test', 'full_test']
+
+Features
+--------
+'signal': {
+  'vibration',
+  'temperature'
+},
+
+'metadata': {
+  'OperatingCondition': ['Bearing1','Bearing2','Bearing3']
+  'OriginalSplit': ['Learning_set', 'Test_set', 'Full_Test_Set']
+  'FileName': Original filename with path
+}
+
+Notes
+=====
+- The split 'test' is the truncation of 'full_test' used for RUL.
 """
 
 _CITATION = """
 P. Nectoux, R. Gouriveau, K. Medjaher, E. Ramasso, B. Morello, N. Zerhouni, C. Varnier. PRONOSTIA: An Experimental Platform for Bearings Accelerated Life Test. IEEE International Conference on Prognostics and Health Management, Denver, CO, USA, 2012
 """
-
-_SPLIT_PATH_MATCH = {
-  'train': 'Learning_set',
-  'test': 'Test_set',
-  'full_test': 'Full_Test_Set'
-}
-
-_PARSER_MATCH = {
-  'Bearing1': 1, # 'condition 1',
-  'Bearing2': 2, # 'condition 2',
-  'Bearing3': 3, # 'condition 3',
-}
 
 _DATA_URLS = 'https://github.com/Lucky-Loek/ieee-phm-2012-data-challenge-dataset/archive/refs/heads/master.zip'
 
@@ -107,9 +127,12 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
           # 'label': tfds.features.ClassLabel(names=['Healthy', 'Faulty', 'Unknown']),
 
           'metadata': {
-            'OperatingCondition': tf.int32,  # More operating conditions
+            'OperatingCondition': tf.string,  # More operating conditions
+            # 'SamplingRate': tf.uint32,
+            # 'LoadForce': tf.uint32,
+            # 'RotatingSpeed': tf.uint32,
             # 'ID': tf.string,  # ID of the bearing
-            # 'Lifetime': tf.float32,  # Time of the run-to-failure experiment
+            # 'Lifetime': tf.uint32,  # Time of the run-to-failure experiment, or Remaining Useful Life
             'OriginalSplit': tf.string,  # Original split
             'FileName': tf.string,  # Original filename with path
           }
@@ -125,34 +148,37 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
 
   def _split_generators(self, dl_manager: tfds.download.DownloadManager):
     if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
-      datadir = dl_manager._manual_dir
+      datadir = Path(dl_manager._manual_dir)  # force conversion
+      # zipfile = dl_manager._manual_dir / 'femto.zip'
+
     else:  # automatically download data
-      _resource = tfds.download.Resource(url=_DATA_URLS, extract_method=tfds.download.ExtractMethod.ZIP)  # in case that the extraction method cannot be deduced automatically from files
-      datadir = dl_manager.download_and_extract(_resource)
+      # _resource = tfds.download.Resource(url=_DATA_URLS, extract_method=tfds.download.ExtractMethod.ZIP)  # in case that the extraction method cannot be deduced automatically from files
+      # datadir = dl_manager.download_and_extract(_resource)
+      raise NotImplemented()
 
     return {
-      sp: self._generate_examples(datadir/fn, sp) for sp, fn in _SPLIT_PATH_MATCH.items()
+      'train': self._generate_examples(datadir, 'Learning_set'),
+      'test': self._generate_examples(datadir, 'Test_set'),
+      'full_test': self._generate_examples(datadir, 'Full_Test_Set')
     }
 
-  def _generate_examples(self, path, split):
-    # assert path.exists()
-    # If the download files are extracted
-    for fp in path.rglob('*.csv'):  # do not use `rglob` if path has no subfolders
-      print(fp)
-      # print(fp.parent)
+  def _generate_examples(self, datadir, split):
+    for fp in (datadir/split).rglob('*.csv'):
+      fname = fp.parts[-1]
 
-      with open(fp,'r') as ff:
-        sep = ';' if ';' in ff.readline() else ','
+      # Delimiter used by csv files is not uniform: both ',' and ';' are encountered => let pandas detect automatically
+      try:
+        dm = pd.read_csv(fp, sep=None, header=None, engine='python')
+        assert dm.shape[1] >= 5
+      except:
+        raise Exception(f'Cannot parse CSV file {fname}')
 
-      dm = pd.read_csv(fp, sep=sep, header=None)
-      assert dm.shape[1] >= 5
-
-      if fp.name[:3] == 'acc':
+      if fname[:3] == 'acc':
         _signal = {
           'vibration': dm.iloc[:,-2:].values,
           'temperature': np.array([])
         }
-      elif fp.name[:4] == 'temp':
+      elif fname[:4] == 'temp':
         _signal = {
           'vibration': np.array([]).reshape((-1,2)),
           'temperature': dm.iloc[:,-1].values,
@@ -161,9 +187,9 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
         continue
 
       metadata = {
-        'OperatingCondition': _PARSER_MATCH[fp.parts[-2].split('_')[0]],
+        'OperatingCondition': fp.parts[-2].split('_')[0],
         'OriginalSplit': split,
-        'FileName': os.path.join(*fp.parts[-3:])
+        'FileName': os.path.join(*fp.parts[-2:])  # full path file name
       }
 
       yield hash(frozenset(metadata.items())), {

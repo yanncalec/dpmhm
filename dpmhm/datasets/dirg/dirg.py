@@ -31,8 +31,8 @@ Original data
 =============
 Date of acquisition: 2016
 Format: Matlab
-Number of channels: 6, for two accelerometers in the x-y-z axis
-Splits: 'Variable speed and load' test, 'Endurance' test
+Channels: 6, for two accelerometers in the x-y-z axis
+Split: 'Variable speed and load' test, 'Endurance' test
 Sampling rate: 51200 Hz for `Variable speed and load` test and 102400 Hz for `Endurance` test
 Recording duration: 10 seconds for `Variable speed and load` test and 8 seconds for `Endurance` test
 Label: normal and faulty
@@ -41,10 +41,27 @@ Download
 --------
 ftp://ftp.polito.it/people/DIRG_BearingData/
 
+Processed data
+==============
+Split: ['variation', 'endurance'].
+
+Features
+--------
+'signal':
+'label': [Normal, Faulty, Unknown]
+'metadata': {
+  'SamplingRate': 51200 Hz for Variation test or 102400 Hz for Endurance test
+  'RotatingSpeed': Nominal speed of the shaft in Hz
+  'LoadForce': Load in N, conversion from mV: mV/0.499 with 0.499 being the sensitivity
+  'FaultComponent': {'Roller', 'InnerRing'}
+  'FaultSize': 450, 250, 150, 0 um
+  'OriginalSplit': {'Variation', 'Endurance'}
+  'FileName': original file name,
+}
+
 Notes
 =====
-Renamed splits: ['variation', 'endurance'].
-Conversion: load is converted from mV to N using the sensitivity factor 0.499 mV/N
+- Conversion: load is converted from mV to N using the sensitivity factor 0.499 mV/N
 """
 
 _CITATION = """
@@ -60,6 +77,8 @@ url = {https://www.sciencedirect.com/science/article/pii/S0888327018306800},
 author = {Alessandro Paolo Daga and Alessandro Fasana and Stefano Marchesiello and Luigi Garibaldi},
 }
 """
+
+_DATA_URLS = []
 
 # _SENSOR_LOCATION = ['A1', 'A2']
 
@@ -129,27 +148,36 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
   def _split_generators(self, dl_manager: tfds.download.DownloadManager):
     """Returns SplitGenerators."""
     if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
-      datadir = dl_manager._manual_dir
+      datadir = Path(dl_manager._manual_dir)
     else:
-      raise FileNotFoundError(self.MANUAL_DOWNLOAD_INSTRUCTIONS)
+      # Parallel download (may result in corrupted files):
+      # _data_files = dl_manager.download(_DATA_URLS)   # urls must be a list
 
-    # print(datadir)
+      # Sequential download:
+      # _data_files = [dl_manager.download(url) for url in _DATA_URLS]
+
+      # fp_dict = {}
+      # for fp in _data_files:
+      #   with open(str(fp)+'.INFO') as fu:
+      #     fp_dict[str(fp)] = _METAINFO.loc[_METAINFO['FileName'] == json.load(fu)['original_fname']].iloc[0].to_dict()
+      raise NotImplemented()
 
     return {
-        'variation': self._generate_examples(datadir/'VariableSpeedAndLoad.zip'),
-        'endurance': self._generate_examples(datadir/'EnduranceTest.zip'),
+        'variation': self._generate_examples(datadir/'VariableSpeedAndLoad'),
+        'endurance': self._generate_examples(datadir/'EnduranceTest'),
     }
 
-  def _generate_examples(self, path):
+  def _generate_examples(self, datadir):
     """Yields examples."""
-    for fname0, fobj in tfds.download.iter_archive(path, tfds.download.ExtractMethod.ZIP):
+    for fp in datadir.glob('*.mat'):
+      fname = fp.parts[-1]
+
       try:
-        dm = tfds.core.lazy_imports.scipy.io.loadmat(fobj)
+        dm = tfds.core.lazy_imports.scipy.io.loadmat(fp)
         # dm = loadmat(fp)
       except Exception as msg:
-        raise Exception(f"Error in processing {fobj}: {msg}")
+        raise Exception(f"Error in processing {fp}: {msg}")
 
-      fname = Path(fname0).parts[1]
       if fname.upper()[0] == 'C':
         ss = fname.upper().split('_')
         # self._fname_parser(fname.name)
@@ -176,7 +204,7 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
           'FaultComponent': _component,
           'FaultSize': _diameter,
           'OriginalSplit': _datalabel,
-          'FileName': fname
+          'FileName': os.path.join(*fp.parts[-2:])
       }
 
       yield hash(frozenset(metadata.items())), {

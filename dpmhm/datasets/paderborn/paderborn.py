@@ -57,7 +57,7 @@ Size: 20.8 Gb
 
 Download
 --------
-http://groups.uni-paderborn.de/kat/BearingDataCenter/
+https://mb.uni-paderborn.de/en/kat/main-research/datacenter/bearing-datacenter/data-sets-and-download
 
 References
 ==========

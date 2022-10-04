@@ -82,7 +82,10 @@ class IMS(tfds.core.GeneratorBasedBuilder):
   MANUAL_DOWNLOAD_INSTRUCTIONS = """
   Due to unsupported file format (7zip, rar), automatic download & extraction is not supported in this package. Please download all data from
 
-    https://ti.arc.nasa.gov/c/3/
+    https://www.kaggle.com/datasets/vinayak123tyagi/bearing-dataset?resource=download
+
+  or
+    https://www.nasa.gov/content/prognostics-center-of-excellence-data-set-repository
 
   extract all files, then proceed the installation manually.
   """
