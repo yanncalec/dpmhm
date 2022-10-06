@@ -9,7 +9,7 @@ Training/Test split: domain split
 
 """
 
-import os
+# import os
 from pathlib import Path
 # import itertools
 # from attr import frozen
@@ -21,14 +21,14 @@ import pandas as pd
 # import mat4py
 import librosa
 
-from dpmhm.datasets.preprocessing import AbstractDatasetPreprocessing, md5_encoder, spectrogram, melspectrogram
+from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, md5_encoder, _EXTRACTOR_SPEC
+from dpmhm.datasets import _DTYPE
 
-
-# Data type
-try:
-  _DTYPE = tf.as_dtype(os.environ['DPMHM_DTYPE'])  # from the environment variable
-except:
-  _DTYPE = tf.float64
+# # Data type
+# try:
+#   _DTYPE = tf.as_dtype(os.environ['DPMHM_DTYPE'])  # from the environment variable
+# except:
+#   _DTYPE = tf.float64
 
 
 _DESCRIPTION = """
@@ -259,127 +259,22 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
       pass
 
 
-# Default feature extractors
-_EXTRACTOR_SPEC = lambda x, sr: spectrogram(x, sr, time_window=0.025, hop_step=0.01, to_db=True)[0]
-
-_EXTRACTOR_MEL = lambda x, sr: melspectrogram(x, sr, time_window=0.025, hop_step=0.01, n_mels=64)[0]
-
-
-class DatasetPreprocessing(AbstractDatasetPreprocessing):
+class DatasetCompactor(AbstractDatasetCompactor):
   """Preprocessing for CWRU dataset.
-
-  This class performs the following preprocessing steps:
-  - resampling,
-  - filtration,
-  - extraction of new labels and channels,
-  - feature transform,
-  - sliding window view with downsampling.
   """
-
-  def __init__(self, dataset, extractor:callable=_EXTRACTOR_SPEC, *, resampling_rate:int=None, filters:dict={}, keys:list=[], channels:list=['DE'], window_shape, downsample):
+  def __init__(self, *args, **kwargs):
     """
-    Args
-    ----
-    dataset: input
-      original CWRU dataset
-    extractor: callable
-      a callable taking arguments (signal, sampling_rate) and returning extracted features.
-    resampling_rate: int
-      rate for resampling, if None use the original sampling rate.
-    filters: dict
-      filters on the field 'metadata'.
-    keys: list
-      keys for extraction of new labels, subset of ['LoadForce', 'FaultComponent', 'FaultSize']. If not given the original labels will be used.
-    channels: list
-      channels for extraction of data, subset of ['DE', 'FE', 'BA].
-    window_shape: tuple
-      either a tuple `(frequency, time)`, i.e. the size of the sliding window in frequency and time axes, or an int which is the size of the sliding window in time axis (the the whole frequency axis is used in this case).
-    downsample: tuple or int
-      downsampling rate in frequency and time axes, either tuple or int, corresponding to the given `frame_size`.
-
     Notes
     -----
+    - keys for extraction of new labels must be subset of ['LoadForce', 'FaultComponent', 'FaultSize'].
+    - channels for extraction of data must be subset of ['DE', 'FE', 'BA].
     """
-    self._extractor = extractor
-    self._resampling_rate = resampling_rate
-    self._filters = filters
-    # for k in keys:
-    #   assert k in ['LoadForce', 'FaultComponent', 'FaultSize']
-    self._keys = keys
-    self._channels = channels
-    self._window_shape = window_shape
-    self._downsample = downsample
-    # dictionary for extracted labels, will be populated only after scanning the compacted dataset
-    self._label_dict = {}
-    # filtered original dataset, of shape (channel, time)
-    self._dataset_filtered = self.filter_metadata(dataset, self._filters)
+    super().__init__(*args, **kwargs)
 
-  def filter_metadata(self, ds, fs):
-    @tf.function
-    def _filter(X, k, v):
-      return tf.reduce_any(tf.equal(X['metadata'][k], v))
-
-    for k,v in fs.items():
-      ds = ds.filter(lambda X: _filter(X, k, v))
-    return ds
-
-  @property
-  def dataset(self):
-    """Preprocessed (resampled and compacted) original dataset.
-    """
-    if self._resampling_rate is None:
-      _dataset = self.compact(self._dataset_filtered)
-    else:
-      _dataset = self.resample(self.compact(self._dataset_filtered))
-    return _dataset
-
-  @property
-  def dataset_feature(self):
-    """Feature-transformed dataset.
-    """
-    return self.to_feature(self.dataset)
-
-  @property
-  def dataset_windows(self):
-    """Windowed view of the feature dataset.
-    """
-    return self.to_windows(self.dataset_feature, self._window_shape, self._downsample)
-
-  @property
-  def label_dict(self):
-    try:
-      self._label_dict_scanned
-    except:
-      self._label_dict = {}
-      # make a full scan of the compacted dataset
-      for x in self.dataset:
-        pass
-      self._label_dict_scanned = self._label_dict
-
-    return self._label_dict_scanned
-
-  @property
-  def label_dict_index(self):
-    # label index
-    return {k: n for n, k in enumerate(self.label_dict.keys())}
-
-  def encode_labels(self, *args):
-    """MD5 encoding of a list of labels.
-
-    From:
-    https://stackoverflow.com/questions/5417949/computing-an-md5-hash-of-a-data-structure
-    """
-    dn = [d.numpy() for d in args]
-    # v = [str(d.numpy()) for d in args]
-    v = [a.decode('utf-8') if type(a) is (bytes or str) else str(a) for a in dn]
-
-    lb = md5_encoder(*v)
-    # if lb in self._label_dict:
-    #   assert self._label_dict[lb] == v
-    # else:
-    #   self._label_dict[lb] = v
-    self._label_dict[lb] = v
-    return lb
+    for k in self._keys:
+      assert k in ['LoadForce', 'FaultComponent', 'FaultSize']
+    for ch in self._channels:
+      assert ch in ['DE', 'FE', 'BA']
 
   def compact(self, dataset):
     @tf.function  # necessary for infering the size of tensor
@@ -411,10 +306,12 @@ class DatasetPreprocessing(AbstractDatasetPreprocessing):
 
       return {
         'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
-        'rpm': X['rpm'],
-        'rpm_nominal': X['metadata']['RotatingSpeed'],
-        'filename': X['metadata']['FileName'],
-        'sampling_rate': X['metadata']['SamplingRate'],
+        'metadata': {
+          'RPM': X['rpm'],
+          'RPM_Nominal': X['metadata']['RotatingSpeed'],
+          'FileName': X['metadata']['FileName'],
+          'SamplingRate': X['metadata']['SamplingRate'],
+        },
         'signal': [X['signal'][ch] for ch in self._channels],
         # 'signal': signal
       }
@@ -422,72 +319,37 @@ class DatasetPreprocessing(AbstractDatasetPreprocessing):
     ds = dataset.filter(_has_channels)
     return ds.map(_compact, num_parallel_calls=tf.data.AUTOTUNE)
 
-  def resample(self, dataset):
-    def _resample(X):
-      Y = X.copy()
-      Y['sampling_rate'] = self._resampling_rate
-      Y['signal'] = tf.py_function(
-        func=lambda x, sr:librosa.resample(x.numpy(), orig_sr=float(sr), target_sr=self._resampling_rate),
-        inp=[X['signal'], X['sampling_rate']],
-        Tout=_DTYPE
-      )
-      return Y
 
-    return dataset.map(_resample, num_parallel_calls=tf.data.AUTOTUNE)
+class FeatureTransformer(AbstractFeatureTransformer):
+  """Feature transform for CWRU dataset.
+  """
+  # def __init__(self, *args, **kwargs):
+  #   super().__init__(*args, **kwargs)
 
-  def to_feature(self, dataset):
-    """Feature transform of a compacted dataset.
-
-    Args
-    ----
-    dataset:
-      compacted/resampled dataset.
-    """
-    # Alternative: define a tf.py_function beforehand
-    # py_extractor = lambda x, sr: tf.py_function(
-    #   func=lambda x, sr: extractor(x.numpy(), sr),  # makes it a tf callable
-    #   inp=[x, sr],
-    #   Tout=tf.float64
-    # )  # x.numpy() must be used inside the method `extractor()`
-
-    def _feature_map(X):
-      return {
-        # 'label': X['label'],  # string label
-        'label': tf.py_function(
-          func=lambda s: self.label_dict_index[s.numpy().decode('utf-8')],
-          inp=[X['label']],
-          Tout=tf.uint32
-          ),  # integer label
-        'info': (X['filename'], X['rpm'], X['rpm_nominal']),
-        'feature': tf.py_function(
-          func=lambda x, sr: self._extractor(x.numpy(), sr),  # makes it a tf callable
-          inp=[X['signal'], X['sampling_rate']],
-          Tout=_DTYPE
-          )  # the mose compact way
-      }
-
-    return dataset.map(_feature_map, num_parallel_calls=tf.data.AUTOTUNE)
-
-  @property
-  def output_signature(self):
+  @classmethod
+  def get_output_signature(cls):
     # return (
-    #   tf.TensorSpec(shape=(), dtype=tf.string, name=None),
+    #   tf.TensorSpec(shape=(), dtype=tf.uint32, name='label'),
     #   (
-    #     tf.TensorSpec(shape=(), dtype=tf.string, name=None),  # filename
-    #     tf.TensorSpec(shape=(), dtype=tf.uint32, name=None),  # real rpm
-    #     tf.TensorSpec(shape=(), dtype=tf.uint32, name=None)  # nominal rpm
+    #     tf.TensorSpec(shape=(), dtype=tf.string, name='FileName'),  # filename
+    #     tf.TensorSpec(shape=(), dtype=tf.uint32, name='RPM'),  # real rpm
+    #     tf.TensorSpec(shape=(), dtype=tf.uint32, name='RPM_Nominal'),  # nominal rpm
+    #     tf.TensorSpec(shape=(), dtype=tf.uint32, name='SamplingRate')
     #     ),
-    #   tf.TensorSpec(shape=(None, None, None), dtype=_DTYPE, name=None)
+    #   tf.TensorSpec(shape=(None, None, None), dtype=tf.float64, name='feature')
     # )
-    return (
-      tf.TensorSpec(shape=(), dtype=tf.uint32, name='label'),
-      (
-        tf.TensorSpec(shape=(), dtype=tf.string, name='filename'),  # filename
-        tf.TensorSpec(shape=(), dtype=tf.uint32, name='rpm'),  # real rpm
-        tf.TensorSpec(shape=(), dtype=tf.uint32, name='rpm_nominal')  # nominal rpm
-        ),
-      tf.TensorSpec(shape=(None, None, None), dtype=_DTYPE, name='feature')
-    )
 
-  def pipeline(self, extractor, frame_size:int):
-    return self.to_frames(self.to_feature(extractor), frame_size)
+    return {
+      'label': tf.TensorSpec(shape=(), dtype=tf.string),
+      'metadata': {
+        'RPM': tf.TensorSpec(shape=(), dtype=tf.uint32),  # real rpm
+        'RPM_Nominal': tf.TensorSpec(shape=(), dtype=tf.uint32),  # nominal rpm
+        'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
+        'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
+      },
+      # 'feature': tf.TensorSpec(shape=(None, None, None), dtype=tf.float64, name='feature'),
+      'feature': tf.TensorSpec(shape=tf.TensorShape(None), dtype=tf.float64),
+    }
+
+  # def pipeline(self, extractor, frame_size:int):
+  #   return self.to_frames(self.to_feature(extractor), frame_size)

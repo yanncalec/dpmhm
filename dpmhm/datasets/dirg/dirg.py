@@ -3,13 +3,17 @@
 
 import os
 from pathlib import Path
-import itertools
-import json
+# import itertools
+# import json
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
-import pandas as pd
+# import pandas as pd
 # from scipy.io import loadmat
+import librosa
+
+from dpmhm.datasets.preprocessing import AbstractDatasetPreprocessing, md5_encoder, _EXTRACTOR_SPEC
+from dpmhm.datasets import _DTYPE
 
 
 _DESCRIPTION = """
@@ -47,14 +51,15 @@ Split: ['variation', 'endurance'].
 
 Features
 --------
-'signal':
+'signal': of shape (6, time)
 'label': [Normal, Faulty, Unknown]
+'load': real load in N
 'metadata': {
   'SamplingRate': 51200 Hz for Variation test or 102400 Hz for Endurance test
-  'RotatingSpeed': Nominal speed of the shaft in Hz
-  'LoadForce': Load in N, conversion from mV: mV/0.499 with 0.499 being the sensitivity
+  'RotatingSpeed': Nominal speed of the shaft in Hz [100, 200, 300, 400, 500] for the variation test and 300 for the endurance test.
+  'LoadForce': Nominal load in N [0, 1000, 1400, 1800]
   'FaultComponent': {'Roller', 'InnerRing'}
-  'FaultSize': 450, 250, 150, 0 um
+  'FaultSize': [450, 250, 150, 0] um
   'OriginalSplit': {'Variation', 'Endurance'}
   'FileName': original file name,
 }
@@ -62,6 +67,7 @@ Features
 Notes
 =====
 - Conversion: load is converted from mV to N using the sensitivity factor 0.499 mV/N
+- The endurance test was originally with the fault type 4A but in the processed data we marked its label as "unknown".
 """
 
 _CITATION = """
@@ -83,6 +89,8 @@ _DATA_URLS = []
 # _SENSOR_LOCATION = ['A1', 'A2']
 
 # _FAULT_LOCATION = ['B1']
+
+_NOMINAL_LOAD = np.asarray([0, 1000, 1400, 1800])
 
 # coding of fault component and diameter (in um)
 _FAULT_TYPE_MATCH = {
@@ -122,16 +130,18 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
         description=_DESCRIPTION,
         features=tfds.features.FeaturesDict({
             # These are the features of your dataset like images, labels ...
-            'signal': tfds.features.Tensor(shape=(None,6), dtype=tf.float64),
+            'signal': tfds.features.Tensor(shape=(6, None), dtype=_DTYPE),
 
             'label': tfds.features.ClassLabel(names=['Normal', 'Faulty', 'Unknown']),
 
+            'load': tf.float32,  # Real load in N
+
             'metadata': {
               'SamplingRate': tf.uint32,  # 51200 Hz for Variation test or 102400 Hz for Endurance test
-              'RotatingSpeed': tf.float32,  # Nominal speed of the shaft in Hz
-              'LoadForce': tf.float32,  # Load in N, conversion from mV: mV/0.499 with 0.499 being the sensitivity
+              'RotatingSpeed': tf.uint32,  # Nominal speed of the shaft in Hz
+              'LoadForce': tf.uint32,  # Nominal load in N
               'FaultComponent': tf.string, # {'Roller', 'InnerRing'}
-              'FaultSize': tf.float32,  # 450, 250, 150, 0 um
+              'FaultSize': tf.uint32,  # 450, 250, 150, 0 um
               'OriginalSplit': tf.string,  # {'Variation', 'Endurance'}
               'FileName': tf.string,
             },
@@ -183,8 +193,9 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
         # self._fname_parser(fname.name)
         _component, _diameter = _FAULT_TYPE_MATCH[ss[0][1:]]
         _samplingrate = 51200
-        _shaftrate = float(ss[1])
-        _load = float(ss[2])/0.499
+        _shaftrate = int(ss[1])
+        _load_real = float(ss[2])/0.499
+        _load = _NOMINAL_LOAD[np.argmin(np.abs(_load_real-_NOMINAL_LOAD))]
         _label = 'Normal' if _component=='None' else 'Faulty'
         _datalabel = 'Variation'
       elif fname.upper()[:3] == 'E4A':
@@ -192,7 +203,8 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
         _samplingrate = 102400
         _shaftrate = 300
         _load = 1800
-        _label = 'Faulty'
+        _load_real = 1800
+        _label = 'Unknown'
         _datalabel = 'Endurance'
       else:
         continue
@@ -208,8 +220,59 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
       }
 
       yield hash(frozenset(metadata.items())), {
-        'signal': dm[fname[:-4]],
+        'signal': dm[fname[:-4]].T.astype(_DTYPE.as_numpy_dtype),  # transpose to the shape (channel, time)
         'label': _label,
+        'load': _load_real,
         'metadata': metadata
       }
 
+
+class DatasetCompactor(AbstractDatasetCompactor):
+  """Preprocessing for DIRG dataset.
+  """
+
+  def __init__(self, *args, **kwargs):
+    """
+    Notes
+    -----
+    """
+    super().__init__(*args, **kwargs)
+
+    for k in self._keys:
+      assert k in ['FaultComponent', 'FaultSize']
+    # self._channels is not used here.
+
+  def compact(self, dataset):
+    @tf.function
+    def _compact(X):
+      d = [X['label']] + [X['metadata'][k] for k in self._keys]
+
+      return {
+        'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
+        'metadata': {
+          'Load': X['load'],
+          'Load_Nominal': X['metadata']['LoadForce'],
+          'RPM_Nominal': X['metadata']['RotatingSpeed'],
+          'FileName': X['metadata']['FileName'],
+        }
+        'signal': X['signal'],
+      }
+    return dataset.map(_compact, num_parallel_calls=tf.data.AUTOTUNE)
+
+
+class FeatureTransformer(AbstractFeatureTransformer):
+  """Feature transform for DIRG dataset.
+  """
+
+  @classmethod
+  def get_output_signature(cls):
+    return {
+      'label': tf.TensorSpec(shape=(), dtype=tf.string),
+      'metadata': {
+        'Load': tf.TensorSpec(shape=(), dtype=tf.uint32),  # real load
+        'Load_Nominal': tf.TensorSpec(shape=(), dtype=tf.uint32),  # nominal load
+        'RPM_Nominal': tf.TensorSpec(shape=(), dtype=tf.uint32),  # nominal rpm
+        'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
+      },
+      'feature': tf.TensorSpec(shape=tf.TensorShape(None), dtype=tf.float64),
+    }
