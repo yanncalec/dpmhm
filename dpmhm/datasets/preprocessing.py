@@ -2,21 +2,15 @@
 """
 
 from abc import ABC, abstractmethod, abstractproperty, abstractclassmethod
-from tkinter import Y
+from importlib import import_module
 
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 import tensorflow as tf
 import librosa
 # import scipy
-import hashlib
-import json
 
-
-def md5_encoder(*args):
-  """Encode a list of arguments to a string.
-  """
-  return hashlib.md5(json.dumps(args, sort_keys=True).encode('utf-8')).hexdigest()
+from . import utils
 
 
 def split_signal_generator(dataset, key:str, n_trunk:int):
@@ -53,7 +47,7 @@ class AbstractDatasetCompactor(ABC):
   We follow the convention of channel first: The original dataset (before feature transform) as well as the transformed dataset has the shape `(channel, frequency, time)`.
   """
 
-  def __init__(self, dataset, n_trunk:int=1, resampling_rate:int=None, filters:dict={}, keys:list=[], channels:list=[]):
+  def __init__(self, dataset, *, n_trunk:int=1, resampling_rate:int=None, filters:dict={}, keys:list=[], channels:list=[]):
     """
     Args
     ----
@@ -108,15 +102,17 @@ class AbstractDatasetCompactor(ABC):
     """Preprocessed (resampled and compacted) original dataset.
     """
     if self._resampling_rate is None:
-      _dataset = self.compact(self._dataset_filtered)
+      ds = self.compact(self._dataset_filtered)
     else:
-      _dataset = self.resample(self.compact(self._dataset_filtered))
+      ds = self.resample(self.compact(self._dataset_filtered))
     if self._n_trunk > 1:
-      _dataset = tf.data.Dataset.from_generator(
-        split_signal_generator(_dataset, 'signal', self._n_trunk),
-        output_signature=_dataset.element_spec,
+      ds = tf.data.Dataset.from_generator(
+        split_signal_generator(ds, 'signal', self._n_trunk),
+        output_signature=ds.element_spec,
       )
-    return _dataset
+    ds.__dpmhm_class__ = self.__class__
+    ds.__dpmhm_name__ = __name__
+    return ds
 
   @property
   def label_dict(self):
@@ -146,7 +142,7 @@ class AbstractDatasetCompactor(ABC):
     # v = [str(d.numpy()) for d in args]
     v = [a.decode('utf-8') if type(a) is (bytes or str) else str(a) for a in dn]
 
-    lb = md5_encoder(*v)
+    lb = utils.md5_encoder(*v)
     # if lb in self._label_dict:
     #   assert self._label_dict[lb] == v
     # else:
@@ -189,7 +185,7 @@ class AbstractFeatureTransformer(ABC):
   We follow the convention of channel first: The original dataset (before feature transform) as well as the transformed dataset has the shape `(channel, frequency, time)`.
   """
 
-  def __init__(self, dataset, extractor:callable, window_shape:tuple, downsample:tuple):
+  def __init__(self, dataset, extractor:callable, *, window_shape:tuple, downsample:tuple):
     """
     Args
     ----
@@ -211,13 +207,17 @@ class AbstractFeatureTransformer(ABC):
   def dataset_feature(self):
     """Feature-transformed dataset.
     """
-    return self.to_feature(self._dataset_origin)
+    ds = self.to_feature(self._dataset_origin)
+    ds.__dpmhm_class__ = self.__class__
+    return ds
 
   @property
   def dataset_windows(self):
     """Windowed view of the feature dataset.
     """
-    return self.to_windows(self.dataset_feature, self._window_shape, self._downsample)
+    ds = self.to_windows(self.dataset_feature, self._window_shape, self._downsample)
+    ds.__dpmhm_class__ = self.__class__
+    return ds
 
   def to_feature(self, dataset):
     """Feature transform of a compacted dataset of signal.
@@ -262,7 +262,7 @@ class AbstractFeatureTransformer(ABC):
     pass
 
   @classmethod
-  def to_windows(cls, dataset, window_shape:tuple, downsample:tuple=None, *, channel_last:bool=True):
+  def to_windows(cls, dataset, window_shape:tuple, downsample:tuple=None):
     """Sliding windows of view of a time-frequency feature dataset.
 
     Windows of view are time-frequency patches of a complete spectral feature. It is obtained by sliding a small window along the time-frequency axes.
@@ -273,8 +273,6 @@ class AbstractFeatureTransformer(ABC):
       feature dataset, must have a dictionary structure and contain the fields {'label', 'info', 'feature'} which corresponds to respectively the label, the context information and the spectral feature of shape (channel, freqeuncy, time).
     window_shape: tuple or int
     downsample: tuple or int
-    channel_last: bool
-      if True the output window will have shape `(channel, frequency, time)`.
 
     Returns
     -------
@@ -283,15 +281,15 @@ class AbstractFeatureTransformer(ABC):
     Notes
     -----
     - The field 'info' should contain context information of the frame, e.g. the orginal signal from which the frame is extracted.
-    - The input dataset is assumed channel first, while the output window can be optionally transformed to channel last.
+    - We follow the convertion of channel first here for both the input and the output dataset.
     """
     def _slider(S, ws, ds):
       # assert ws is int or tuple, ds
+      # assert S.ndim == 3
       if ws is None:
         ws = S.shape[1:]
       elif type(ws) is int:
-          ws = (S.shape[1], ws)
-      assert type(ws) is tuple and len(ws)==2
+        ws = (S.shape[1], ws)
 
       if ds is None:
         return  sliding_window_view(S, (S.shape[0], *ws))[0]
@@ -300,19 +298,6 @@ class AbstractFeatureTransformer(ABC):
       else:
         return  sliding_window_view(S, (S.shape[0], *ws))[0, ::ds[0], ::ds[1]]
 
-      # # Regularization for features shorter than frame_size:
-      # # return sliding_window_view(S, (S.shape[0], S.shape[1], min(S.shape[-1], window_shape)))[0]
-      # if type(window_shape) is int:
-      #   window_shape = (S.shape[1], window_shape)
-      # Sview =  sliding_window_view(S, (S.shape[0], *wdim))[0]
-      # if downsample is None:
-      #   return Sview
-      # else:
-      #   if type(downsample) is int:
-      #     return Sview[:, ::downsample]
-      #   else:
-      #     return Sview[::downsample[0], ::downsample[1]]
-
     def _generator(dataset):
       def _get_generator():
         for label, metadata, windows in dataset:
@@ -320,19 +305,15 @@ class AbstractFeatureTransformer(ABC):
           # (n_view_frequency, n_view_time, n_channel, window_shape[0], window_shape[1])
           for F in windows:  # iteration on frequency axis
             for x in F:  # iteration on time axis
-              if channel_last:
-                x = tf.transpose(x, [1,2,0])  # convert to channel last
-              # yield label, metadata, x
+              # if channel_last:
+              #   x = tf.transpose(x, [1,2,0])  # convert to channel last
               yield {
                 'label': label,
                 'metadata': metadata,
                 'feature': x,
               }
+              # yield label, metadata, x
       return _get_generator
-
-    # py_slider = lambda S: tf.py_function(func=_slider, inp=[S], Tout=tf.float64)
-    # ds = dataset.map(lambda X: (X['label'], X['info'], py_slider(X['feature'])))
-    # or more compactly:
 
     ds = dataset.map(lambda X: (X['label'], X['metadata'], tf.py_function(
       func=lambda S: _slider(S.numpy(), window_shape, downsample),
@@ -363,277 +344,35 @@ class AbstractFeatureTransformer(ABC):
     return self._window_dim
 
 
-## Feature extractor
-def spectrogram(x, sampling_rate:int, *, time_window:float, hop_step:float, n_fft:int=None, to_db:bool=True, normalize:bool=True, **kwargs):
-  """Compute the power spectrogram of a multichannel waveform.
+def pipeline(dataset, module_name, extractor:callable, *,
+            dc_kwargs:dict, ft_kwargs:dict,
+            splits:dict, sp_kwargs:dict={}, mode:str='global'):
+  # module = import_module('..'+module_name, __name__)
+  module = import_module('dpmhm.datasets.'+module_name)
 
-  Args
-  ----
-  x: input
-    nd array with the last dimension being time
-  sampling_rate: int
-    original sampling rate (in Hz) of the input
-  time_window: float
-    size of short-time Fourier transform (STFT) window, in second
-  hop_step: float
-    time step of the sliding STFT window, in second
-  n_fft: int
-    size of FFT, by default automatically determined
-  to_db: bool
-    power spectrogram in db
-
-  Returns
-  -------
-  Sxx:
-    power spectrogram
-  (win_length, hop_length, n_fft):
-    real values used by librosa for feature extraction
-  (Ts, Fs):
-    time and frequency steps of `Sxx`
-  """
-  sr = float(sampling_rate)
-
-  win_length = int(time_window * sr)
-  # hop_length = win_length // 2
-  hop_length = int(hop_step * sr)
-
-  if n_fft is None:
-    n_fft = 2**(int(np.ceil(np.math.log2(win_length))))
-
-  # Compute the spectrogram
-  if normalize:
-    y = (x-x.mean())/x.std()
-  else:
-    y = y
-  S = librosa.stft(y, n_fft=n_fft, win_length=win_length, hop_length=hop_length, **kwargs)
-  Sxx = librosa.power_to_db(np.abs(S)**2) if to_db else np.abs(S)**2
-
-  Ts = np.arange(S.shape[-1]) * hop_length / sr  # last dimension is time
-  Fs = np.arange(S.shape[-2])/S.shape[-2] * sr//2  # before last dimension is frequency
-  # elif method == 'scipy':
-  #   Fs, Ts, Sxx = scipy.signal.spectrogram(x, sr, nperseg=win_length, noverlap=win_length-hop_length, nfft=n_fft, **kwargs)
-  #   Sxx = librosa.power_to_db(Sxx) if to_db else Sxx
-
-  return Sxx, (win_length, hop_length, n_fft), (Ts, Fs)
-
-
-def melspectrogram(x, sampling_rate:int, *, time_window:float, hop_step:float, n_fft:int=None, n_mels:int=128, normalize:bool=True, **kwargs):
-  """Compute the mel-spectrogram of a multichannel waveform.
-
-  Args
-  ----
-  x: input
-    nd array with the last dimension being time
-  sampling_rate: int
-    original sampling rate (in Hz) of the input
-  time_window: float
-    size of short-time Fourier transform (STFT) window, in second
-  hop_step: float
-    time step of the sliding STFT window, in second
-  n_fft: int
-    size of FFT, by default automatically determined
-
-  Returns
-  -------
-  Sxx:
-    mel-spectrogram
-  (win_length, hop_length, n_fft):
-    real values used by librosa for feature extraction
-  """
-  sr = float(sampling_rate)
-
-  win_length = int(time_window * sr)
-  # hop_length = win_length // 2
-  hop_length = int(hop_step * sr)
-
-  if n_fft is None:
-    n_fft = 2**(int(np.ceil(np.math.log2(win_length))))
-
-  # Compute the melspectrogram
-  if normalize:
-    y = (x-x.mean())/x.std()
-  else:
-    y = y
-  Sxx = librosa.feature.melspectrogram(y=y, n_fft=n_fft, win_length=win_length, hop_length=hop_length, n_mels=n_mels, **kwargs)
-
-  return Sxx, (win_length, hop_length, n_fft)
-
-
-# Default feature extractors
-_EXTRACTOR_SPEC = lambda x, sr: spectrogram(x, sr, time_window=0.025, hop_step=0.01, to_db=True)[0]
-
-_EXTRACTOR_MEL = lambda x, sr: melspectrogram(x, sr, time_window=0.025, hop_step=0.01, n_mels=64)[0]
-
-
-## Dataset related
-
-def extract_by_category(ds, labels:set=None):
-  """Extract from a dataset the sub-datasets corresponding to the given categories.
-
-  Args
-  ----
-  ds: tf.data.Dataset
-    input dataset of element (value, label).
-  labels: list
-    list of category to be extracted. If not given the labels will be extracted by scanning the dataset (can be time-consuming).
-
-  Returns
-  -------
-  a dictionary containing sub-dataset of each category.
-  """
-  if labels is None:
-    labels = set([l.numpy() for x,l in ds])
-
-  dp = {}
-  for l in labels:
-    dp[l] = ds.filter(lambda x: tf.equal(x['label'],l))
-  return dp
-
-
-def get_dataset_size(ds) -> int:
-  """Get the number of elements of a dataset.
-  """
-  # count = ds.reduce(0, lambda x, _: x + 1)  # same efficiency
-  count = 0
-  for x in ds:
-    count += 1
-  return count
-
-
-def random_split_dataset(ds, splits:dict, shuffle_size:int=1, **kwargs):
-  """Randomly split a dataset according to the specified ratio.
-
-  Args
-  ----
-  ds: tf.data.Dataset
-    input dataset.
-  splits: dict
-    dictionary specifying the name and ratio of the splits.
-  shuffle_size: int
-    size of shuffle, 1 for no shuffle, None for full shuffle.
-  kwargs:
-    other keywords arguments to the method `shuffle()`, e.g. `reshuffle_each_iteration=False`, `seed=1234`.
-
-  Return
-  ------
-  A dictionary of datasets with the same keys as `split`.
-  """
-  assert all([v>=0 for k,v in splits.items()])
-  assert tf.reduce_sum(list(splits.values())) == 1.
-
-  try:
-    ds_size = len(ds)  # will raise error if length is unknown
-  except:
-    ds_size = get_dataset_size(ds)
-  assert ds_size >= 0
-  # assert (ds_size := ds.cardinality()) >= 0
-
-  # Specify seed to always have the same split distribution between runs
-  # e.g. seed=1234
-  ds = ds.shuffle(ds_size if shuffle_size is None else shuffle_size, **kwargs)
-
-  keys = list(splits.keys())
-  sp_size = {k: tf.cast(splits[k]*ds_size, tf.int64) for k in keys[:-1]}
-  sp_size[keys[-1]] = ds_size - tf.reduce_sum(list(sp_size.values()))
-  assert all([(splits[k]==0.) | (sp_size[k]>0) for k in keys]), "Empty split."
-
-  dp = {}
-  s = 0
-  for k, v in sp_size.items():
-    dp[k] = ds.skip(s).take(v)
-    s += v
-  return dp
-
-
-def split_dataset(ds, splits:dict={'train':0.7, 'val':0.2, 'test':0.1}, labels:list=None, *args, **kwargs):
-  """Randomly split a dataset either on either global or per category basis.
-
-  Args
-  ----
-  ds: tf.data.Dataset
-    input dataset with element of type (value, label).
-  splits: dict
-    dictionary specifying the name and ratio of the splits.
-  labels: list
-    list of categories. If given apply the split per category otherwise apply it globally on the whole dataset.
-  *args, **kwargs: arguments for `split_dataset_random()`
-
-  Return
-  ------
-  A dictionary of datasets with the same keys as `split`.
-  """
-  if labels is None:
-    dp = random_split_dataset(ds, splits, *args, **kwargs)
-  else:
-    ds = extract_by_category(ds, labels)
-    dp = {}
-    for n, (k,v) in enumerate(ds.items()):
-      # dp[k] = random_split_dataset(v, splits, *args, **kwargs)
-      if n == 0:
-        dp.update(random_split_dataset(v, splits, *args, **kwargs))
-      else:
-        dq = random_split_dataset(v, splits, *args, **kwargs)
-        for kk in dp.keys():
-          dp[kk] = dp[kk].concatenate(dq[kk])
-
-  return dp
-
-
-def preprocessing_pipeline(dataset, DC, dc_args:dict, FT, ft_args:dict, splits:dict, feature_extractor:callable, outdir:str=None, *, mode:str='global', splits_kwargs:dict={}):
   # step 1: compact & split
-  compactor = DC(dataset, *dc_args)
+  compactor = module.DatasetCompactor(dataset, **dc_kwargs)
 
-  if mode = 'global':
+  if mode == 'global':
       labels = None
   else:
       labels = compactor.label_dict.keys()
 
-  ds_split = split_dataset(compactor.dataset, splits=splits, labels=labels, **splits_kwargs)
+  if splits is None:
+    transformer = module.FeatureTransformer(compactor.dataset, extractor, **ft_kwargs)
+    # df_split[k] = transformer.dataset_feature
+    return transformer.dataset_windows
+  else:
+    ds_split = utils.split_dataset(compactor.dataset, splits, labels=labels, **sp_kwargs)
 
-  # step 2: feature transform
-  # df_split = {}
-  dw_split = {}
+    # step 2: feature transform
+    # df_split = {}
+    dw_split = {}
 
-  for k, ds in ds_split.items():
-      transformer = FT(ds, feature_extractor, **ft_args)
-      # df_split[k] = transformer.dataset_feature
-      dw_split[k] = transformer.dataset_windows
+    for k, ds in ds_split.items():
+        transformer = module.FeatureTransformer(ds, extractor, **ft_kwargs)
+        # df_split[k] = transformer.dataset_feature
+        dw_split[k] = transformer.dataset_windows
 
-  if outdir is not None:
-    for k,v in dw_split.items():
-        v.save(os.path.joing(outdir, k))
+    return dw_split
 
-  return dw_split
-
-# def split_dataset_by_category(ds, labels:list=None, split:dict={'train':0.8, 'test':0.1, 'val':0.1}, *args, **kwargs):
-#   ds = get_dataset_dictcategory(ds, labels)
-#   dp = {}
-#   for n, (k,v) in enumerate(ds.items()):
-#     dp[k] = split_dataset_random(v, split, *args, **kwargs)
-
-#   return dp
-
-
-  # @abstractmethod
-  # def pipeline(self, dataset):
-  #   """Pipeline transform of a dataset.
-  #   """
-  #   pass
-
-  # @abstractproperty
-  # def dataset(self):
-  #   """Preprocessed original dataset.
-  #   """
-  #   pass
-
-  # @abstractproperty
-  # def dataset_feature(self):
-  #   """Feature-transformed dataset.
-  #   """
-  #   pass
-
-  # @abstractproperty
-  # def dataset_windows(self):
-  #   """Windowed view of the feature dataset.
-  #   """
-  #   pass

@@ -21,7 +21,8 @@ import pandas as pd
 # import mat4py
 import librosa
 
-from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, md5_encoder, _EXTRACTOR_SPEC
+from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer
+# from dpmhm.datasets.feature import _EXTRACTOR_SPEC
 from dpmhm.datasets import _DTYPE
 
 # # Data type
@@ -262,19 +263,19 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 class DatasetCompactor(AbstractDatasetCompactor):
   """Preprocessing for CWRU dataset.
   """
-  def __init__(self, *args, **kwargs):
-    """
-    Notes
-    -----
-    - keys for extraction of new labels must be subset of ['LoadForce', 'FaultComponent', 'FaultSize'].
-    - channels for extraction of data must be subset of ['DE', 'FE', 'BA].
-    """
-    super().__init__(*args, **kwargs)
+  # def __init__(self, *args, **kwargs):
+  #   """
+  #   Notes
+  #   -----
+  #   - keys for extraction of new labels must be subset of ['LoadForce', 'FaultComponent', 'FaultSize'].
+  #   - channels for extraction of data must be subset of ['DE', 'FE', 'BA].
+  #   """
+  #   super().__init__(*args, **kwargs)
 
-    for k in self._keys:
-      assert k in ['LoadForce', 'FaultComponent', 'FaultSize']
-    for ch in self._channels:
-      assert ch in ['DE', 'FE', 'BA']
+  #   for k in self._keys:
+  #     assert k in ['LoadForce', 'FaultComponent', 'FaultSize']
+  #   for ch in self._channels:
+  #     assert ch in ['DE', 'FE', 'BA']
 
   def compact(self, dataset):
     @tf.function  # necessary for infering the size of tensor
