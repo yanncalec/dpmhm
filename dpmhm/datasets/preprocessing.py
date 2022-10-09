@@ -3,10 +3,14 @@
 
 from abc import ABC, abstractmethod, abstractproperty, abstractclassmethod
 from importlib import import_module
+from logging import warning
+import tempfile
 
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 import tensorflow as tf
+from tensorflow import keras
+
 import librosa
 # import scipy
 
@@ -111,7 +115,7 @@ class AbstractDatasetCompactor(ABC):
         output_signature=ds.element_spec,
       )
     ds.__dpmhm_class__ = self.__class__
-    ds.__dpmhm_name__ = __name__
+    # ds.__dpmhm_name__ = __name__
     return ds
 
   @property
@@ -194,9 +198,9 @@ class AbstractFeatureTransformer(ABC):
     extractor: callable
       a callable taking arguments (signal, sampling_rate) and returning extracted features.
     window_shape: tuple or int
-      either a tuple `(frequency, time)`, i.e. the size of the sliding window in frequency and time axes, or an int which is the size of the sliding window in time axis (the the whole frequency axis is used in this case).
+      either a tuple `(frequency, time)`, i.e. the size of the sliding window in frequency and time axes, or an int which is the size of the sliding window in time axis (the the whole frequency axis is used in this case). No windowed view is created if set to `None`.
     downsample: tuple or int
-      downsampling rate in frequency and time axes, either tuple or int, corresponding to the given `frame_size`.
+      downsampling rate in frequency and time axes, either tuple or int, corresponding to the given `frame_size`. No downsampling if set to `None`.
     """
     self._dataset_origin = dataset
     self._extractor = extractor
@@ -256,7 +260,7 @@ class AbstractFeatureTransformer(ABC):
     return dataset.map(_feature_map, num_parallel_calls=tf.data.AUTOTUNE)
 
   @abstractclassmethod
-  def get_output_signature(cls):
+  def get_output_signature(cls, tensor_shape:tuple):
     """Output signature for the windowed view on the feature dataset.
     """
     pass
@@ -321,8 +325,10 @@ class AbstractFeatureTransformer(ABC):
       Tout=tf.float64)),
       num_parallel_calls=tf.data.AUTOTUNE)
 
+    tensor_shape = tuple(list(ds.take(1))[0][-1].shape[-3:])  # drop the first two dimensions of sliding view
+
     return tf.data.Dataset.from_generator(_generator(ds),
-      output_signature=cls.get_output_signature()
+      output_signature=cls.get_output_signature(tensor_shape)
       # https://www.tensorflow.org/api_docs/python/tf/data/Dataset#from_generator
       # output_types=(tf.string, tf.string, tf.float64))  # not recommended
     )
@@ -344,35 +350,114 @@ class AbstractFeatureTransformer(ABC):
     return self._window_dim
 
 
-def pipeline(dataset, module_name, extractor:callable, *,
-            dc_kwargs:dict, ft_kwargs:dict,
-            splits:dict, sp_kwargs:dict={}, mode:str='global'):
+def wav2frames_pipeline(dataset, module_name, extractor:callable, *,
+dc_kwargs:dict, ft_kwargs:dict, export_dir:str=None):
+  """Transform a dataset of waveform to sliding windowed-view of feature.
+  """
   # module = import_module('..'+module_name, __name__)
   module = import_module('dpmhm.datasets.'+module_name)
+  compactor = module.DatasetCompactor(dataset, **dc_kwargs)
+  transformer = module.FeatureTransformer(compactor.dataset, extractor, **ft_kwargs)
+  dw = transformer.dataset_windows
+  if export_dir is not None:
+    dw.save(export_dir)
+    dw = tf.data.Dataset.load(export_dir)
+  return dw, compactor, transformer
 
-  # step 1: compact & split
+
+def get_keras_preprocessing_model(dataset, labels:list=None, normalize:bool=False):
+  """Get Keras preprocessing model for normalization.
+  """
+  type_spec = dataset.element_spec
+  inputs = {
+    'metadata': {k: keras.Input(type_spec=v) for k,v in type_spec['metadata'].items()},
+    'feature': keras.Input(type_spec=type_spec['feature']),
+    'label': keras.Input(type_spec=type_spec['label']),
+  }
+
+  # Label conversion: string to int/one-hot
+  # Gotcha: by default the converted integer label is zero-based and has zero as the first label which represents the off-class. This augments the number of class by 1 and has to be taken into account in the model fitting.
+  label_layer = keras.layers.StringLookup(
+    # num_oov_indices=0,   # force zero-based integer
+    vocabulary=labels,
+    # output_mode='one_hot'
+  )
+  if labels is None:
+    # Adaptation depends on the given dataset
+    label_layer.adapt([x['label'].numpy() for x in dataset])
+
+  label_output = label_layer(inputs['label'])
+
+  # Normalization
+  # https://keras.io/api/layers/preprocessing_layers/numerical/normalization/
+  if normalize:
+    # Manually compute the mean and variance of the data
+    X = np.asarray([x['feature'].numpy() for x in dataset]).transpose([1,0,2,3]); X = X.reshape((X.shape[0],-1))
+    # X = np.hstack([x['feature'].numpy().reshape((n_channels,-1)) for x in dataset])
+    mean = X.mean(axis=-1)
+    variance = X.var(axis=-1)
+
+    feature_layer = keras.layers.Normalization(axis=0, mean=mean, variance=variance)  # have to provide mean and variance if axis=0 is used
+    feature_output = feature_layer(inputs['feature'])
+    #
+    # # The following works but will generate additional dimensions when applied on data
+    # X = np.asarray([x['feature'].numpy() for x in dataset]).transpose([0,2,3,1])
+    # layer = keras.layers.Normalization(axis=-1)
+    # layer.adapt(X)
+    # feature_output = layer(tf.transpose(inputs['feature'], [1,2,0]))
+    #
+    # # This won't work
+    # layer = keras.layers.Normalization(axis=0)
+    # layer.adapt(X)  # complain about the unknown shape at dimension 0
+  else:
+    feature_output = inputs['feature']
+
+  # to channel-last
+  outputs = (tf.transpose(feature_output, [1,2,0]), label_output)
+  # outputs = {
+  #   'feature': tf.transpose(feature_output, [1,2,0])
+  #   'label': label_output,
+  # }
+
+  return keras.Model(inputs, outputs)
+
+
+# Obsolete functions
+def _wav2feature_pipeline_obslt(dataset, module_name, extractor:callable, *,
+dc_kwargs:dict, ft_kwargs:dict,
+splits:dict=None, sp_mode:str='uniform', sp_kwargs:dict={}):
+  """Transform a dataset of waveform to feature.
+  """
+  # module = import_module('..'+module_name, __name__)
+  module = import_module('dpmhm.datasets.'+module_name)
+  early_mode = 'early' in sp_mode.split('+')
+  uniform_mode = 'uniform' in sp_mode.split('+')
+
   compactor = module.DatasetCompactor(dataset, **dc_kwargs)
 
-  if mode == 'global':
-      labels = None
-  else:
-      labels = compactor.label_dict.keys()
+  transformer = module.FeatureTransformer(compactor.dataset, extractor, **ft_kwargs)
+  # df_split[k] = transformer.dataset_feature
+  dw = transformer.dataset_windows
 
   if splits is None:
-    transformer = module.FeatureTransformer(compactor.dataset, extractor, **ft_kwargs)
-    # df_split[k] = transformer.dataset_feature
-    return transformer.dataset_windows
+    return dw
   else:
-    ds_split = utils.split_dataset(compactor.dataset, splits, labels=labels, **sp_kwargs)
-
-    # step 2: feature transform
-    # df_split = {}
-    dw_split = {}
-
-    for k, ds in ds_split.items():
-        transformer = module.FeatureTransformer(ds, extractor, **ft_kwargs)
-        # df_split[k] = transformer.dataset_feature
-        dw_split[k] = transformer.dataset_windows
+    if early_mode:
+      ds_split = utils.split_dataset(compactor.dataset, splits,
+      labels=None if uniform_mode else compactor.label_dict.keys(),
+      **sp_kwargs
+      )
+      # df_split = {}
+      dw_split = {}
+      for k, ds in ds_split.items():
+          transformer = module.FeatureTransformer(ds, extractor, **ft_kwargs)
+          # df_split[k] = transformer.dataset_feature
+          dw_split[k] = transformer.dataset_windows
+    else:
+      dw_split = utils.split_dataset(dw, splits,
+      labels=None if uniform_mode else compactor.label_dict.keys(),
+      **sp_kwargs
+      )
 
     return dw_split
 

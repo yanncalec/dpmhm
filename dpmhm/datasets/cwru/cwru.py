@@ -263,19 +263,20 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 class DatasetCompactor(AbstractDatasetCompactor):
   """Preprocessing for CWRU dataset.
   """
-  # def __init__(self, *args, **kwargs):
-  #   """
-  #   Notes
-  #   -----
-  #   - keys for extraction of new labels must be subset of ['LoadForce', 'FaultComponent', 'FaultSize'].
-  #   - channels for extraction of data must be subset of ['DE', 'FE', 'BA].
-  #   """
-  #   super().__init__(*args, **kwargs)
+  def __init__(self, *args, **kwargs):
+    """
+    Notes
+    -----
+    - keys for extraction of new labels must be subset of ['FaultLocation', 'FaultComponent', 'FaultSize'].
+    - channels for extraction of data must be subset of ['DE', 'FE', 'BA].
+    """
+    super().__init__(*args, **kwargs)
 
-  #   for k in self._keys:
-  #     assert k in ['LoadForce', 'FaultComponent', 'FaultSize']
-  #   for ch in self._channels:
-  #     assert ch in ['DE', 'FE', 'BA']
+    for k in self._keys:
+      assert k in ['FaultLocation', 'FaultComponent', 'FaultSize']
+    for ch in self._channels:
+      assert ch in ['DE', 'FE', 'BA']
+    # self._channels_mode = channels_mode
 
   def compact(self, dataset):
     @tf.function  # necessary for infering the size of tensor
@@ -295,16 +296,6 @@ class DatasetCompactor(AbstractDatasetCompactor):
     def _compact(X):
       d = [X['label']] + [X['metadata'][k] for k in self._keys]
 
-      # signal = [X['signal'][ch] for ch in self._channels]
-      # if len(self._channels) > 0:
-      #   signal = [X['signal'][ch] for ch in self._channels]
-      # else:
-      #   # signal = [X['signal'][k] for k in ['DE', 'FE', 'BA']]
-      #   signal = []
-      #   for v in X['signal'].values():
-      #     tf.cond(tf.size(v)>0, true_fn=lambda: signal.append(v), false_fn=lambda: None)
-      #   # signal = [v for v in X['signal'].values() if tf.size(v)>0]
-
       return {
         'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
         'metadata': {
@@ -317,8 +308,8 @@ class DatasetCompactor(AbstractDatasetCompactor):
         # 'signal': signal
       }
     # return dataset.filter(_has_channels)
-    ds = dataset.filter(_has_channels)
-    return ds.map(_compact, num_parallel_calls=tf.data.AUTOTUNE)
+    ds = dataset.filter(lambda X:_has_channels(X))
+    return ds.map(lambda X:_compact(X), num_parallel_calls=tf.data.AUTOTUNE)
 
 
 class FeatureTransformer(AbstractFeatureTransformer):
@@ -328,7 +319,7 @@ class FeatureTransformer(AbstractFeatureTransformer):
   #   super().__init__(*args, **kwargs)
 
   @classmethod
-  def get_output_signature(cls):
+  def get_output_signature(cls, tensor_shape:tuple=None):
     # return (
     #   tf.TensorSpec(shape=(), dtype=tf.uint32, name='label'),
     #   (
@@ -349,8 +340,61 @@ class FeatureTransformer(AbstractFeatureTransformer):
         'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
       },
       # 'feature': tf.TensorSpec(shape=(None, None, None), dtype=tf.float64, name='feature'),
-      'feature': tf.TensorSpec(shape=tf.TensorShape(None), dtype=tf.float64),
+      'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=tf.float64),
     }
 
-  # def pipeline(self, extractor, frame_size:int):
-  #   return self.to_frames(self.to_feature(extractor), frame_size)
+
+
+# def compact(self, dataset):
+#   @tf.function  # necessary for infering the size of tensor
+#   def _has_channels(X, channels):
+#     """Test if channels are present in data."""
+#     flag = True
+#     for ch in channels:
+#       if tf.size(X['signal'][ch]) == 0:  # to infer the size in graph mode
+#       # if tf.equal(tf.size(X['signal'][ch]), 0):
+#       # if X['signal'][ch].shape == 0:  # raise strange "shape mismatch error"
+#       # if len(X['signal'][ch]) == 0:  # raise TypeError
+#         flag = False
+#         # break or return False are not supported by tensorflow
+#     return flag
+
+#   @tf.function
+#   def _compact(X, channels):
+#     d = [X['label']] + [X['metadata'][k] for k in self._keys]
+
+#     # signal = [X['signal'][ch] for ch in self._channels]
+#     # if len(self._channels) > 0:
+#     #   signal = [X['signal'][ch] for ch in self._channels]
+#     # else:
+#     #   # signal = [X['signal'][k] for k in ['DE', 'FE', 'BA']]
+#     #   signal = []
+#     #   for v in X['signal'].values():
+#     #     tf.cond(tf.size(v)>0, true_fn=lambda: signal.append(v), false_fn=lambda: None)
+#     #   # signal = [v for v in X['signal'].values() if tf.size(v)>0]
+
+#     return {
+#       'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
+#       'metadata': {
+#         'RPM': X['rpm'],
+#         'RPM_Nominal': X['metadata']['RotatingSpeed'],
+#         'FileName': X['metadata']['FileName'],
+#         'SamplingRate': X['metadata']['SamplingRate'],
+#       },
+#       'signal': [X['signal'][ch] for ch in channels],
+#       # 'signal': signal
+#     }
+#   # return dataset.filter(_has_channels)
+#   if self._channels_mode == 'all':
+#     ds = dataset.filter(lambda X:_has_channels(X, self._channels))
+#     ds = ds.map(lambda X:_compact(X, self._channels), num_parallel_calls=tf.data.AUTOTUNE)
+#   else:
+#     ch = self._channels[0]
+#     df = dataset.filter(lambda X:_has_channels(X, [ch]))
+#     ds = df.map(lambda X:_compact(X, [ch]), num_parallel_calls=tf.data.AUTOTUNE)
+#     for ch in self._channels[1:]:
+#       df = dataset.filter(lambda X:_has_channels(X, [ch]))
+#       df = df.map(lambda X:_compact(X, [ch]), num_parallel_calls=tf.data.AUTOTUNE)
+#       ds = ds.concatenate(df)
+
+#   return ds

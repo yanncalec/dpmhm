@@ -23,7 +23,7 @@ def get_dataset_size(ds) -> int:
   return count
 
 
-def extract_by_category(ds, labels:set=None):
+def extract_by_category(ds, labels:list):
   """Extract from a dataset the sub-datasets corresponding to the given categories.
 
   Args
@@ -31,22 +31,19 @@ def extract_by_category(ds, labels:set=None):
   ds: tf.data.Dataset
     input dataset of dictionary structure which contains the field 'label'.
   labels: list
-    list of category to be extracted. If not given the labels will be extracted by scanning the dataset (can be time-consuming).
+    label of categories to be extracted.
 
   Returns
   -------
   a dictionary containing sub-dataset of each category.
   """
-  if labels is None:
-    labels = set([l.numpy() for x,l in ds])
-
   dp = {}
-  for l in labels:
+  for l in set(labels):
     dp[l] = ds.filter(lambda x: tf.equal(x['label'],l))
   return dp
 
 
-def random_split_dataset(ds, splits:dict, *, shuffle_size:int=1, **kwargs):
+def random_split_dataset(ds, splits:dict, *, shuffle_size:int=None, **kwargs):
   """Randomly split a dataset according to the specified ratio.
 
   Args
@@ -56,7 +53,7 @@ def random_split_dataset(ds, splits:dict, *, shuffle_size:int=1, **kwargs):
   splits: dict
     dictionary specifying the name and ratio of the splits.
   shuffle_size: int
-    size of shuffle, 1 for no shuffle, None for full shuffle.
+    size of shuffle, 1 for no shuffle (deterministic), None for full shuffle.
   kwargs:
     other keywords arguments to the method `shuffle()`, e.g. `reshuffle_each_iteration=False`, `seed=1234`.
 
@@ -84,13 +81,6 @@ def random_split_dataset(ds, splits:dict, *, shuffle_size:int=1, **kwargs):
   sp_size[keys[-1]] = ds_size - int(np.sum(list(sp_size.values())))
 #   print(ds_size, int(np.sum(list(sp_size.values()))), sp_size)
   assert all([(splits[k]==0.) | (sp_size[k]>0) for k in keys]), "Empty split."
-
-#   keys = list(splits.keys())
-#   sp_size = {k: tf.cast(splits[k]*ds_size, tf.int64) for k in keys[:-1]}
-#   print(sp_size)
-#   sp_size[keys[-1]] = ds_size - tf.reduce_sum(list(sp_size.values()))
-#   print(ds_size, tf.reduce_sum(list(sp_size.values())), sp_size)
-#   assert all([(splits[k]==0.) | (sp_size[k]>0) for k in keys]), "Empty split."
 
   dp = {}
   s = 0

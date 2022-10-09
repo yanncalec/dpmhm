@@ -2,7 +2,7 @@ import numpy as np
 import librosa
 
 ## Feature extractor
-def spectrogram(x, sampling_rate:int, *, time_window:float, hop_step:float, n_fft:int=None, to_db:bool=True, normalize:bool=True, **kwargs):
+def spectrogram(x, sampling_rate:int, *, time_window:float, hop_step:float, n_fft:int=None, to_db:bool=True, normalize:bool=False, **kwargs):
   """Compute the power spectrogram of a multichannel waveform.
 
   Args
@@ -42,7 +42,7 @@ def spectrogram(x, sampling_rate:int, *, time_window:float, hop_step:float, n_ff
   if normalize:
     y = (x-x.mean())/x.std()
   else:
-    y = y
+    y = x
   S = librosa.stft(y, n_fft=n_fft, win_length=win_length, hop_length=hop_length, **kwargs)
   Sxx = librosa.power_to_db(np.abs(S)**2) if to_db else np.abs(S)**2
 
@@ -55,7 +55,7 @@ def spectrogram(x, sampling_rate:int, *, time_window:float, hop_step:float, n_ff
   return Sxx, (win_length, hop_length, n_fft), (Ts, Fs)
 
 
-def melspectrogram(x, sampling_rate:int, *, time_window:float, hop_step:float, n_fft:int=None, n_mels:int=128, normalize:bool=True, **kwargs):
+def melspectrogram(x, sampling_rate:int, *, time_window:float, hop_step:float, n_fft:int=None, n_mels:int=128, normalize:bool=False, **kwargs):
   """Compute the mel-spectrogram of a multichannel waveform.
 
   Args
@@ -91,7 +91,7 @@ def melspectrogram(x, sampling_rate:int, *, time_window:float, hop_step:float, n
   if normalize:
     y = (x-x.mean())/x.std()
   else:
-    y = y
+    y = x
   Sxx = librosa.feature.melspectrogram(y=y, n_fft=n_fft, win_length=win_length, hop_length=hop_length, n_mels=n_mels, **kwargs)
 
   return Sxx, (win_length, hop_length, n_fft)
