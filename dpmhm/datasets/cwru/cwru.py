@@ -21,7 +21,7 @@ import pandas as pd
 # import mat4py
 import librosa
 
-from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer
+from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
 # from dpmhm.datasets.feature import _EXTRACTOR_SPEC
 from dpmhm.datasets import _DTYPE
 
@@ -278,6 +278,11 @@ class DatasetCompactor(AbstractDatasetCompactor):
       assert ch in ['DE', 'FE', 'BA']
     # self._channels_mode = channels_mode
 
+  @classmethod
+  def get_label_dict(cls, dataset, keys:list):
+    compactor = cls(dataset, keys=keys, channels=['DE'])
+    return compactor.label_dict
+
   def compact(self, dataset):
     @tf.function  # necessary for infering the size of tensor
     def _has_channels(X):
@@ -344,6 +349,8 @@ class FeatureTransformer(AbstractFeatureTransformer):
     }
 
 
+class Preprocessor(AbstractPreprocessor):
+  pass
 
 # def compact(self, dataset):
 #   @tf.function  # necessary for infering the size of tensor

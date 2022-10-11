@@ -1,6 +1,7 @@
 """Dataset related.
 """
 
+from sklearn.utils import shuffle
 import tensorflow as tf
 import hashlib
 import json
@@ -64,16 +65,18 @@ def random_split_dataset(ds, splits:dict, *, shuffle_size:int=None, **kwargs):
   assert all([v>=0 for k,v in splits.items()])
   assert tf.reduce_sum(list(splits.values())) == 1.
 
-  try:
-    ds_size = len(ds)  # will raise error if length is unknown
-  except:
-    ds_size = get_dataset_size(ds)
-  assert ds_size >= 0
-  # assert (ds_size := ds.cardinality()) >= 0
+  # Gotcha:
+  # It may happen for a filtered dataset that `len(ds)` returns 1 and `ds.cardinality()` returns a negative number.
+  ds_size = get_dataset_size(ds)
+
+  if ds_size == 0: # empty dataset
+    return {k: ds for k in splits.keys()}
 
   # Specify seed to always have the same split distribution between runs
   # e.g. seed=1234
-  ds = ds.shuffle(ds_size if shuffle_size is None else shuffle_size, **kwargs)
+  if shuffle_size is None:
+    shuffle_size = ds_size
+  ds = ds.shuffle(shuffle_size, **kwargs)
 
   keys = list(splits.keys())
   sp_size = {k: int(splits[k]*ds_size) for k in keys[:-1]}
@@ -100,12 +103,17 @@ def split_dataset(ds, splits:dict={'train':0.7, 'val':0.2, 'test':0.1}, *, label
   splits: dict
     dictionary specifying the name and ratio of the splits.
   labels: list
-    list of categories. If given apply the split per category otherwise apply it globally on the whole dataset.
+    list of categories. If given apply the few-shot style split (i.e. split per category) otherwise apply the normal split.
   *args, **kwargs: arguments for `split_dataset_random()`
 
   Return
   ------
   A dictionary of datasets with the same keys as `split`.
+
+  Notes
+  -----
+  - In case of few-shot style split, the returned datasets are obtained by concatenating per-category split, hence need to be shuffled before use.
+  - In case of normal split the dataset is first shuffled globally.
   """
   if labels is None:
     dp = random_split_dataset(ds, splits, **kwargs)
@@ -113,13 +121,12 @@ def split_dataset(ds, splits:dict={'train':0.7, 'val':0.2, 'test':0.1}, *, label
     ds = extract_by_category(ds, labels)
     dp = {}
     for n, (k,v) in enumerate(ds.items()):
-      # dp[k] = random_split_dataset(v, splits, **kwargs)
+      dq = random_split_dataset(v, splits, **kwargs)
       if n == 0:
-        dp.update(random_split_dataset(v, splits, **kwargs))
+        dp.update(dq)
       else:
-        dq = random_split_dataset(v, splits, **kwargs)
-        for kk in dp.keys():
-          dp[kk] = dp[kk].concatenate(dq[kk])
+        for s in splits.keys():
+          dp[s] = dq[s].concatenate(dp[s])
 
   return dp
 

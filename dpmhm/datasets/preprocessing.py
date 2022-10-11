@@ -80,8 +80,13 @@ class AbstractDatasetCompactor(ABC):
     self._channels = channels
     # dictionary for extracted labels, will be populated only after scanning the compacted dataset
     self._label_dict = {}
+    self._dataset_origin = dataset
     # filtered original dataset, of shape (channel, time)
     self._dataset_filtered = self.filter_metadata(dataset, self._filters)
+
+  @abstractclassmethod
+  def get_label_dict(cls, ds, keys) -> dict:
+    pass
 
   def filter_metadata(self, ds, fs:dict):
     """Filter a dataset by values of its field 'metadata'.
@@ -350,19 +355,45 @@ class AbstractFeatureTransformer(ABC):
     return self._window_dim
 
 
-def wav2frames_pipeline(dataset, module_name, extractor:callable, *,
-dc_kwargs:dict, ft_kwargs:dict, export_dir:str=None):
-  """Transform a dataset of waveform to sliding windowed-view of feature.
-  """
-  # module = import_module('..'+module_name, __name__)
-  module = import_module('dpmhm.datasets.'+module_name)
-  compactor = module.DatasetCompactor(dataset, **dc_kwargs)
-  transformer = module.FeatureTransformer(compactor.dataset, extractor, **ft_kwargs)
-  dw = transformer.dataset_windows
-  if export_dir is not None:
-    dw.save(export_dir)
-    dw = tf.data.Dataset.load(export_dir)
-  return dw, compactor, transformer
+class AbstractPreprocessor(ABC):
+  def __init__(self, dataset, extractor:callable, *, dc_kwargs:dict, ft_kwargs:dict):
+    module = import_module(self.__module__)
+    self._compactor = module.DatasetCompactor(dataset, **dc_kwargs)
+    self._transformer = module.FeatureTransformer(self._compactor.dataset, extractor, **ft_kwargs)
+    self.label_dict = self._compactor.get_label_dict(dataset, self._compactor._keys)
+
+    # self.dataset_feature = self._transformer.dataset_feature
+    # self.dataset_window = self._transformer.dataset_windows
+
+  def export(self, outdir:str):
+    self._transformer.dataset_windows.save(outdir)
+    self._dataset_windows_reloaded = tf.data.Dataset.load(outdir)
+
+  @property
+  def dataset_windows(self):
+    try:
+      return self._dataset_windows_reloaded
+    except:
+      return self._transformer.dataset_windows
+
+  # @abstractproperty
+  # def label_dict(self):
+  #   pass
+    # return import_module('dpmhm.datasets.'+module_name).DatasetCompactor.get_label_dict(dataset, keys)
+
+  # def wav2frames_pipeline(dataset, module_name:str, extractor:callable, *,
+  # dc_kwargs:dict, ft_kwargs:dict, export_dir:str=None):
+  #   """Transform a dataset of waveform to sliding windowed-view of feature.
+  #   """
+  #   # module = import_module('..'+module_name, __name__)
+  #   module = import_module('dpmhm.datasets.'+module_name)
+  #   compactor = module.DatasetCompactor(dataset, **dc_kwargs)
+  #   transformer = module.FeatureTransformer(compactor.dataset, extractor, **ft_kwargs)
+  #   dw = transformer.dataset_windows
+  #   if export_dir is not None:
+  #     dw.save(export_dir)
+  #     dw = tf.data.Dataset.load(export_dir)
+  #   return dw, compactor, transformer
 
 
 def get_keras_preprocessing_model(dataset, labels:list=None, normalize:bool=False):
