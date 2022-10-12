@@ -1,1 +1,2 @@
-from .cwru import CWRU, DatasetCompactor, FeatureTransformer, Preprocessor
+from .cwru import *
+# CWRU, DatasetCompactor, FeatureTransformer, Preprocessor

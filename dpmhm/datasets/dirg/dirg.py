@@ -3,8 +3,6 @@
 
 import os
 from pathlib import Path
-# import itertools
-# import json
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
@@ -12,7 +10,7 @@ import tensorflow_datasets as tfds
 # from scipy.io import loadmat
 import librosa
 
-from dpmhm.datasets.preprocessing import AbstractDatasetPreprocessing, md5_encoder, _EXTRACTOR_SPEC
+from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
 from dpmhm.datasets import _DTYPE
 
 
@@ -115,11 +113,6 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
   }
 
   MANUAL_DOWNLOAD_INSTRUCTIONS = """
-  Due to the access limitation of the ftp server, automatic download is not supported in this package. Please download all data from
-
-    ftp://ftp.polito.it/people/DIRG_BearingData/
-
-  and proceed the installation manually.
   """
 
   def _info(self) -> tfds.core.DatasetInfo:
@@ -240,9 +233,17 @@ class DatasetCompactor(AbstractDatasetCompactor):
 
     for k in self._keys:
       assert k in ['FaultComponent', 'FaultSize']
-    # self._channels is not used here.
+    if self._channels is None:
+      self._channels = [0,1,2,3,4,5]
+    else:
+      assert all([ch in [0,1,2,3,4,5] for ch in self._channels])
 
-  def compact(self, dataset):
+  @classmethod
+  def get_label_dict(cls, dataset, keys:list):
+    compactor = cls(dataset, keys=keys)
+    return compactor.label_dict
+
+  def compact(self, ds):
     @tf.function
     def _compact(X):
       d = [X['label']] + [X['metadata'][k] for k in self._keys]
@@ -253,11 +254,12 @@ class DatasetCompactor(AbstractDatasetCompactor):
           'Load': X['load'],
           'Load_Nominal': X['metadata']['LoadForce'],
           'RPM_Nominal': X['metadata']['RotatingSpeed'],
+          'SamplingRate': X['metadata']['SamplingRate'],
           'FileName': X['metadata']['FileName'],
-        }
-        'signal': X['signal'],
+        },
+        'signal': [X['signal'][ch] for ch in self._channels],
       }
-    return dataset.map(_compact, num_parallel_calls=tf.data.AUTOTUNE)
+    return ds.map(_compact, num_parallel_calls=tf.data.AUTOTUNE)
 
 
 class FeatureTransformer(AbstractFeatureTransformer):
@@ -265,14 +267,22 @@ class FeatureTransformer(AbstractFeatureTransformer):
   """
 
   @classmethod
-  def get_output_signature(cls):
+  def get_output_signature(cls, tensor_shape:tuple=None):
     return {
       'label': tf.TensorSpec(shape=(), dtype=tf.string),
       'metadata': {
         'Load': tf.TensorSpec(shape=(), dtype=tf.uint32),  # real load
         'Load_Nominal': tf.TensorSpec(shape=(), dtype=tf.uint32),  # nominal load
         'RPM_Nominal': tf.TensorSpec(shape=(), dtype=tf.uint32),  # nominal rpm
+        'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
         'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
       },
-      'feature': tf.TensorSpec(shape=tf.TensorShape(None), dtype=tf.float64),
+      'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=tf.float64),
     }
+
+
+class Preprocessor(AbstractPreprocessor):
+  pass
+
+
+__all__ = ['DatasetCompactor', 'FeatureTransformer', 'Preprocessor']

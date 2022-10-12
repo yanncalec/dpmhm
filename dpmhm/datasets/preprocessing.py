@@ -1,15 +1,19 @@
 """Class for dataset transformer.
 """
 
+# from typing import List, Dict
 from abc import ABC, abstractmethod, abstractproperty, abstractclassmethod
 from importlib import import_module
-from logging import warning
-import tempfile
+import os
+# from logging import warning
+# import tempfile
 
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
+from soupsieve import match
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow.data import Dataset
 
 import librosa
 # import scipy
@@ -17,15 +21,15 @@ import librosa
 from . import utils
 
 
-def split_signal_generator(dataset, key:str, n_trunk:int):
+def split_signal_generator(ds:Dataset, key:str, n_trunk:int):
   """
-  dataset:
+  ds:
     input dataset with dictionary structure.
   key: str
-    dataset[key] is the signal to be divided.
+    ds[key] is the signal to be divided.
   """
   def _get_generator():
-    for X in dataset:
+    for X in ds:
       truncs = np.array_split(X[key], n_trunk, axis=-1)
       # truncs = tf.split(X[key], num_or_size_splits=n_trunk, axis=-1)
       Y = X.copy()
@@ -51,7 +55,7 @@ class AbstractDatasetCompactor(ABC):
   We follow the convention of channel first: The original dataset (before feature transform) as well as the transformed dataset has the shape `(channel, frequency, time)`.
   """
 
-  def __init__(self, dataset, *, n_trunk:int=1, resampling_rate:int=None, filters:dict={}, keys:list=[], channels:list=[]):
+  def __init__(self, dataset, *, n_trunk:int=1, resampling_rate:int=None, filters:dict={}, keys:list=[], channels:list=None):
     """
     Args
     ----
@@ -86,6 +90,8 @@ class AbstractDatasetCompactor(ABC):
 
   @abstractclassmethod
   def get_label_dict(cls, ds, keys) -> dict:
+    """Get the full dictionary of labels.
+    """
     pass
 
   def filter_metadata(self, ds, fs:dict):
@@ -93,7 +99,7 @@ class AbstractDatasetCompactor(ABC):
 
     Args
     ----
-    ds: tf.data.Dataset
+    ds: Dataset
       input dataset
     fs: dict
       a dictionary of lkeys and admissible values of the field 'metadata'.
@@ -115,7 +121,7 @@ class AbstractDatasetCompactor(ABC):
     else:
       ds = self.resample(self.compact(self._dataset_filtered))
     if self._n_trunk > 1:
-      ds = tf.data.Dataset.from_generator(
+      ds = Dataset.from_generator(
         split_signal_generator(ds, 'signal', self._n_trunk),
         output_signature=ds.element_spec,
       )
@@ -166,7 +172,7 @@ class AbstractDatasetCompactor(ABC):
     """
     pass
 
-  def resample(self, dataset):
+  def resample(self, ds):
     """Resample the compacted dataset to a target rate.
     """
     def _resample(X):
@@ -179,7 +185,7 @@ class AbstractDatasetCompactor(ABC):
       )
       return Y
 
-    return dataset.map(_resample, num_parallel_calls=tf.data.AUTOTUNE)
+    return ds.map(_resample, num_parallel_calls=tf.data.AUTOTUNE)
 
 
 class AbstractFeatureTransformer(ABC):
@@ -216,26 +222,42 @@ class AbstractFeatureTransformer(ABC):
   def dataset_feature(self):
     """Feature-transformed dataset.
     """
-    ds = self.to_feature(self._dataset_origin)
-    ds.__dpmhm_class__ = self.__class__
-    return ds
+    try:
+      return self._dataset_feature
+    except:
+      ds = self.to_feature(self._dataset_origin)
+      ds.__dpmhm_class__ = self.__class__
+      return ds
+
+  @dataset_feature.setter
+  def dataset_feature(self, df):
+    self._dataset_feature = df
+    self._dataset_feature.__dpmhm_class__ = self.__class__
 
   @property
   def dataset_windows(self):
     """Windowed view of the feature dataset.
     """
-    ds = self.to_windows(self.dataset_feature, self._window_shape, self._downsample)
-    ds.__dpmhm_class__ = self.__class__
-    return ds
+    try:
+      return self._dataset_windows
+    except:
+      ds = self.to_windows(self.dataset_feature, self._window_shape, self._downsample)
+      ds.__dpmhm_class__ = self.__class__
+      return ds
 
-  def to_feature(self, dataset):
+  @dataset_windows.setter
+  def dataset_windows(self, df):
+    self._dataset_windows = df
+    self._dataset_windows.__dpmhm_class__ = self.__class__
+
+  def to_feature(self, ds):
     """Feature transform of a compacted dataset of signal.
 
     This method transforms a waveform to spectral features. The transformed database has a dictionary structure which contains the fields {'label', 'metadata', 'feature'}.
 
     Args
     ----
-    dataset: tf.data.Dataset
+    ds: Dataset
       compacted/resampled signal dataset, must have the fields {'label', 'metadata', 'signal'}.
     """
     # Alternative: define a tf.py_function beforehand
@@ -262,7 +284,7 @@ class AbstractFeatureTransformer(ABC):
           )  # the most compact way
       }
 
-    return dataset.map(_feature_map, num_parallel_calls=tf.data.AUTOTUNE)
+    return ds.map(_feature_map, num_parallel_calls=tf.data.AUTOTUNE)
 
   @abstractclassmethod
   def get_output_signature(cls, tensor_shape:tuple):
@@ -278,7 +300,7 @@ class AbstractFeatureTransformer(ABC):
 
     Args
     ----
-    dataset: tf.data.Dataset
+    dataset: Dataset
       feature dataset, must have a dictionary structure and contain the fields {'label', 'info', 'feature'} which corresponds to respectively the label, the context information and the spectral feature of shape (channel, freqeuncy, time).
     window_shape: tuple or int
     downsample: tuple or int
@@ -332,7 +354,7 @@ class AbstractFeatureTransformer(ABC):
 
     tensor_shape = tuple(list(ds.take(1))[0][-1].shape[-3:])  # drop the first two dimensions of sliding view
 
-    return tf.data.Dataset.from_generator(_generator(ds),
+    return Dataset.from_generator(_generator(ds),
       output_signature=cls.get_output_signature(tensor_shape)
       # https://www.tensorflow.org/api_docs/python/tf/data/Dataset#from_generator
       # output_types=(tf.string, tf.string, tf.float64))  # not recommended
@@ -356,25 +378,68 @@ class AbstractFeatureTransformer(ABC):
 
 
 class AbstractPreprocessor(ABC):
-  def __init__(self, dataset, extractor:callable, *, dc_kwargs:dict, ft_kwargs:dict):
+  def __init__(self, dataset, extractor:callable, *, dc_kwargs:dict, ft_kwargs:dict, outdir:str=None):
     module = import_module(self.__module__)
     self._compactor = module.DatasetCompactor(dataset, **dc_kwargs)
     self._transformer = module.FeatureTransformer(self._compactor.dataset, extractor, **ft_kwargs)
     self.label_dict = self._compactor.get_label_dict(dataset, self._compactor._keys)
 
-    # self.dataset_feature = self._transformer.dataset_feature
-    # self.dataset_window = self._transformer.dataset_windows
+    # save & reload to boost performance of the dataset
+    if outdir is not None:
+      # try:  # ~ 30s
+      #   self._transformer.dataset_feature = self.load(outdir, 'feature')
+      # except:
+      #   self.save(outdir, 'feature')
+      #   self._transformer.dataset_feature = self.load(outdir, 'feature')
+      try:  # ~ 45s
+        self._transformer.dataset_windows = self.load(outdir, 'windows')
+      except:
+        self.save(outdir, 'windows')
+        self._transformer.dataset_windows = self.load(outdir, 'windows')
 
-  def export(self, outdir:str):
-    self._transformer.dataset_windows.save(outdir)
-    self._dataset_windows_reloaded = tf.data.Dataset.load(outdir)
+  def save(self, outdir:str, name:str):
+    if name == 'feature':
+      self._transformer.dataset_feature.save(os.path.join(outdir, 'feature'))
+    elif name == 'windows':
+      self._transformer.dataset_windows.save(os.path.join(outdir, 'windows'))
+    # elif name == 'signal':
+    #   self._compactor.dataset.save(outdir)
+    else:
+      raise NameError(name)
+
+  def load(self, outdir:str, name:str) -> Dataset:
+    if name == 'feature':
+      ds = Dataset.load(os.path.join(outdir, 'feature'))
+    elif name == 'windows':
+      ds = Dataset.load(os.path.join(outdir, 'windows'))
+    # elif name == 'signal':
+    #   self._compactor.dataset = Dataset.load(outdir)
+    else:
+      raise NameError(name)
+    return ds
+
+  @property
+  def dataset(self):
+    return self._compactor.dataset
+
+  @property
+  def dataset_feature(self):
+    return self._transformer.dataset_feature
 
   @property
   def dataset_windows(self):
-    try:
-      return self._dataset_windows_reloaded
-    except:
-      return self._transformer.dataset_windows
+    return self._transformer.dataset_windows
+
+  # def save(self, outdir:str):
+  #   self._transformer.dataset_windows.save(outdir)
+  #   self._dataset_windows_reloaded = Dataset.load(outdir)
+
+  # @property
+  # def dataset_windows(self):
+  #   try:
+  #     return self._dataset_windows_reloaded
+  #   except:
+  #     return self._transformer.dataset_windows
 
   # @abstractproperty
   # def label_dict(self):
@@ -392,14 +457,24 @@ class AbstractPreprocessor(ABC):
   #   dw = transformer.dataset_windows
   #   if export_dir is not None:
   #     dw.save(export_dir)
-  #     dw = tf.data.Dataset.load(export_dir)
+  #     dw = Dataset.load(export_dir)
   #   return dw, compactor, transformer
 
 
-def get_keras_preprocessing_model(dataset, labels:list=None, normalize:bool=False):
-  """Get Keras preprocessing model for normalization.
+def get_keras_preprocessing_model(ds, labels:list=None, normalize:bool=False):
+  """Initialize a Keras preprocessing model on a provided dataset.
+
+  The model performs the following transformation:
+  - string label to integer
+  - normalization by channel
+
+  Args
+  ----
+  ds: training dataset
+  labels: list of string labels for lookup
+  normalize: if True estimate the mean and variance by channel and apply the normalization.
   """
-  type_spec = dataset.element_spec
+  type_spec = ds.element_spec
   inputs = {
     'metadata': {k: keras.Input(type_spec=v) for k,v in type_spec['metadata'].items()},
     'feature': keras.Input(type_spec=type_spec['feature']),
@@ -415,7 +490,7 @@ def get_keras_preprocessing_model(dataset, labels:list=None, normalize:bool=Fals
   )
   if labels is None:
     # Adaptation depends on the given dataset
-    label_layer.adapt([x['label'].numpy() for x in dataset])
+    label_layer.adapt([x['label'].numpy() for x in ds])
 
   label_output = label_layer(inputs['label'])
 
@@ -423,8 +498,8 @@ def get_keras_preprocessing_model(dataset, labels:list=None, normalize:bool=Fals
   # https://keras.io/api/layers/preprocessing_layers/numerical/normalization/
   if normalize:
     # Manually compute the mean and variance of the data
-    X = np.asarray([x['feature'].numpy() for x in dataset]).transpose([1,0,2,3]); X = X.reshape((X.shape[0],-1))
-    # X = np.hstack([x['feature'].numpy().reshape((n_channels,-1)) for x in dataset])
+    X = np.asarray([x['feature'].numpy() for x in ds]).transpose([1,0,2,3]); X = X.reshape((X.shape[0],-1))
+    # X = np.hstack([x['feature'].numpy().reshape((n_channels,-1)) for x in ds])
     mean = X.mean(axis=-1)
     variance = X.var(axis=-1)
 
@@ -432,7 +507,7 @@ def get_keras_preprocessing_model(dataset, labels:list=None, normalize:bool=Fals
     feature_output = feature_layer(inputs['feature'])
     #
     # # The following works but will generate additional dimensions when applied on data
-    # X = np.asarray([x['feature'].numpy() for x in dataset]).transpose([0,2,3,1])
+    # X = np.asarray([x['feature'].numpy() for x in ds]).transpose([0,2,3,1])
     # layer = keras.layers.Normalization(axis=-1)
     # layer.adapt(X)
     # feature_output = layer(tf.transpose(inputs['feature'], [1,2,0]))
@@ -454,7 +529,7 @@ def get_keras_preprocessing_model(dataset, labels:list=None, normalize:bool=Fals
 
 
 # Obsolete functions
-def _wav2feature_pipeline_obslt(dataset, module_name, extractor:callable, *,
+def _wav2feature_pipeline_obslt(ds, module_name, extractor:callable, *,
 dc_kwargs:dict, ft_kwargs:dict,
 splits:dict=None, sp_mode:str='uniform', sp_kwargs:dict={}):
   """Transform a dataset of waveform to feature.
@@ -464,7 +539,7 @@ splits:dict=None, sp_mode:str='uniform', sp_kwargs:dict={}):
   early_mode = 'early' in sp_mode.split('+')
   uniform_mode = 'uniform' in sp_mode.split('+')
 
-  compactor = module.DatasetCompactor(dataset, **dc_kwargs)
+  compactor = module.DatasetCompactor(ds, **dc_kwargs)
 
   transformer = module.FeatureTransformer(compactor.dataset, extractor, **ft_kwargs)
   # df_split[k] = transformer.dataset_feature

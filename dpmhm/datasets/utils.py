@@ -1,7 +1,7 @@
-"""Dataset related.
+"""Dataset manipulation related.
 """
 
-from sklearn.utils import shuffle
+# from sklearn.utils import shuffle
 import tensorflow as tf
 import hashlib
 import json
@@ -15,7 +15,7 @@ def md5_encoder(*args):
 
 
 def get_dataset_size(ds) -> int:
-  """Get the number of elements of a dataset.
+  """Get the number of elements in a dataset.
   """
   # count = ds.reduce(0, lambda x, _: x + 1)  # same efficiency
   count = 0
@@ -80,9 +80,7 @@ def random_split_dataset(ds, splits:dict, *, shuffle_size:int=None, **kwargs):
 
   keys = list(splits.keys())
   sp_size = {k: int(splits[k]*ds_size) for k in keys[:-1]}
-#   print(sp_size)
   sp_size[keys[-1]] = ds_size - int(np.sum(list(sp_size.values())))
-#   print(ds_size, int(np.sum(list(sp_size.values()))), sp_size)
   assert all([(splits[k]==0.) | (sp_size[k]>0) for k in keys]), "Empty split."
 
   dp = {}

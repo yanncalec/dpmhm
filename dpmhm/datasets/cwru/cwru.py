@@ -1,35 +1,18 @@
 """CWRU bearing dataset.
-
-Predefined task
----------------
-Channels: subset of ['DE', 'FE', 'BA']
-Labels: [FaultComponent, FaultSize]
-Domains: load force [0,1,2,3]
-Training/Test split: domain split
-
 """
 
 # import os
 from pathlib import Path
-# import itertools
-# from attr import frozen
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import pandas as pd
 # import scipy
 # import mat4py
-import librosa
+# import librosa
 
 from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
-# from dpmhm.datasets.feature import _EXTRACTOR_SPEC
 from dpmhm.datasets import _DTYPE
-
-# # Data type
-# try:
-#   _DTYPE = tf.as_dtype(os.environ['DPMHM_DTYPE'])  # from the environment variable
-# except:
-#   _DTYPE = tf.float64
 
 
 _DESCRIPTION = """
@@ -261,13 +244,11 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 
 
 class DatasetCompactor(AbstractDatasetCompactor):
-  """Preprocessing for CWRU dataset.
-  """
   def __init__(self, *args, **kwargs):
     """
     Notes
     -----
-    - keys for extraction of new labels must be subset of ['FaultLocation', 'FaultComponent', 'FaultSize'].
+    - keys for extraction of new labels must be subset of [ 'FaultComponent', 'FaultSize']. The field 'FaultLocation' is already contained in the label ([0,1,2] for ['None', 'DriveEnd', 'FanEnd']) hence redundant.
     - channels for extraction of data must be subset of ['DE', 'FE', 'BA].
     """
     super().__init__(*args, **kwargs)
@@ -306,8 +287,8 @@ class DatasetCompactor(AbstractDatasetCompactor):
         'metadata': {
           'RPM': X['rpm'],
           'RPM_Nominal': X['metadata']['RotatingSpeed'],
-          'FileName': X['metadata']['FileName'],
           'SamplingRate': X['metadata']['SamplingRate'],
+          'FileName': X['metadata']['FileName'],
         },
         'signal': [X['signal'][ch] for ch in self._channels],
         # 'signal': signal
@@ -341,8 +322,8 @@ class FeatureTransformer(AbstractFeatureTransformer):
       'metadata': {
         'RPM': tf.TensorSpec(shape=(), dtype=tf.uint32),  # real rpm
         'RPM_Nominal': tf.TensorSpec(shape=(), dtype=tf.uint32),  # nominal rpm
-        'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
         'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
+        'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
       },
       # 'feature': tf.TensorSpec(shape=(None, None, None), dtype=tf.float64, name='feature'),
       'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=tf.float64),
@@ -351,6 +332,10 @@ class FeatureTransformer(AbstractFeatureTransformer):
 
 class Preprocessor(AbstractPreprocessor):
   pass
+
+
+__all__ = ['DatasetCompactor', 'FeatureTransformer', 'Preprocessor']
+
 
 # def compact(self, dataset):
 #   @tf.function  # necessary for infering the size of tensor

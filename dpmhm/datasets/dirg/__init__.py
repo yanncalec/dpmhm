@@ -1,3 +1,3 @@
 """dirg dataset."""
 
-from .dirg import DIRG, DatasetPreprocessing
+from .dirg import *
