@@ -46,7 +46,14 @@ import os
 try:
   _DTYPE = tf.as_dtype(os.environ['DPMHM_DTYPE'])  # from the environment variable
 except:
-  _DTYPE = tf.float64
+  _DTYPE = tf.float32
+
+# Encoding length for class label
+try:
+  _ENCLEN = tf.as_dtype(os.environ['DPMHM_ENCLEN'])
+except:
+  _ENCLEN = 8
+
 
 
 # from dataclasses import dataclass

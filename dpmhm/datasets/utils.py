@@ -14,6 +14,14 @@ def md5_encoder(*args):
   return hashlib.md5(json.dumps(args, sort_keys=True).encode('utf-8')).hexdigest()
 
 
+def md5sum(fname:str):
+  """md5sum of a file.
+  """
+  with open(fname, 'r') as fp:
+    ms = hashlib.md5(fp.read().encode()).hexdigest()
+  return ms
+
+
 def get_dataset_size(ds) -> int:
   """Get the number of elements in a dataset.
   """

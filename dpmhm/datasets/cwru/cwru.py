@@ -75,6 +75,8 @@ Features
 Notes
 =====
 - Convention for a normal experiment: FaultLocation and FaultComponent are None and FaultSize is 0.
+- For a recent review of developments based on CWRU, see:
+  Wei, X. and Söffker, D. (2021) ‘Comparison of CWRU Dataset-Based Diagnosis Approaches: Review of Best Approaches and Results’, in P. Rizzo and A. Milazzo (eds) European Workshop on Structural Health Monitoring. Cham: Springer International Publishing (Lecture Notes in Civil Engineering), pp. 525–532. Available at: https://doi.org/10.1007/978-3-030-64594-6_51.
 """
 
 _CITATION = """
@@ -326,7 +328,7 @@ class FeatureTransformer(AbstractFeatureTransformer):
         'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
       },
       # 'feature': tf.TensorSpec(shape=(None, None, None), dtype=tf.float64, name='feature'),
-      'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=tf.float64),
+      'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
     }
 
 

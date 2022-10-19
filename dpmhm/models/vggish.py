@@ -24,8 +24,9 @@ from keras import layers, models
 # from keras.models import Model
 from dataclasses import dataclass
 
+
 @dataclass
-class VGGish_Params:
+class Params:
 	"""Global parameters for VGGish.
 
 	See also:
@@ -36,7 +37,7 @@ class VGGish_Params:
 	n_bands:int = 64
 	n_frames:int = 96
 
-	# Dimension of output embedding
+	# Dimension of embedding
 	n_embedding:int = 128
 
 	# Number of classes, 2 for binary classfication
@@ -51,7 +52,7 @@ class VGGish_Params:
 	strides:tuple = (2,2)
 
 
-def get_ConvNet_A(params: VGGish_Params) -> keras.models.Model:
+def get_ConvNet_A(params:Params) -> keras.models.Model:
 	"""ConvNet model A or VGG 11 layers.
 	"""
 	input_dim = (params.n_bands, params.n_frames, params.n_channels)
@@ -98,7 +99,7 @@ def get_ConvNet_A(params: VGGish_Params) -> keras.models.Model:
 	return models.Sequential(layers=_layers, name='VGGish-A')
 
 
-def get_ConvNet_B(params: VGGish_Params) -> keras.models.Model:
+def get_ConvNet_B(params:Params) -> keras.models.Model:
 	"""ConvNet model B or VGG 13 layers.
 	"""
 	input_dim = (params.n_bands, params.n_frames, params.n_channels)

@@ -18,11 +18,14 @@ from tensorflow.data import Dataset
 import librosa
 # import scipy
 
-from . import utils
-
+# from . import utils, _DTYPE
+from dpmhm.datasets import utils, _DTYPE, _ENCLEN
 
 def split_signal_generator(ds:Dataset, key:str, n_trunk:int):
-  """
+  """Generator function for splitting a signal into trunks.
+
+  Args
+  ----
   ds:
     input dataset with dictionary structure.
   key: str
@@ -157,7 +160,7 @@ class AbstractDatasetCompactor(ABC):
     # v = [str(d.numpy()) for d in args]
     v = [a.decode('utf-8') if type(a) is (bytes or str) else str(a) for a in dn]
 
-    lb = utils.md5_encoder(*v)
+    lb = utils.md5_encoder(*v)[:_ENCLEN]
     # if lb in self._label_dict:
     #   assert self._label_dict[lb] == v
     # else:
@@ -181,7 +184,7 @@ class AbstractDatasetCompactor(ABC):
       Y['signal'] = tf.py_function(
         func=lambda x, sr:librosa.resample(x.numpy(), orig_sr=float(sr), target_sr=self._resampling_rate),
         inp=[X['signal'], X['metadata']['SamplingRate']],
-        Tout=tf.float64
+        Tout=_DTYPE
       )
       return Y
 
@@ -259,14 +262,11 @@ class AbstractFeatureTransformer(ABC):
     ----
     ds: Dataset
       compacted/resampled signal dataset, must have the fields {'label', 'metadata', 'signal'}.
-    """
-    # Alternative: define a tf.py_function beforehand
-    # py_extractor = lambda x, sr: tf.py_function(
-    #   func=lambda x, sr: extractor(x.numpy(), sr),  # makes it a tf callable
-    #   inp=[x, sr],
-    #   Tout=tf.float64
-    # )  # x.numpy() must be used inside the method `extractor()`
 
+    Notes
+    -----
+    Unless the shape of the returned value by self._extractor can be pre-determined, there's no way to make lazy evaluation here (for e.g.faster scanning of the mapped dataset).
+    """
     def _feature_map(X):
       return {
         'label': X['label'],  # string label
@@ -278,9 +278,9 @@ class AbstractFeatureTransformer(ABC):
         # 'info': (X['filename'], X['rpm'], X['rpm_nominal']),
         'metadata': X['metadata'],
         'feature': tf.py_function(
-          func=lambda x, sr: self._extractor(x.numpy(), sr),  # makes it a tf callable
+          func=lambda x, sr: self._extractor(x.numpy(), sr),  # makes it a tf callable. x.numpy() must be used inside the method `extractor()`
           inp=[X['signal'], X['metadata']['SamplingRate']],
-          Tout=tf.float64
+          Tout=_DTYPE
           )  # the most compact way
       }
 
@@ -342,6 +342,7 @@ class AbstractFeatureTransformer(ABC):
                 'label': label,
                 'metadata': metadata,
                 'feature': x,
+                # 'feature': tf.cast(x, _DTYPE),
               }
               # yield label, metadata, x
       return _get_generator
@@ -349,7 +350,7 @@ class AbstractFeatureTransformer(ABC):
     ds = dataset.map(lambda X: (X['label'], X['metadata'], tf.py_function(
       func=lambda S: _slider(S.numpy(), window_shape, downsample),
       inp=[X['feature']],
-      Tout=tf.float64)),
+      Tout=_DTYPE)),
       num_parallel_calls=tf.data.AUTOTUNE)
 
     tensor_shape = tuple(list(ds.take(1))[0][-1].shape[-3:])  # drop the first two dimensions of sliding view
