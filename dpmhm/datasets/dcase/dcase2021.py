@@ -1,10 +1,14 @@
 """DCASE2021 Task2 dataset."""
 
 import os
-import json
+# import json
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from pathlib import Path
+
+from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
+from dpmhm.datasets import _DTYPE
+
 
 _DESCRIPTION = """
 DCASE2021 Task2:
@@ -37,6 +41,7 @@ Features
 'signal': audio,
 'label': ['normal', 'anomaly', 'unknown'],
 'metadata': {
+  'SamplingRate': 16000,
   'Machine': name of machine,
   'Section': section ID,
   'Domain': source or target domain,
@@ -107,6 +112,7 @@ class DCASE2021(tfds.core.GeneratorBasedBuilder):
             'label': tfds.features.ClassLabel(names=['normal', 'anomaly', 'unknown']),
 
             'metadata': {
+              'SamplingRate': tf.uint32,
               'Machine': tf.string,
               'Section': tf.string,
               'Domain': tf.string,
@@ -182,6 +188,7 @@ class DCASE2021(tfds.core.GeneratorBasedBuilder):
       # _, x = tfds.core.lazy_imports.scipy.io.wavfile.read(fp)
 
       metadata = {
+        'SamplingRate': 16000,
         'Machine': _machine,
         'Section': _section,
         'Domain': _domain,
@@ -199,5 +206,45 @@ class DCASE2021(tfds.core.GeneratorBasedBuilder):
 
     # with open(f'/home/han/tmp/dcase2021/wavfiles_extract_{mode}.json', 'w') as fp:
     #   json.dump(wavfiles, fp)
+
+
+class DatasetCompactor(AbstractDatasetCompactor):
+  _all_keys = ['Machine', 'Section', 'Domain']
+  _all_channels = [0]
+
+  def compact(self, dataset):
+    @tf.function
+    def _compact(X):
+      d = [X['label']] + [X['metadata'][k] for k in self._keys]
+
+      return {
+        'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
+        'metadata': X['metadata'],
+        'signal': [X['signal'][ch] for ch in self._channels],
+      }
+    return dataset.map(lambda X:_compact(X), num_parallel_calls=tf.data.AUTOTUNE)
+
+
+class FeatureTransformer(AbstractFeatureTransformer):
+  @classmethod
+  def get_output_signature(cls, tensor_shape:tuple=None):
+    return {
+      'label': tf.TensorSpec(shape=(), dtype=tf.string),
+      'metadata': {
+        'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
+        'Machine': tf.TensorSpec(shape=(), dtype=tf.string),  # machine type
+        'Section': tf.TensorSpec(shape=(), dtype=tf.string),  # section id
+        'Domain': tf.TensorSpec(shape=(), dtype=tf.string),  # domain
+        'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
+      },
+      'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
+    }
+
+
+class Preprocessor(AbstractPreprocessor):
+  pass
+
+
+__all__ = ['DatasetCompactor', 'FeatureTransformer', 'Preprocessor']
 
 

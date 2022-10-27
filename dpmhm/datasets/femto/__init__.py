@@ -1,3 +1,3 @@
 """femto dataset."""
 
-from .femto import FEMTO
+from .femto import *

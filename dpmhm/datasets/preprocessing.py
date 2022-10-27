@@ -10,7 +10,6 @@ import os
 
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
-from soupsieve import match
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.data import Dataset
@@ -58,6 +57,10 @@ class AbstractDatasetCompactor(ABC):
   We follow the convention of channel first: The original dataset (before feature transform) as well as the transformed dataset has the shape `(channel, frequency, time)`.
   """
 
+  # class variables to be overrided by subclasses
+  _all_channels:list = None  # all available channels
+  _all_keys:list = None  # all available keys for label extraction
+
   def __init__(self, dataset, *, n_trunk:int=1, resampling_rate:int=None, filters:dict={}, keys:list=[], channels:list=None):
     """
     Args
@@ -75,7 +78,7 @@ class AbstractDatasetCompactor(ABC):
     keys: list
       keys for extraction of new labels, if not given the original labels will be used.
     channels: list
-      channels for extraction of data.
+      channels for extraction of data, if not given all available channels will be used simultaneously (which may yield an empty dataset).
 
     Notes
     -----
@@ -83,19 +86,37 @@ class AbstractDatasetCompactor(ABC):
     self._n_trunk = n_trunk
     self._resampling_rate = resampling_rate
     self._filters = filters
+
     self._keys = keys
-    self._channels = channels
+    for k in self._keys:
+      assert k in self._all_keys
+
+    if channels is None:
+      self._channels = self._all_channels
+    else:
+      self._channels = channels
+    assert all([ch in self._all_channels for ch in self._channels])
+
     # dictionary for extracted labels, will be populated only after scanning the compacted dataset
     self._label_dict = {}
     self._dataset_origin = dataset
     # filtered original dataset, of shape (channel, time)
     self._dataset_filtered = self.filter_metadata(dataset, self._filters)
 
-  @abstractclassmethod
-  def get_label_dict(cls, ds, keys) -> dict:
+  @classmethod
+  def get_label_dict(cls, dataset, keys) -> dict:
     """Get the full dictionary of labels.
+
+    Note: This method may be overrided by subclass using more efficient approach.
     """
-    pass
+    for ch in cls._all_channels:
+      compactor = cls(dataset, keys=keys, channels=[ch])
+      try:
+        ld.update(compactor.label_dict)
+      except:
+        ld = compactor.label_dict
+
+    return ld
 
   def filter_metadata(self, ds, fs:dict):
     """Filter a dataset by values of its field 'metadata'.

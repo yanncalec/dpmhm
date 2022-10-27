@@ -11,22 +11,20 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = ['Click>=7.0',
-'patool']
+'tensorflow', 'tensorflow-datasets', 'pandas', 'scipy', 'numpy', 'pydub', 'librosa', 'patool']
 
 test_requirements = [ ]
 
 setup(
     author="Han Wang",
     author_email='han.wang@cea.fr',
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
     description="Diagnostic and Pronostic in Machine Health Monitoring",

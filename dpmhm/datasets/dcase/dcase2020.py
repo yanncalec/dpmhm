@@ -1,10 +1,17 @@
-"""DCASE2020 Task2 dataset."""
+"""DCASE2020 Task2 dataset.
+
+Type of experiments: labelled data.
+"""
 
 import os
-import json
+# import json
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from pathlib import Path
+
+from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
+from dpmhm.datasets import _DTYPE
+
 
 _DESCRIPTION = """
 DCASE2020 Task2:
@@ -36,6 +43,7 @@ Features
 'signal': audio,
 'label': ['normal', 'anomaly', 'unknown'],
 'metadata': {
+  'SamplingRate': 16000,
   'Machine': type of machine,
   'ID': machine ID,
   'FileName': original file name,
@@ -68,13 +76,14 @@ class DCASE2020(tfds.core.GeneratorBasedBuilder):
         builder=self,
         description=_DESCRIPTION,
         features=tfds.features.FeaturesDict({
-            'signal': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.BYTES),
+            'signal': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.BYTES),  # shape=(1, None) doesn't work
 
-            # 'signal': tfds.features.Tensor(shape=(None,), dtype=tf.float64),
+            # 'signal': tfds.features.Tensor(shape=(1,None), dtype=tf.float64),
 
             'label': tfds.features.ClassLabel(names=['normal', 'anomaly', 'unknown']),
 
             'metadata': {
+              'SamplingRate': tf.uint32,
               'Machine': tf.string,
               'ID': tf.string,
               'FileName': tf.string,
@@ -91,9 +100,11 @@ class DCASE2020(tfds.core.GeneratorBasedBuilder):
     if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
       datadir = Path(dl_manager._manual_dir)
     else:
-      raise FileNotFoundError(self.MANUAL_DOWNLOAD_INSTRUCTIONS)
+      raise NotImplemented()
+      # raise FileNotFoundError(self.MANUAL_DOWNLOAD_INSTRUCTIONS)
 
     train_list = [str(x) for x in datadir.rglob('*/train/*.wav')]
+    # separate query data (not labelled) from test data
     test_list = [str(x) for x in datadir.rglob('*/test/anomaly*.wav')] +  [str(x) for x in datadir.rglob('*/test/normal*.wav')]
 
     aa = [str(x) for x in datadir.rglob('*/test/*.wav')]
@@ -139,6 +150,7 @@ class DCASE2020(tfds.core.GeneratorBasedBuilder):
       # _, x = tfds.core.lazy_imports.scipy.io.wavfile.read(fp)
 
       metadata = {
+        'SamplingRate': 16000,
         'Machine': _machine,
         'ID': _id,
         'FileName': os.path.join(*fp.parts[-3:])
@@ -146,8 +158,47 @@ class DCASE2020(tfds.core.GeneratorBasedBuilder):
 
       yield hash(frozenset(metadata.items())), {
         'signal': fp,
-        # 'signal': x,
+        # 'signal': x.reshape((1,-1)),
         'label': _label,
         'metadata': metadata
       }
+
+
+class DatasetCompactor(AbstractDatasetCompactor):
+  _all_keys = ['Machine', 'ID']
+  _all_channels = [0]
+
+  def compact(self, dataset):
+    @tf.function
+    def _compact(X):
+      d = [X['label']] + [X['metadata'][k] for k in self._keys]
+
+      return {
+        'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
+        'metadata': X['metadata'],
+        'signal': [X['signal'][ch] for ch in self._channels],
+      }
+    return dataset.map(lambda X:_compact(X), num_parallel_calls=tf.data.AUTOTUNE)
+
+
+class FeatureTransformer(AbstractFeatureTransformer):
+  @classmethod
+  def get_output_signature(cls, tensor_shape:tuple=None):
+    return {
+      'label': tf.TensorSpec(shape=(), dtype=tf.string),
+      'metadata': {
+        'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
+        'Machine': tf.TensorSpec(shape=(), dtype=tf.string),  # machine type
+        'ID': tf.TensorSpec(shape=(), dtype=tf.string),  # machine id
+        'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
+      },
+      'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
+    }
+
+
+class Preprocessor(AbstractPreprocessor):
+  pass
+
+
+__all__ = ['DatasetCompactor', 'FeatureTransformer', 'Preprocessor']
 

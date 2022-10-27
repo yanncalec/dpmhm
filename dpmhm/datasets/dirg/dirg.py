@@ -1,4 +1,6 @@
 """DIRG dataset.
+
+Type of experiments: initiated faults and run-to-failure.
 """
 
 import os
@@ -82,8 +84,6 @@ author = {Alessandro Paolo Daga and Alessandro Fasana and Stefano Marchesiello a
 }
 """
 
-_DATA_URLS = []
-
 # _SENSOR_LOCATION = ['A1', 'A2']
 
 # _FAULT_LOCATION = ['B1']
@@ -116,7 +116,6 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
   """
 
   def _info(self) -> tfds.core.DatasetInfo:
-    """Returns the dataset metadata."""
     # TODO(dirg): Specifies the tfds.core.DatasetInfo object
     return tfds.core.DatasetInfo(
         builder=self,
@@ -149,7 +148,6 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
     )
 
   def _split_generators(self, dl_manager: tfds.download.DownloadManager):
-    """Returns SplitGenerators."""
     if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
       datadir = Path(dl_manager._manual_dir)
     else:
@@ -171,7 +169,6 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
     }
 
   def _generate_examples(self, datadir):
-    """Yields examples."""
     for fp in datadir.glob('*.mat'):
       fname = fp.parts[-1]
 
@@ -223,27 +220,15 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
 class DatasetCompactor(AbstractDatasetCompactor):
   """Preprocessing for DIRG dataset.
   """
-
-  def __init__(self, *args, **kwargs):
-    """
-    Notes
-    -----
-    """
-    super().__init__(*args, **kwargs)
-
-    for k in self._keys:
-      assert k in ['FaultComponent', 'FaultSize']
-    if self._channels is None:
-      self._channels = [0,1,2,3,4,5]
-    else:
-      assert all([ch in [0,1,2,3,4,5] for ch in self._channels])
+  _all_keys = ['FaultComponent', 'FaultSize']
+  _all_channels = [0, 1, 2, 3, 4, 5]
 
   @classmethod
   def get_label_dict(cls, dataset, keys:list):
     compactor = cls(dataset, keys=keys)
     return compactor.label_dict
 
-  def compact(self, ds):
+  def compact(self, dataset):
     @tf.function
     def _compact(X):
       d = [X['label']] + [X['metadata'][k] for k in self._keys]
@@ -259,7 +244,7 @@ class DatasetCompactor(AbstractDatasetCompactor):
         },
         'signal': [X['signal'][ch] for ch in self._channels],
       }
-    return ds.map(_compact, num_parallel_calls=tf.data.AUTOTUNE)
+    return dataset.map(_compact, num_parallel_calls=tf.data.AUTOTUNE)
 
 
 class FeatureTransformer(AbstractFeatureTransformer):
