@@ -1,14 +1,17 @@
 """Fraunhofer_205 dataset."""
 
-import os
+# import os
 from pathlib import Path
-import itertools
-import json
+# import itertools
+# import json
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import pandas as pd
 # from scipy.io import loadmat
+
+from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
+from dpmhm.datasets import _DTYPE
 
 
 _DESCRIPTION = """
@@ -51,7 +54,7 @@ https://fordatis.fraunhofer.de/bitstream/fordatis/205/1/fraunhofer_iis_eas_datas
 
 Notes
 =====
-In this package the records of different rotational speeds are separated.
+- In the processed data the records are separated by their RPM.
 """
 
 _CITATION = """
@@ -86,93 +89,135 @@ _DATA_URLS = 'https://fordatis.fraunhofer.de/bitstream/fordatis/205/1/fraunhofer
 
 
 class Fraunhofer205(tfds.core.GeneratorBasedBuilder):
-  """DatasetBuilder for Fraunhofer_205 dataset."""
+	"""DatasetBuilder for Fraunhofer_205 dataset."""
 
-  VERSION = tfds.core.Version('1.0.0')
-  RELEASE_NOTES = {
-      '1.0.0': 'Initial release.',
-  }
+	VERSION = tfds.core.Version('1.0.0')
+	RELEASE_NOTES = {
+			'1.0.0': 'Initial release.',
+	}
 
-  def _info(self) -> tfds.core.DatasetInfo:
-    return tfds.core.DatasetInfo(
-        builder=self,
-        description=_DESCRIPTION,
-        features=tfds.features.FeaturesDict({
-          # Number of channels is named or not fixed
-          'signal': {
-            'Vibration': tfds.features.Tensor(shape=(8192, None), dtype=tf.float64),
-            'AcousticEmission': tfds.features.Tensor(shape=(8000, None), dtype=tf.float64),
-          },
+	def _info(self) -> tfds.core.DatasetInfo:
+		return tfds.core.DatasetInfo(
+				builder=self,
+				description=_DESCRIPTION,
+				features=tfds.features.FeaturesDict({
+					# Number of channels is named or not fixed
+					'signal': {
+						'Vibration': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
+						'AcousticEmission': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
+					},
 
-          'label': tfds.features.ClassLabel(names=_COMPONENT),
+					'label': tfds.features.ClassLabel(names=_COMPONENT),
 
-          'metadata': {
-            'RotatingSpeed': tf.float32,  # Rotation speed of the shaft
-            # 'SensorName': tf.string,  # name of sensor
-            'FaultComponent': tf.string, # Component of the fault, e.g. {'Ball', 'Cage' ,'InnerRace', 'OuterRace'}
-            # 'FaultSize': tf.float32,  # Size of the fault
-            'FaultExtend': tf.int32,  # Extend of the fault, e.g. mild, severe etc
-            'FileName': tf.string,  # Original filename with path in the dataset
-          },
-        }),
-        # If there's a common (input, target) tuple from the
-        # features, specify them here. They'll be used if
-        # `as_supervised=True` in `builder.as_dataset`.
-        # supervised_keys=('signal', 'label'),  # Set to `None` to disable
-        supervised_keys=None,
-        homepage='https://fordatis.fraunhofer.de/handle/fordatis/205',
-        citation=_CITATION,
-    )
+					'metadata': {
+						'SamplingRate': tf.uint32,
+						'RotatingSpeed': tf.uint32,  # Rotation speed of the shaft
+						'FaultComponent': tf.string, # Component of the fault, e.g. {'Ball', 'Cage' ,'InnerRace', 'OuterRace', 'None}
+						'FaultExtend': tf.uint32,  # Extend of the fault, [0,1,2]
+						'FileName': tf.string,  # Original filename with path in the dataset
+					},
+				}),
+				# If there's a common (input, target) tuple from the
+				# features, specify them here. They'll be used if
+				# `as_supervised=True` in `builder.as_dataset`.
+				# supervised_keys=('signal', 'label'),  # Set to `None` to disable
+				supervised_keys=None,
+				homepage='https://fordatis.fraunhofer.de/handle/fordatis/205',
+				citation=_CITATION,
+		)
 
-  def _split_generators(self, dl_manager: tfds.download.DownloadManager):
-    if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
-      datadir = dl_manager._manual_dir
-    else:  # automatically download data
-      _resource = tfds.download.Resource(url=_DATA_URLS, extract_method=tfds.download.ExtractMethod.ZIP)  # in case that the extraction method cannot be deduced automatically from files
-      datadir = dl_manager.download_and_extract(_resource)
+	def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+		if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
+			datadir = dl_manager._manual_dir
+		else:  # automatically download data
+			# _resource = tfds.download.Resource(url=_DATA_URLS, extract_method=tfds.download.ExtractMethod.ZIP)  # in case that the extraction method cannot be deduced automatically from files
+			# datadir = dl_manager.download_and_extract(_resource)
+			raise NotImplementedError()
 
-    return {
-        # cp.lower(): self._generate_examples(datadir) for cp in _COMPONENT
-        'train': self._generate_examples(datadir/'data'),
-    }
+		return {
+				# cp.lower(): self._generate_examples(datadir) for cp in _COMPONENT
+				'train': self._generate_examples(datadir/'data'),
+		}
 
-  def _generate_examples(self, path):
-    # assert path.exists()
+	def _generate_examples(self, path):
+		for fp in path.iterdir():
+			# print(fp)
+			dv = pd.read_csv(fp/'vb.csv', header=None, sep=' ', index_col=0).astype(np.float64)
+			da = pd.read_csv(fp/'ae.csv', header=None, sep=' ', index_col=0).astype(np.float64)
+			dw = pd.read_csv(fp/'w.csv', header=None, sep=' ', index_col=0)
 
-    for fp in path.iterdir():
-      print(fp)
+			# dv.index = pd.DatetimeIndex(dv.index)
+			# dv = dv.resample('1s').mean()
+			# da.index = pd.DatetimeIndex(da.index)
+			# da = da.resample(pd.Timedelta('20480us')).mean()
 
-      dv = pd.read_csv(fp/'vb.csv', header=None, sep=' ', index_col=0).astype(np.float64)
-      da = pd.read_csv(fp/'ae.csv', header=None, sep=' ', index_col=0).astype(np.float64)
-      dw = pd.read_csv(fp/'w.csv', header=None, sep=' ', index_col=0)
+			for rpm in _SPEED:
+				t0,t1 = dw.index[dw[1]==rpm]  # time range of the constant RPM
+				xvb = dv.loc[t0:t1]
+				xae = da.loc[t0:t1]
 
-      # dv.index = pd.DatetimeIndex(dv.index)
-      # dv = dv.resample('1s').mean()
-      # da.index = pd.DatetimeIndex(da.index)
-      # da = da.resample(pd.Timedelta('20480us')).mean()
+				metadata = _METAINFO.loc[fp.name].to_dict()
+				metadata['RotatingSpeed'] = rpm
+				metadata['FileName'] = fp.name
 
-      for rpm in _SPEED:
-        t0,t1=dw.index[dw[1]==rpm]
-        xvb = dv.loc[t0:t1]
-        xae = da.loc[t0:t1]
+				yield hash(frozenset(metadata.items())), {
+					'signal': {
+						'Vibration': dv.loc[t0:t1].values.astype(_DTYPE.as_numpy_dtype),
+						'AcousticEmission': da.loc[t0:t1].values.astype(_DTYPE.as_numpy_dtype),
+					},
+					'label': metadata['FaultComponent'],
+					'metadata': metadata
+				}
 
-        metadata = _METAINFO.loc[fp.name].to_dict()
-        metadata['RotatingSpeed'] = rpm
-        metadata['FileName'] = fp.name
+	@staticmethod
+	def get_references():
+		try:
+			with open(Path(__file__).parent / 'Exported Items.bib') as fp:
+				return fp.read()
+		except:
+			pass
 
-        yield hash(frozenset(metadata.items())), {
-          'signal': {
-            'Vibration': dv.loc[t0:t1].values.T,
-            'AcousticEmission': da.loc[t0:t1].values.T,
-          },
-          'label': metadata['FaultComponent'],
-          'metadata': metadata
-        }
 
-  @staticmethod
-  def get_references():
-    try:
-      with open(Path(__file__).parent / 'Exported Items.bib') as fp:
-        return fp.read()
-    except:
-      pass
+class DatasetCompactor(AbstractDatasetCompactor):
+	_all_keys = ['FaultExtend']  # FaultComponent is redundant with the label
+	_all_channels = ['Vibration', 'AcousticEmission']
+
+	def compact(self, dataset):
+		@tf.function
+		def _compact(X):
+			d = [X['label']] + [X['metadata'][k] for k in self._keys]
+
+			return {
+				'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
+				'metadata': # X['metadata'],
+				{
+					'SamplingRate': X['metadata']['SamplingRate'],
+					'Fault': X['metadata']['LoadMass'],
+					'FileName': X['metadata']['FileName'],
+				},
+				'signal': [X['signal'][ch] for ch in self._channels],
+			}
+		return dataset.map(lambda X:_compact(X), num_parallel_calls=tf.data.AUTOTUNE)
+
+
+class FeatureTransformer(AbstractFeatureTransformer):
+	@classmethod
+	def get_output_signature(cls, tensor_shape:tuple=None):
+		return {
+			'label': tf.TensorSpec(shape=(), dtype=tf.string),
+			'metadata': {
+				'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
+				'LoadRadius': tf.TensorSpec(shape=(), dtype=tf.float32),
+				'LoadMass': tf.TensorSpec(shape=(), dtype=tf.float32),
+				'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
+			},
+			'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
+		}
+
+
+class Preprocessor(AbstractPreprocessor):
+	pass
+
+
+__all__ = ['DatasetCompactor', 'FeatureTransformer', 'Preprocessor']
+

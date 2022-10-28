@@ -97,8 +97,17 @@ Features
 Notes
 =====
 - The split 'test' is the truncation of 'full_test' used for RUL.
-- The channels 'vibration' and 'temperature' have different sampling rate hence should better be treated as distinct signal. However we made the choice to represent them as channels but they should be loaded separately. When both being available they correspond to the same experiment.
+- When both being recorded, 'vibration' and 'temperature' correspond to the same experiment and should be understood as two channels. However, being sampled at  different sampling rate they cannot be extracted simultaneously in form of a 3-channels signal.
+- The original timestamp of sampling is not regular. We made the choice to not include the timestamp data.
+- RUL cannot be extracted due to a strange error occurs, see the comments in the source code.
 """
+
+# Code snippet showing the original timestamp is not regular.
+# fname = '.../ieee-phm-2012-data-challenge-dataset-master/Test_set/Bearing1_6/acc_00136.csv'
+# df0 = pd.read_csv(fname, header=0, sep=',', index_col=[0,1,2,3])
+# ts  = [datetime.datetime(2012,1,1,*np.int32(a)).timestamp() for a in df0.index]
+# # the time difference is not regular!
+# np.diff(ts) # not constant
 
 _CITATION = """
 P. Nectoux, R. Gouriveau, K. Medjaher, E. Ramasso, B. Morello, N. Zerhouni, C. Varnier. PRONOSTIA: An Experimental Platform for Bearings Accelerated Life Test. IEEE International Conference on Prognostics and Health Management, Denver, CO, USA, 2012
@@ -128,6 +137,7 @@ _DATE = {
 	'Bearing3_3': datetime(2011,4,8),
 }
 
+# Remaining useful life
 _RUL = {
 	'Bearing1_3': 5730,
 	'Bearing1_4': 339,
@@ -142,12 +152,14 @@ _RUL = {
 	'Bearing3_3': 820
 }
 
+# Load force
 _LOAD = {
 	'Bearing1': 4000,
 	'Bearing2': 4200,
 	'Bearing3': 5000,
 }
 
+# Nominal RPM
 _RPM = {
 	'Bearing1': 1800,
 	'Bearing2': 1650,
@@ -174,6 +186,7 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
 						'temperature': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
 					},
 
+					# Timestamp not included
 					# 'timestamp': {
 					# 	'vibration': tfds.features.Tensor(shape=(None), dtype=tf.float64),
 					# 	'temperature': tfds.features.Tensor(shape=(None,), dtype=tf.float64),
@@ -246,7 +259,7 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
 
 			bid = fp.parts[-2]  # bearing experiment id, e.g. 'Bearing1_x'
 			gid = bid.split('_')[0]  # bearing group id, e.g. 'Bearing1'
-			# A strange error occurs during encoding 'Bearing1_7/acc_00520.csv': RUL is encoded as tuple '(7570,)'
+			# A strange error occurs during encoding 'Bearing1_7/acc_00520.csv': RUL is encoded as tuple '(7570,)' but not as number
 			#
 			# try:
 			#   rul = _RUL[bid],
@@ -281,7 +294,7 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
 
 class DatasetCompactor(AbstractDatasetCompactor):
 	_all_keys = ['ID']  # the fields 'RotatingSpeed' and 'LoadForce' are redundant.
-	_all_channels = ['vibration', 'temperature']
+	_all_channels = ['vibration', 'temperature']  # cannot be extracted at the same time
 
 	@classmethod
 	def get_label_dict(cls, dataset, keys:list):

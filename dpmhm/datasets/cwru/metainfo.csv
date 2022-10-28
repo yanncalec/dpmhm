@@ -1,4 +1,4 @@
-SamplingRate,LoadForce,RotatingSpeed,FaultLocation,FaultComponent,FaultSize,FileName
+SamplingRate,LoadForce,NominalRPM,FaultLocation,FaultComponent,FaultSize,FileName
 12000,0,1797,DriveEnd,Ball,0.007,118.mat
 12000,1,1772,DriveEnd,Ball,0.007,119.mat
 12000,2,1750,DriveEnd,Ball,0.007,120.mat

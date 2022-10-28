@@ -13,7 +13,7 @@ import pandas as pd
 # import mat4py
 # import librosa
 
-from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
+# from dpmhm.datasets.preprocessing import DatasetCompactor, FeatureTransformer, Preprocessor
 from dpmhm.datasets import _DTYPE
 
 
@@ -64,11 +64,17 @@ Features
 		'FaultSize': {0.007, 0.014, 0.021, 0.028}, diameter of fault in inches.
 		'FileName': original filename.
 		'LoadForce': {0, 1, 2, 3} nominal motor load in horsepower, corresponding to the nominal RPM: [1797, 1772, 1750, 1730].
-		'RotatingSpeed': nominal RPM.
-		'SamplingRate': {12000, 48000} in Hz.
-},
-'rpm': real RPM of experiment, contained by most files.
+		'NominalRPM': nominal RPM.
+		'RPM': real RPM
+}
+
 'signal': {
+		'BA': base accelerometer data,
+		'DE': drive end accelerometer data,
+		'FE': fan end accelerometer data,
+}
+
+'sampling_rate': {
 		'BA': base accelerometer data,
 		'DE': drive end accelerometer data,
 		'FE': fan end accelerometer data,
@@ -77,7 +83,10 @@ Features
 Notes
 =====
 - Convention for a normal experiment: FaultLocation and FaultComponent are None and FaultSize is 0.
-- For a recent review of developments based on CWRU, see:
+- The real RPM is known for most experiment, otherwise it is replaced by the nomial one.
+
+For a recent review of developments based on CWRU, see:
+
 	Wei, X. and Söffker, D. (2021) ‘Comparison of CWRU Dataset-Based Diagnosis Approaches: Review of Best Approaches and Results’, in P. Rizzo and A. Milazzo (eds) European Workshop on Structural Health Monitoring. Cham: Springer International Publishing (Lecture Notes in Civil Engineering), pp. 525–532. Available at: https://doi.org/10.1007/978-3-030-64594-6_51.
 """
 
@@ -112,55 +121,53 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 
 	def _info(self) -> tfds.core.DatasetInfo:
 		return tfds.core.DatasetInfo(
-				builder=self,
-				description=_DESCRIPTION,
-				features=tfds.features.FeaturesDict({
-					# The sampling rate and the shape of a signal are not fixed.
-					'signal':{  # three possible channels: drive-end, fan-end and base
-						'DE': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
-						'FE': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
-						'BA': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
-					},
-					# Can not save all channels in a tensor with unknown dimension, like
-					# 'signal': tfds.features.Tensor(shape=(None,1), dtype=tf.float64),
+			builder=self,
+			description=_DESCRIPTION,
+			features=tfds.features.FeaturesDict({
+				# The sampling rate and the shape of a signal are not fixed.
+				'signal':{  # three possible channels: drive-end, fan-end and base
+					'DE': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
+					'FE': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
+					'BA': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
+				},
+				# Can not save all channels in a tensor with unknown dimension, like
+				# 'signal': tfds.features.Tensor(shape=(None,1), dtype=tf.float64),
 
-					'rpm': tf.uint32, # real rpm of the signal, not the nominal one (motor load).
+				'label': tfds.features.ClassLabel(names=['None', 'DriveEnd', 'FanEnd']),
 
-					'label': tfds.features.ClassLabel(names=['None', 'DriveEnd', 'FanEnd']),
+				'sampling_rate': {
+					'DE': tf.uint32,
+					'FE': tf.uint32,
+					'BA': tf.uint32,
+				}, # {12000, 48000} Hz
 
-					'metadata': {
-							'SamplingRate': tf.uint32, # {12000, 48000} Hz
-							'RotatingSpeed': tf.uint32,  # average RPM: [1797, 1772, 1750, 1730]
-							'LoadForce': tf.uint32, # {0, 1, 2 ,3}, corresponding average RPM: [1797, 1772, 1750, 1730]
-							'FaultLocation': tf.string, # {'DriveEnd', 'FanEnd', 'None'}
-							'FaultComponent': tf.string,  # {'InnerRace', 'Ball', 'OuterRace3', 'OuterRace6', 'OuterRace12', 'None'}
-							'FaultSize': tf.float32,  # {0.007, 0.014, 0.021, 0.028, 0}
-							'FileName': tf.string,
-					},
+				'metadata': {
+					'NominalRPM': tf.uint32,  # nominal RPM: [1797, 1772, 1750, 1730]
+					'RPM': tf.uint32,  # real RPM
+					'LoadForce': tf.uint32, # {0, 1, 2 ,3}, corresponding average RPM: [1797, 1772, 1750, 1730]
+					'FaultLocation': tf.string, # {'DriveEnd', 'FanEnd', 'None'}
+					'FaultComponent': tf.string,  # {'InnerRace', 'Ball', 'OuterRace3', 'OuterRace6', 'OuterRace12', 'None'}
+					'FaultSize': tf.float32,  # {0.007, 0.014, 0.021, 0.028, 0}
+					'FileName': tf.string,
+				},
 
-					# Another possibility is to use class labels (string)
-					# This implies conversion in the decoding part.
-					# 'metadata': {
-					#     'SamplingRate': tfds.features.ClassLabel(names=['12000', '48000']),  # Hz
-					#     'LoadForce': tfds.features.ClassLabel(names=['0', '1', '2', '3']),  # Horsepower
-					#     'RotatingSpeed': tfds.features.ClassLabel(names=['1797', '1772', '1750', '1730']),
-					#     'FaultLocation': tfds.features.ClassLabel(names=['DriveEnd', 'FanEnd', 'None']),
-					#     'FaultComponent': tfds.features.ClassLabel(names=['InnerRace', 'Ball', 'OuterRace3', 'OuterRace6', 'OuterRace12', 'None']),
-					#     'FaultSize': tfds.features.ClassLabel(names=['0.007', '0.014', '0.021', '0.028', '0.0']),  # inches
-					#     'FileName': tf.string,
-					# },
-				}),
-				supervised_keys=None,
-				# supervised_keys=('signal', 'label'),  # Set to `None` to disable
-				homepage='https://engineering.case.edu/bearingdatacenter',
-				citation=_CITATION,
+				# Another possibility is to use class labels (string),
+				# e.g.
+				# 'metadata': {
+				#     'LoadForce': tfds.features.ClassLabel(names=['0', '1', '2', '3']),  # Horsepower
+				# },
+				# This implies conversion in the decoding part.
+			}),
+			supervised_keys=None,
+			# supervised_keys=('signal', 'label'),  # Set to `None` to disable
+			homepage='https://engineering.case.edu/bearingdatacenter',
+			citation=_CITATION,
 		)
 
 	def _split_generators(self, dl_manager: tfds.download.DownloadManager):
 		# If class labels are used for `meta`, add `.astype(str)` in the following before `to_dict()`
 		if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
 			datadir = Path(dl_manager._manual_dir)
-
 			# _data_files = dl_manager._manual_dir.glob('*.mat')
 			# fp_dict = {str(fp): _METAINFO.loc[_METAINFO['FileName'] == fp.name].iloc[0].to_dict() for fp in _data_files}
 		else:  # automatically download data
@@ -169,8 +176,7 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 
 			# Sequential download:
 			# _data_files = [dl_manager.download(url) for url in _DATA_URLS]
-
-			raise NotImplemented()
+			raise NotImplementedError()
 
 		return {
 				# 'train': self._generate_examples(fp_dict),
@@ -192,8 +198,10 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 				raise Exception(f"Error in processing {fp}: {msg}")
 				# continue
 
-			# If filename is e.g. `112.mat`, then the matlab file  contains some of the fields `X112_DE_time` (always), `X112RPM`, as well as `X112_FE_time` and `X112_BA_time`.
-			# Exception: the datafiles `300?.mat`` do not contain fields starting with `X300?` nor the field `RPM`.
+			# If filename is e.g. `112.mat`, then the matlab file  contains the fields
+			# - `X112_DE_time` (always),
+			# - `X112RPM`, `X112_FE_time` and `X112_BA_time` (not aways).
+			# Exception: the files `300?.mat`` do not contain fields of name starting with `X300?` nor the field `RPM`.
 
 			fn = f"{int(metadata['FileName'].split('.mat')[0]):03d}"
 			if f'X{fn}_DE_time' in dm:  # find regular fields
@@ -214,7 +222,9 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 				xde, xfe, xba = dm[kde], np.empty(0), np.empty(0)
 
 			# Use nominal value if the real value is not given.
-			rpm = int(dm[krpm]) if krpm in dm else metadata['RotatingSpeed']
+			metadata['RPM'] = int(dm[krpm]) if krpm in dm else metadata['NominalRPM']
+
+			sr = metadata.pop('SamplingRate')  # pop out the field from metadata
 
 			yield hash(frozenset(metadata.items())), {
 				'signal': {
@@ -222,12 +232,11 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 					'FE': xfe.astype(_DTYPE.as_numpy_dtype),
 					'BA': xba.astype(_DTYPE.as_numpy_dtype),
 				},  # if not empty all three have the same length
-				# 'signal': {
-				#   'DE': xde,
-				#   'FE': xfe,
-				#   'BA': xba,
-				# },  # if not empty all three have the same length
-				'rpm': rpm,
+				'sampling_rate': {
+					'DE': sr,
+					'FE': sr,
+					'BA': sr,
+				},
 				'label': metadata['FaultLocation'],
 				'metadata': metadata,
 			}
@@ -239,136 +248,3 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 				return fp.read()
 		except:
 			pass
-
-
-class DatasetCompactor(AbstractDatasetCompactor):
-	_all_channels:list = ['DE', 'FE', 'BA']
-	_all_keys:list = ['FaultComponent', 'FaultSize']  # The field 'FaultLocation' is already contained in the label ([0,1,2] for ['None', 'DriveEnd', 'FanEnd']) hence is redundant.
-
-	@classmethod
-	def get_label_dict(cls, dataset, keys:list):
-		ld = cls(dataset, keys=keys, channels=['DE']).label_dict
-
-		return ld
-
-	def compact(self, dataset):
-		@tf.function  # necessary for infering the size of tensor
-		def _has_channels(X):
-			"""Test if channels are present in data."""
-			flag = True
-			for ch in self._channels:
-				if tf.size(X['signal'][ch]) == 0:  # to infer the size in graph mode
-				# if tf.equal(tf.size(X['signal'][ch]), 0):
-				# if X['signal'][ch].shape == 0:  # raise strange "shape mismatch error"
-				# if len(X['signal'][ch]) == 0:  # raise TypeError
-					flag = False
-					# break or return False are not supported by tensorflow
-			return flag
-
-		@tf.function
-		def _compact(X):
-			d = [X['label']] + [X['metadata'][k] for k in self._keys]
-
-			return {
-				'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
-				'metadata': {
-					'RPM': X['rpm'],
-					'RPM_Nominal': X['metadata']['RotatingSpeed'],
-					'SamplingRate': X['metadata']['SamplingRate'],
-					'FileName': X['metadata']['FileName'],
-				},
-				'signal': [X['signal'][ch] for ch in self._channels],
-				# 'signal': signal
-			}
-		# return dataset.filter(_has_channels)
-		ds = dataset.filter(lambda X:_has_channels(X))
-		return ds.map(lambda X:_compact(X), num_parallel_calls=tf.data.AUTOTUNE)
-
-
-class FeatureTransformer(AbstractFeatureTransformer):
-	@classmethod
-	def get_output_signature(cls, tensor_shape:tuple=None):
-		# return (
-		#   tf.TensorSpec(shape=(), dtype=tf.uint32, name='label'),
-		#   (
-		#     tf.TensorSpec(shape=(), dtype=tf.string, name='FileName'),  # filename
-		#     tf.TensorSpec(shape=(), dtype=tf.uint32, name='RPM'),  # real rpm
-		#     tf.TensorSpec(shape=(), dtype=tf.uint32, name='RPM_Nominal'),  # nominal rpm
-		#     tf.TensorSpec(shape=(), dtype=tf.uint32, name='SamplingRate')
-		#     ),
-		#   tf.TensorSpec(shape=(None, None, None), dtype=tf.float64, name='feature')
-		# )
-
-		return {
-			'label': tf.TensorSpec(shape=(), dtype=tf.string),
-			'metadata': {
-				'RPM': tf.TensorSpec(shape=(), dtype=tf.uint32),  # real rpm
-				'RPM_Nominal': tf.TensorSpec(shape=(), dtype=tf.uint32),  # nominal rpm
-				'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
-				'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
-			},
-			# 'feature': tf.TensorSpec(shape=(None, None, None), dtype=tf.float64, name='feature'),
-			'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
-		}
-
-
-class Preprocessor(AbstractPreprocessor):
-	pass
-
-
-__all__ = ['DatasetCompactor', 'FeatureTransformer', 'Preprocessor']
-
-
-# def compact(self, dataset):
-#   @tf.function  # necessary for infering the size of tensor
-#   def _has_channels(X, channels):
-#     """Test if channels are present in data."""
-#     flag = True
-#     for ch in channels:
-#       if tf.size(X['signal'][ch]) == 0:  # to infer the size in graph mode
-#       # if tf.equal(tf.size(X['signal'][ch]), 0):
-#       # if X['signal'][ch].shape == 0:  # raise strange "shape mismatch error"
-#       # if len(X['signal'][ch]) == 0:  # raise TypeError
-#         flag = False
-#         # break or return False are not supported by tensorflow
-#     return flag
-
-#   @tf.function
-#   def _compact(X, channels):
-#     d = [X['label']] + [X['metadata'][k] for k in self._keys]
-
-#     # signal = [X['signal'][ch] for ch in self._channels]
-#     # if len(self._channels) > 0:
-#     #   signal = [X['signal'][ch] for ch in self._channels]
-#     # else:
-#     #   # signal = [X['signal'][k] for k in ['DE', 'FE', 'BA']]
-#     #   signal = []
-#     #   for v in X['signal'].values():
-#     #     tf.cond(tf.size(v)>0, true_fn=lambda: signal.append(v), false_fn=lambda: None)
-#     #   # signal = [v for v in X['signal'].values() if tf.size(v)>0]
-
-#     return {
-#       'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
-#       'metadata': {
-#         'RPM': X['rpm'],
-#         'RPM_Nominal': X['metadata']['RotatingSpeed'],
-#         'FileName': X['metadata']['FileName'],
-#         'SamplingRate': X['metadata']['SamplingRate'],
-#       },
-#       'signal': [X['signal'][ch] for ch in channels],
-#       # 'signal': signal
-#     }
-#   # return dataset.filter(_has_channels)
-#   if self._channels_mode == 'all':
-#     ds = dataset.filter(lambda X:_has_channels(X, self._channels))
-#     ds = ds.map(lambda X:_compact(X, self._channels), num_parallel_calls=tf.data.AUTOTUNE)
-#   else:
-#     ch = self._channels[0]
-#     df = dataset.filter(lambda X:_has_channels(X, [ch]))
-#     ds = df.map(lambda X:_compact(X, [ch]), num_parallel_calls=tf.data.AUTOTUNE)
-#     for ch in self._channels[1:]:
-#       df = dataset.filter(lambda X:_has_channels(X, [ch]))
-#       df = df.map(lambda X:_compact(X, [ch]), num_parallel_calls=tf.data.AUTOTUNE)
-#       ds = ds.concatenate(df)
-
-#   return ds

@@ -9,7 +9,6 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from pathlib import Path
 
-from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
 from dpmhm.datasets import _DTYPE
 
 
@@ -43,162 +42,172 @@ Features
 'signal': audio,
 'label': ['normal', 'anomaly', 'unknown'],
 'metadata': {
-  'SamplingRate': 16000,
-  'Machine': type of machine,
-  'ID': machine ID,
-  'FileName': original file name,
+	'SamplingRate': 16000,
+	'Machine': type of machine,
+	'ID': machine ID,
+	'FileName': original file name,
 }
 """
 
 _CITATION = """
 @inproceedings{Koizumi_DCASE2020_01,
-    Author = "Koizumi, Yuma and Kawaguchi, Yohei and Imoto, Keisuke and Nakamura, Toshiki and Nikaido, Yuki and Tanabe, Ryo and Purohit, Harsh and Suefusa, Kaori and Endo, Takashi and Yasuda, Masahiro and Harada, Noboru",
-    title = "Description and Discussion on {DCASE}2020 Challenge Task2: Unsupervised Anomalous Sound Detection for Machine Condition Monitoring",
-    year = "2020",
-    booktitle = "Proceedings of the Detection and Classification of Acoustic Scenes and Events 2020 Workshop (DCASE2020)",
-    month = "November",
-    pages = "81--85",
+		Author = "Koizumi, Yuma and Kawaguchi, Yohei and Imoto, Keisuke and Nakamura, Toshiki and Nikaido, Yuki and Tanabe, Ryo and Purohit, Harsh and Suefusa, Kaori and Endo, Takashi and Yasuda, Masahiro and Harada, Noboru",
+		title = "Description and Discussion on {DCASE}2020 Challenge Task2: Unsupervised Anomalous Sound Detection for Machine Condition Monitoring",
+		year = "2020",
+		booktitle = "Proceedings of the Detection and Classification of Acoustic Scenes and Events 2020 Workshop (DCASE2020)",
+		month = "November",
+		pages = "81--85",
 }
 """
 
 
 class DCASE2020(tfds.core.GeneratorBasedBuilder):
-  """DatasetBuilder for DCASE 2020 task2 dataset."""
+	"""DatasetBuilder for DCASE 2020 task2 dataset."""
 
-  VERSION = tfds.core.Version('1.0.0')
+	VERSION = tfds.core.Version('1.0.0')
 
-  RELEASE_NOTES = {
-      '1.0.0': 'Initial release.',
-  }
+	RELEASE_NOTES = {
+			'1.0.0': 'Initial release.',
+	}
 
-  def _info(self) -> tfds.core.DatasetInfo:
-    return tfds.core.DatasetInfo(
-        builder=self,
-        description=_DESCRIPTION,
-        features=tfds.features.FeaturesDict({
-            'signal': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.BYTES),  # shape=(1, None) doesn't work
+	def _info(self) -> tfds.core.DatasetInfo:
+		return tfds.core.DatasetInfo(
+				builder=self,
+				description=_DESCRIPTION,
+				features=tfds.features.FeaturesDict({
+						'signal': {
+							'1': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.BYTES)
+						},
 
-            # 'signal': tfds.features.Tensor(shape=(1,None), dtype=tf.float64),
+						# 'signal': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.BYTES),  # shape=(1, None) doesn't work
 
-            'label': tfds.features.ClassLabel(names=['normal', 'anomaly', 'unknown']),
+						# 'signal': tfds.features.Tensor(shape=(1,None), dtype=tf.float64),  # much slower on wav files
 
-            'metadata': {
-              'SamplingRate': tf.uint32,
-              'Machine': tf.string,
-              'ID': tf.string,
-              'FileName': tf.string,
-            },
-        }),
+						'sampling_rate': {
+							'1': tf.uint32,
+						},
 
-        # supervised_keys=('signal', 'label'),  # Set to `None` to disable
-        supervised_keys=None,
-        homepage='https://dcase.community/challenge2020/task-unsupervised-detection-of-anomalous-sounds',
-        citation=_CITATION,
-    )
+						'label': tfds.features.ClassLabel(names=['normal', 'anomaly', 'unknown']),
 
-  def _split_generators(self, dl_manager: tfds.download.DownloadManager):
-    if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
-      datadir = Path(dl_manager._manual_dir)
-    else:
-      raise NotImplemented()
-      # raise FileNotFoundError(self.MANUAL_DOWNLOAD_INSTRUCTIONS)
+						'metadata': {
+							'Machine': tf.string,
+							'ID': tf.string,
+							'FileName': tf.string,
+						},
+				}),
 
-    train_list = [str(x) for x in datadir.rglob('*/train/*.wav')]
-    # separate query data (not labelled) from test data
-    test_list = [str(x) for x in datadir.rglob('*/test/anomaly*.wav')] +  [str(x) for x in datadir.rglob('*/test/normal*.wav')]
+				# supervised_keys=('signal', 'label'),  # Set to `None` to disable
+				supervised_keys=None,
+				homepage='https://dcase.community/challenge2020/task-unsupervised-detection-of-anomalous-sounds',
+				citation=_CITATION,
+		)
 
-    aa = [str(x) for x in datadir.rglob('*/test/*.wav')]
-    query_list = [x for x in aa if x not in test_list]
-    # print(len(train_list), len(test_list), len(query_list))
+	def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+		if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
+			datadir = Path(dl_manager._manual_dir)
+		else:
+			raise NotImplementedError()
+			# raise FileNotFoundError(self.MANUAL_DOWNLOAD_INSTRUCTIONS)
 
-    return {
-        'train': self._generate_examples(train_list),
-        'test': self._generate_examples(test_list),
-        'query': self._generate_examples(query_list),
-    }
+		train_list = [str(x) for x in datadir.rglob('*/train/*.wav')]
+		# separate query data (not labelled) from test data
+		test_list = [str(x) for x in datadir.rglob('*/test/anomaly*.wav')] +  [str(x) for x in datadir.rglob('*/test/normal*.wav')]
 
-  @classmethod
-  def _fname_parser(cls, fname):
-    """Parse the filename and extract relevant information.
+		aa = [str(x) for x in datadir.rglob('*/test/*.wav')]
+		query_list = [x for x in aa if x not in test_list]
+		# print(len(train_list), len(test_list), len(query_list))
 
-    Examples of filename
-    --------------------
-    train: fan/train/normal_id_00_00000000.wav
-    test: ToyCar/test/anomaly_id_01_00000005.wav
-    query: ToyCar/test/id_07_00000496.wav
-    """
-    _machine = fname.parts[0]
-    _mode = fname.parts[1]
-    idx = fname.parts[-1].find('id_')
-    _id = fname.parts[-1][idx+3:idx+5]
-    _label = fname.parts[-1].split('_')[0]
+		return {
+				'train': self._generate_examples(train_list),
+				'test': self._generate_examples(test_list),
+				'query': self._generate_examples(query_list),
+		}
 
-    if _label not in ['normal', 'anomaly']:
-      _label = 'unknown'
-      _mode = 'query'
+	@classmethod
+	def _fname_parser(cls, fname):
+		"""Parse the filename and extract relevant information.
 
-    return _machine, _mode, _id, _label
+		Examples of filename
+		--------------------
+		train: fan/train/normal_id_00_00000000.wav
+		test: ToyCar/test/anomaly_id_01_00000005.wav
+		query: ToyCar/test/id_07_00000496.wav
+		"""
+		_machine = fname.parts[0]
+		_mode = fname.parts[1]
+		idx = fname.parts[-1].find('id_')
+		_id = fname.parts[-1][idx+3:idx+5]
+		_label = fname.parts[-1].split('_')[0]
 
-  def _generate_examples(self, fnames):
-    # for zf in path.glob('*.zip'):
-    #   # flat iteration being transparent to sub folders of zip_path
-    #   for fname, fobj in tfds.download.iter_archive(zf, tfds.download.ExtractMethod.ZIP):
-    for fn in fnames:
-      fp = Path(fn)
+		if _label not in ['normal', 'anomaly']:
+			_label = 'unknown'
+			_mode = 'query'
 
-      _machine, _mode, _id, _label = self._fname_parser(Path(*fp.parts[-3:]))
-      # _, x = tfds.core.lazy_imports.scipy.io.wavfile.read(fp)
+		return _machine, _mode, _id, _label
 
-      metadata = {
-        'SamplingRate': 16000,
-        'Machine': _machine,
-        'ID': _id,
-        'FileName': os.path.join(*fp.parts[-3:])
-      }
+	def _generate_examples(self, fnames):
+		# for zf in path.glob('*.zip'):
+		#   # flat iteration being transparent to sub folders of zip_path
+		#   for fname, fobj in tfds.download.iter_archive(zf, tfds.download.ExtractMethod.ZIP):
+		for fn in fnames:
+			fp = Path(fn)
 
-      yield hash(frozenset(metadata.items())), {
-        'signal': fp,
-        # 'signal': x.reshape((1,-1)),
-        'label': _label,
-        'metadata': metadata
-      }
+			_machine, _mode, _id, _label = self._fname_parser(Path(*fp.parts[-3:]))
+			# _, x = tfds.core.lazy_imports.scipy.io.wavfile.read(fp)
 
+			metadata = {
+				# 'SamplingRate': 16000,
+				'Machine': _machine,
+				'ID': _id,
+				'FileName': os.path.join(*fp.parts[-3:])
+			}
 
-class DatasetCompactor(AbstractDatasetCompactor):
-  _all_keys = ['Machine', 'ID']
-  _all_channels = [0]
-
-  def compact(self, dataset):
-    @tf.function
-    def _compact(X):
-      d = [X['label']] + [X['metadata'][k] for k in self._keys]
-
-      return {
-        'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
-        'metadata': X['metadata'],
-        'signal': [X['signal'][ch] for ch in self._channels],
-      }
-    return dataset.map(lambda X:_compact(X), num_parallel_calls=tf.data.AUTOTUNE)
+			yield hash(frozenset(metadata.items())), {
+				# 'signal': {'1': (fp, 16000)},  # doesn't work
+				# 'signal': fp,
+				# 'signal': x.reshape((1,-1)),
+				'signal': {'1': fp},
+				'sampling_rate': {'1': 16000},
+				'label': _label,
+				'metadata': metadata
+			}
 
 
-class FeatureTransformer(AbstractFeatureTransformer):
-  @classmethod
-  def get_output_signature(cls, tensor_shape:tuple=None):
-    return {
-      'label': tf.TensorSpec(shape=(), dtype=tf.string),
-      'metadata': {
-        'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
-        'Machine': tf.TensorSpec(shape=(), dtype=tf.string),  # machine type
-        'ID': tf.TensorSpec(shape=(), dtype=tf.string),  # machine id
-        'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
-      },
-      'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
-    }
+# class DatasetCompactor(AbstractDatasetCompactor):
+# 	_all_keys = ['Machine', 'ID']
+# 	_all_channels = [1]
+
+# 	def compact(self, dataset):
+# 		@tf.function
+# 		def _compact(X):
+# 			d = [X['label']] + [X['metadata'][k] for k in self._keys]
+
+# 			return {
+# 				'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
+# 				'metadata': X['metadata'],
+# 				'signal': [X['signal'][ch] for ch in self._channels],
+# 			}
+# 		return dataset.map(lambda X:_compact(X), num_parallel_calls=tf.data.AUTOTUNE)
 
 
-class Preprocessor(AbstractPreprocessor):
-  pass
+# class FeatureTransformer(AbstractFeatureTransformer):
+# 	@classmethod
+# 	def get_output_signature(cls, tensor_shape:tuple=None):
+# 		return {
+# 			'label': tf.TensorSpec(shape=(), dtype=tf.string),
+# 			'metadata': {
+# 				'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
+# 				'Machine': tf.TensorSpec(shape=(), dtype=tf.string),  # machine type
+# 				'ID': tf.TensorSpec(shape=(), dtype=tf.string),  # machine id
+# 				'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
+# 			},
+# 			'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
+# 		}
 
 
-__all__ = ['DatasetCompactor', 'FeatureTransformer', 'Preprocessor']
+# class Preprocessor(AbstractPreprocessor):
+# 	pass
+
+
+# __all__ = ['DatasetCompactor', 'FeatureTransformer', 'Preprocessor']
 
