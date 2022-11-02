@@ -14,7 +14,7 @@ import pandas as pd
 # import librosa
 
 # from dpmhm.datasets.preprocessing import DatasetCompactor, FeatureTransformer, Preprocessor
-from dpmhm.datasets import _DTYPE
+from dpmhm.datasets import _DTYPE, _ENCODING
 
 
 _DESCRIPTION = """
@@ -126,9 +126,9 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 			features=tfds.features.FeaturesDict({
 				# The sampling rate and the shape of a signal are not fixed.
 				'signal':{  # three possible channels: drive-end, fan-end and base
-					'DE': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
-					'FE': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
-					'BA': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
+					'DE': tfds.features.Tensor(shape=(None,), dtype=_DTYPE, encoding=_ENCODING),
+					'FE': tfds.features.Tensor(shape=(None,), dtype=_DTYPE, encoding=_ENCODING),
+					'BA': tfds.features.Tensor(shape=(None,), dtype=_DTYPE, encoding=_ENCODING),
 				},
 				# Can not save all channels in a tensor with unknown dimension, like
 				# 'signal': tfds.features.Tensor(shape=(None,1), dtype=tf.float64),

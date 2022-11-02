@@ -10,8 +10,7 @@ import tensorflow_datasets as tfds
 import pandas as pd
 # from scipy.io import loadmat
 
-from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
-from dpmhm.datasets import _DTYPE
+from dpmhm.datasets import _DTYPE, _ENCODING
 
 
 _DESCRIPTION = """
@@ -51,6 +50,31 @@ Recording period: ~ 41 milliseconds
 Download
 --------
 https://fordatis.fraunhofer.de/bitstream/fordatis/205/1/fraunhofer_iis_eas_dataset_vibrations_acoustic_emissions_of_drive_train_v1.zip
+
+Processed data
+==============
+Split: ['train']
+
+Features
+--------
+'signal': {
+	'Vibration',
+	'AcousticEmission'
+},
+
+'label': ['Ball', 'InnerRace', 'OuterRace', 'None'],
+
+'sampling_rate': {
+	'Vibration': 8192,
+	'AcousticEmission': 390625
+},
+'metadata': {
+	'TrunkIndex': starting index of the trunk,
+	'RotatingSpeed': Rotation speed of the shaft
+	'FaultComponent': Component of the fault, e.g. {'Ball', 'Cage' ,'InnerRace', 'OuterRace', 'None}
+	'FaultExtend':  Extend of the fault, [0,1,2]
+	'FileName': Original filename with path in the dataset
+}
 
 Notes
 =====
@@ -93,37 +117,42 @@ class Fraunhofer205(tfds.core.GeneratorBasedBuilder):
 
 	VERSION = tfds.core.Version('1.0.0')
 	RELEASE_NOTES = {
-			'1.0.0': 'Initial release.',
+		'1.0.0': 'Initial release.',
 	}
 
 	def _info(self) -> tfds.core.DatasetInfo:
 		return tfds.core.DatasetInfo(
-				builder=self,
-				description=_DESCRIPTION,
-				features=tfds.features.FeaturesDict({
-					# Number of channels is named or not fixed
-					'signal': {
-						'Vibration': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
-						'AcousticEmission': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
-					},
+			builder=self,
+			description=_DESCRIPTION,
+			features=tfds.features.FeaturesDict({
+				# Number of channels is named or not fixed
+				'signal': {
+					'Vibration': tfds.features.Tensor(shape=(None,), dtype=_DTYPE, encoding=_ENCODING),
+					'AcousticEmission': tfds.features.Tensor(shape=(None,), dtype=_DTYPE, encoding=_ENCODING),
+				},
 
-					'label': tfds.features.ClassLabel(names=_COMPONENT),
+				'sampling_rate': {
+					'Vibration': tf.uint32,
+					'AcousticEmission': tf.uint32,
+				},
 
-					'metadata': {
-						'SamplingRate': tf.uint32,
-						'RotatingSpeed': tf.uint32,  # Rotation speed of the shaft
-						'FaultComponent': tf.string, # Component of the fault, e.g. {'Ball', 'Cage' ,'InnerRace', 'OuterRace', 'None}
-						'FaultExtend': tf.uint32,  # Extend of the fault, [0,1,2]
-						'FileName': tf.string,  # Original filename with path in the dataset
-					},
-				}),
-				# If there's a common (input, target) tuple from the
-				# features, specify them here. They'll be used if
-				# `as_supervised=True` in `builder.as_dataset`.
-				# supervised_keys=('signal', 'label'),  # Set to `None` to disable
-				supervised_keys=None,
-				homepage='https://fordatis.fraunhofer.de/handle/fordatis/205',
-				citation=_CITATION,
+				'label': tfds.features.ClassLabel(names=_COMPONENT),
+
+				'metadata': {
+					'TrunkIndex': tf.string,  # starting index of the trunk in the original data file
+					'RotatingSpeed': tf.uint32,  # Rotation speed of the shaft
+					'FaultComponent': tf.string, # Component of the fault, e.g. {'Ball', 'Cage' ,'InnerRace', 'OuterRace', 'None}
+					'FaultExtend': tf.uint32,  # Extend of the fault, [0,1,2]
+					'FileName': tf.string,  # Original filename with path in the dataset
+				},
+			}),
+			# If there's a common (input, target) tuple from the
+			# features, specify them here. They'll be used if
+			# `as_supervised=True` in `builder.as_dataset`.
+			# supervised_keys=('signal', 'label'),  # Set to `None` to disable
+			supervised_keys=None,
+			homepage='https://fordatis.fraunhofer.de/handle/fordatis/205',
+			citation=_CITATION,
 		)
 
 	def _split_generators(self, dl_manager: tfds.download.DownloadManager):
@@ -135,16 +164,16 @@ class Fraunhofer205(tfds.core.GeneratorBasedBuilder):
 			raise NotImplementedError()
 
 		return {
-				# cp.lower(): self._generate_examples(datadir) for cp in _COMPONENT
-				'train': self._generate_examples(datadir/'data'),
+			# cp.lower(): self._generate_examples(datadir) for cp in _COMPONENT
+			'train': self._generate_examples(datadir/'data'),
 		}
 
 	def _generate_examples(self, path):
 		for fp in path.iterdir():
 			# print(fp)
-			dv = pd.read_csv(fp/'vb.csv', header=None, sep=' ', index_col=0).astype(np.float64)
-			da = pd.read_csv(fp/'ae.csv', header=None, sep=' ', index_col=0).astype(np.float64)
-			dw = pd.read_csv(fp/'w.csv', header=None, sep=' ', index_col=0)
+			dv = pd.read_csv(fp/'vb.csv', header=None, sep=' ', index_col=0, parse_dates=True).astype(np.float64)
+			da = pd.read_csv(fp/'ae.csv', header=None, sep=' ', index_col=0, parse_dates=True).astype(np.float64)
+			dw = pd.read_csv(fp/'w.csv', header=None, sep=' ', index_col=0, parse_dates=True).astype(np.int32)
 
 			# dv.index = pd.DatetimeIndex(dv.index)
 			# dv = dv.resample('1s').mean()
@@ -153,21 +182,49 @@ class Fraunhofer205(tfds.core.GeneratorBasedBuilder):
 
 			for rpm in _SPEED:
 				t0,t1 = dw.index[dw[1]==rpm]  # time range of the constant RPM
-				xvb = dv.loc[t0:t1]
-				xae = da.loc[t0:t1]
+				xvb = dv.loc[t0:t1].values
+				xae = da.loc[t0:t1].values
 
 				metadata = _METAINFO.loc[fp.name].to_dict()
+				metadata['TrunkIndex'] = str(t0)
 				metadata['RotatingSpeed'] = rpm
 				metadata['FileName'] = fp.name
-
-				yield hash(frozenset(metadata.items())), {
-					'signal': {
-						'Vibration': dv.loc[t0:t1].values.astype(_DTYPE.as_numpy_dtype),
-						'AcousticEmission': da.loc[t0:t1].values.astype(_DTYPE.as_numpy_dtype),
-					},
-					'label': metadata['FaultComponent'],
-					'metadata': metadata
+				sampling_rate = {
+							'Vibration': 8192,
+							'AcousticEmission': 390625,
 				}
+				# vibration signal
+				for x in xvb:
+					yield hash(frozenset(metadata.items())), {
+						'signal': {
+							'Vibration': x.astype(_DTYPE.as_numpy_dtype),
+							'AcousticEmission': np.array([], dtype=_DTYPE.as_numpy_dtype) ,
+						},
+						'sampling_rate': sampling_rate,
+						'label': metadata['FaultComponent'],
+						'metadata': metadata
+					}
+				# acoustic signal
+				for x in xae:
+					yield hash(frozenset(metadata.items())), {
+						'signal': {
+							'Vibration': np.array([], dtype=_DTYPE.as_numpy_dtype),
+							'AcousticEmission': x.astype(_DTYPE.as_numpy_dtype),
+						},
+						'sampling_rate': sampling_rate,
+						'label': metadata['FaultComponent'],
+						'metadata': metadata
+					}
+				# yield hash(frozenset(metadata.items())), {
+				# 	'signal': {
+				# 		'Vibration': dv.loc[t0:t1].values.astype(_DTYPE.as_numpy_dtype),
+				# 		'AcousticEmission': da.loc[t0:t1].values.astype(_DTYPE.as_numpy_dtype),
+				# 	},
+				# 	'sampling_rate': sampling_rate,
+				# 	'label': metadata['FaultComponent'],
+				# 	'metadata': metadata
+				# }
+
 
 	@staticmethod
 	def get_references():
@@ -176,48 +233,4 @@ class Fraunhofer205(tfds.core.GeneratorBasedBuilder):
 				return fp.read()
 		except:
 			pass
-
-
-class DatasetCompactor(AbstractDatasetCompactor):
-	_all_keys = ['FaultExtend']  # FaultComponent is redundant with the label
-	_all_channels = ['Vibration', 'AcousticEmission']
-
-	def compact(self, dataset):
-		@tf.function
-		def _compact(X):
-			d = [X['label']] + [X['metadata'][k] for k in self._keys]
-
-			return {
-				'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
-				'metadata': # X['metadata'],
-				{
-					'SamplingRate': X['metadata']['SamplingRate'],
-					'Fault': X['metadata']['LoadMass'],
-					'FileName': X['metadata']['FileName'],
-				},
-				'signal': [X['signal'][ch] for ch in self._channels],
-			}
-		return dataset.map(lambda X:_compact(X), num_parallel_calls=tf.data.AUTOTUNE)
-
-
-class FeatureTransformer(AbstractFeatureTransformer):
-	@classmethod
-	def get_output_signature(cls, tensor_shape:tuple=None):
-		return {
-			'label': tf.TensorSpec(shape=(), dtype=tf.string),
-			'metadata': {
-				'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
-				'LoadRadius': tf.TensorSpec(shape=(), dtype=tf.float32),
-				'LoadMass': tf.TensorSpec(shape=(), dtype=tf.float32),
-				'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
-			},
-			'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
-		}
-
-
-class Preprocessor(AbstractPreprocessor):
-	pass
-
-
-__all__ = ['DatasetCompactor', 'FeatureTransformer', 'Preprocessor']
 

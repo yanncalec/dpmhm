@@ -52,6 +52,27 @@ def extract_by_category(ds, labels:list):
   return dp
 
 
+def split_signal_generator(ds, key:str, n_trunk:int):
+	"""Generator function for splitting a signal into trunks.
+
+	Args
+	----
+	ds:
+		input dataset with dictionary structure.
+	key: str
+		ds[key] is the signal to be divided.
+	"""
+	def _get_generator():
+		for X in ds:
+			truncs = np.array_split(X[key], n_trunk, axis=-1)
+			# truncs = tf.split(X[key], num_or_size_splits=n_trunk, axis=-1)
+			Y = X.copy()
+			for x in truncs:
+				Y[key] = x
+				yield Y
+	return _get_generator
+
+
 def random_split_dataset(ds, splits:dict, *, shuffle_size:int=None, **kwargs):
   """Randomly split a dataset according to the specified ratio.
 

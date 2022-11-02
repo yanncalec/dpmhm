@@ -50,11 +50,16 @@ except:
 
 # Encoding length for class label
 try:
-  _ENCLEN = tf.as_dtype(os.environ['DPMHM_ENCLEN'])
+  _ENCLEN = int(os.environ['DPMHM_ENCLEN'])
 except:
   _ENCLEN = 8
 
-
+try:
+  _ENCODING = os.environ['DPMHM_ENCODING']
+  assert _ENCODING in {'zlib', 'bytes', 'none'}
+except:
+  _ENCODING = 'none'
+  # _ENCODING = tfds.features.Encoding.NONE
 
 # from dataclasses import dataclass
 

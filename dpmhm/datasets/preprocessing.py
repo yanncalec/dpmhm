@@ -2,12 +2,11 @@
 """
 
 # from typing import List, Dict
-from abc import ABC, abstractmethod, abstractproperty, abstractclassmethod
-from importlib import import_module
-import os
-# from logging import warning
+# from abc import ABC, abstractmethod, abstractproperty, abstractclassmethod
+# from importlib import import_module
 # import tempfile
 
+import os
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 import tensorflow as tf
@@ -22,26 +21,6 @@ Logger = logging.getLogger('dpmhm')
 
 # from . import utils, _DTYPE
 from dpmhm.datasets import utils, _DTYPE, _ENCLEN
-
-def split_signal_generator(ds:Dataset, key:str, n_trunk:int):
-	"""Generator function for splitting a signal into trunks.
-
-	Args
-	----
-	ds:
-		input dataset with dictionary structure.
-	key: str
-		ds[key] is the signal to be divided.
-	"""
-	def _get_generator():
-		for X in ds:
-			truncs = np.array_split(X[key], n_trunk, axis=-1)
-			# truncs = tf.split(X[key], num_or_size_splits=n_trunk, axis=-1)
-			Y = X.copy()
-			for x in truncs:
-				Y[key] = x
-				yield Y
-	return _get_generator
 
 
 class DatasetCompactor:
@@ -122,13 +101,15 @@ class DatasetCompactor:
 		ds = self.compact(self.resample(self._dataset_origin, self._resampling_rate))
 		if self._n_trunk > 1:
 			ds = Dataset.from_generator(
-				split_signal_generator(ds, 'signal', self._n_trunk),
+				utils.split_signal_generator(ds, 'signal', self._n_trunk),
 				output_signature=ds.element_spec,
 			)
 		return ds
 
 	@property
 	def label_dict(self):
+		"""Dictionary of compacted labels.
+		"""
 		try:
 			self._label_dict_scanned
 		except:
@@ -164,7 +145,7 @@ class DatasetCompactor:
 		return lb
 
 	@classmethod
-	def resample(cls, ds, rsr:int):
+	def resample(cls, dataset, rsr:int):
 		"""Resample the dataset to a common target rate.
 		"""
 		@tf.function
@@ -172,16 +153,27 @@ class DatasetCompactor:
 			Y = X.copy()
 			if rsr is None:
 				vsr = tf.stack(list(X['sampling_rate'].values()))
-				tf.reduce_all(tf.equal(vsr[0], vsr))
+				tf.Assert(
+					tf.reduce_all(tf.equal(vsr[0], vsr)),  #
+					['All channels must have the sampling rate:', vsr]
+				)
 				Y['sampling_rate'] = vsr[0]
 			else:
 				xs = {}
 				for k in X['signal'].keys():
 					if tf.size(X['signal'][k]) > 0:
 						try:
+							# X['sampling_rate'] has nested structure
 							xs[k] = tf.py_function(
 								func=lambda x, sr:librosa.resample(x.numpy(), orig_sr=float(sr), target_sr=float(rsr)),
 								inp=[X['signal'][k], X['sampling_rate'][k]],
+								Tout=_DTYPE
+							)
+						except KeyError:
+							# X['sampling_rate'] is a number
+							xs[k] = tf.py_function(
+								func=lambda x, sr:librosa.resample(x.numpy(), orig_sr=float(sr), target_sr=float(rsr)),
+								inp=[X['signal'][k], X['sampling_rate']],
 								Tout=_DTYPE
 							)
 						except Exception as msg:
@@ -193,7 +185,7 @@ class DatasetCompactor:
 				Y['sampling_rate'] = rsr
 			return Y
 
-		return ds.map(_resample, num_parallel_calls=tf.data.AUTOTUNE)
+		return dataset.map(_resample, num_parallel_calls=tf.data.AUTOTUNE)
 
 	def compact(self, dataset):
 		"""Transform a dataset into a compact form.
@@ -271,7 +263,7 @@ class FeatureTransformer:
 			return self._dataset_feature
 		except:
 			ds = self.to_feature(self._dataset_origin)
-			ds.__dpmhm_class__ = self.__class__
+			# ds.__dpmhm_class__ = self.__class__
 			return ds
 
 	@dataset_feature.setter
@@ -406,6 +398,8 @@ class FeatureTransformer:
 
 	@property
 	def feature_dim(self):
+		"""Dimension of the feature.
+		"""
 		try:
 			self._feature_dim
 		except:
@@ -414,6 +408,8 @@ class FeatureTransformer:
 
 	@property
 	def window_dim(self):
+		"""Dimension of the windowed feature.
+		"""
 		try:
 			self._window_dim
 		except:
@@ -421,7 +417,9 @@ class FeatureTransformer:
 		return self._window_dim
 
 
-class Preprocessor(ABC):
+class Preprocessor:
+	"""Preprocessor class.
+	"""
 	def __init__(self, dataset, extractor:callable, *, dc_kwargs:dict, ft_kwargs:dict, outdir:str=None):
 		# module = import_module(self.__module__)
 		# self._compactor = module.DatasetCompactor(dataset, **dc_kwargs)
@@ -588,44 +586,3 @@ def get_keras_preprocessing_model(ds, labels:list=None, normalize:bool=False):
 	# }
 
 	return keras.Model(inputs, outputs)
-
-
-# Obsolete functions
-def _wav2feature_pipeline_obslt(ds, module_name, extractor:callable, *,
-dc_kwargs:dict, ft_kwargs:dict,
-splits:dict=None, sp_mode:str='uniform', sp_kwargs:dict={}):
-	"""Transform a dataset of waveform to feature.
-	"""
-	# module = import_module('..'+module_name, __name__)
-	module = import_module('dpmhm.datasets.'+module_name)
-	early_mode = 'early' in sp_mode.split('+')
-	uniform_mode = 'uniform' in sp_mode.split('+')
-
-	compactor = module.DatasetCompactor(ds, **dc_kwargs)
-
-	transformer = module.FeatureTransformer(compactor.dataset, extractor, **ft_kwargs)
-	# df_split[k] = transformer.dataset_feature
-	dw = transformer.dataset_windows
-
-	if splits is None:
-		return dw
-	else:
-		if early_mode:
-			ds_split = utils.split_dataset(compactor.dataset, splits,
-			labels=None if uniform_mode else compactor.label_dict.keys(),
-			**sp_kwargs
-			)
-			# df_split = {}
-			dw_split = {}
-			for k, ds in ds_split.items():
-					transformer = module.FeatureTransformer(ds, extractor, **ft_kwargs)
-					# df_split[k] = transformer.dataset_feature
-					dw_split[k] = transformer.dataset_windows
-		else:
-			dw_split = utils.split_dataset(dw, splits,
-			labels=None if uniform_mode else compactor.label_dict.keys(),
-			**sp_kwargs
-			)
-
-		return dw_split
-

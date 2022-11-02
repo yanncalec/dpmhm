@@ -14,7 +14,7 @@ import pandas as pd
 # from scipy.io import loadmat
 from datetime import datetime
 
-from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
+# from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
 from dpmhm.datasets import _DTYPE
 
 
@@ -86,6 +86,13 @@ Features
 'signal': {
 	'vibration',
 	'temperature'
+},
+
+'label': 'Unknown',
+
+'sampling_rate': {
+	'vibration': 25600,
+	'temperature': 10
 },
 
 'metadata': {
@@ -177,40 +184,45 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
 
 	def _info(self) -> tfds.core.DatasetInfo:
 		return tfds.core.DatasetInfo(
-				builder=self,
-				description=_DESCRIPTION,
-				features=tfds.features.FeaturesDict({
-					# Number of channels is named or not fixed
-					'signal': {
-						'vibration': tfds.features.Tensor(shape=(2, None), dtype=_DTYPE),
-						'temperature': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
-					},
+			builder=self,
+			description=_DESCRIPTION,
+			features=tfds.features.FeaturesDict({
+				# Number of channels is named or not fixed
+				'signal': {
+					'vibration': tfds.features.Tensor(shape=(2, None), dtype=_DTYPE),
+					'temperature': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
+				},
 
-					# Timestamp not included
-					# 'timestamp': {
-					# 	'vibration': tfds.features.Tensor(shape=(None), dtype=tf.float64),
-					# 	'temperature': tfds.features.Tensor(shape=(None,), dtype=tf.float64),
-					# },
+				# Timestamp not included
+				# 'timestamp': {
+				# 	'vibration': tfds.features.Tensor(shape=(None), dtype=tf.float64),
+				# 	'temperature': tfds.features.Tensor(shape=(None,), dtype=tf.float64),
+				# },
 
-					# 'label': tfds.features.ClassLabel(names=['Healthy', 'Faulty', 'Unknown']),
+				'label': tfds.features.ClassLabel(names=['Healthy', 'Faulty', 'Unknown']),
 
-					'metadata': {
-						'SamplingRate': tf.uint32,
-						'ID': tf.string,  # ID of the bearing, also its operating conditions
-						'RotatingSpeed': tf.uint32,
-						'LoadForce': tf.uint32,
-						# 'RemainingUsefulLife': tf.float32,  # Time of the run-to-failure experiment
-						'OriginalSplit': tf.string,  # Original split
-						'FileName': tf.string,  # Original filename with path
-					}
-				}),
-				# If there's a common (input, target) tuple from the
-				# features, specify them here. They'll be used if
-				# `as_supervised=True` in `builder.as_dataset`.
-				# supervised_keys=('signal', 'label'),  # Set to `None` to disable
-				supervised_keys=None,
-				homepage='',
-				citation=_CITATION,
+				'sampling_rate':{
+					'vibration': tf.uint32,
+					'temperature': tf.uint32,
+				},
+
+				'metadata': {
+					# 'SamplingRate': tf.uint32,
+					'ID': tf.string,  # ID of the bearing, also its operating conditions
+					'RotatingSpeed': tf.uint32,
+					'LoadForce': tf.uint32,
+					# 'RemainingUsefulLife': tf.float32,  # Time of the run-to-failure experiment
+					'OriginalSplit': tf.string,  # Original split
+					'FileName': tf.string,  # Original filename with path
+				}
+			}),
+			# If there's a common (input, target) tuple from the
+			# features, specify them here. They'll be used if
+			# `as_supervised=True` in `builder.as_dataset`.
+			# supervised_keys=('signal', 'label'),  # Set to `None` to disable
+			supervised_keys=None,
+			homepage='',
+			citation=_CITATION,
 		)
 
 	def _split_generators(self, dl_manager: tfds.download.DownloadManager):
@@ -221,7 +233,7 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
 		else:  # automatically download data
 			# _resource = tfds.download.Resource(url=_DATA_URLS, extract_method=tfds.download.ExtractMethod.ZIP)  # in case that the extraction method cannot be deduced automatically from files
 			# datadir = dl_manager.download_and_extract(_resource)
-			raise NotImplemented()
+			raise NotImplementedError()
 
 		return {
 			'train': self._generate_examples(datadir, 'Learning_set'),
@@ -269,7 +281,7 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
 			# assert isinstance(rul, float), f"{rul}, {fp}"
 
 			metadata = {
-				'SamplingRate': _sr,
+				# 'SamplingRate': _sr,
 				'ID': bid,
 				'RotatingSpeed': _RPM[gid],
 				'LoadForce': _LOAD[gid],
@@ -280,6 +292,11 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
 
 			yield hash(frozenset(metadata.items())), {
 				'signal': _signal,
+				'sampling_rate': {
+					'vibration': 25600,
+					'temperature': 10
+				},
+				'label': 'Unknown',
 				'metadata': metadata
 			}
 
@@ -292,66 +309,66 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
 			pass
 
 
-class DatasetCompactor(AbstractDatasetCompactor):
-	_all_keys = ['ID']  # the fields 'RotatingSpeed' and 'LoadForce' are redundant.
-	_all_channels = ['vibration', 'temperature']  # cannot be extracted at the same time
+# class DatasetCompactor(AbstractDatasetCompactor):
+# 	_all_keys = ['ID']  # the fields 'RotatingSpeed' and 'LoadForce' are redundant.
+# 	_all_channels = ['vibration', 'temperature']  # cannot be extracted at the same time
 
-	@classmethod
-	def get_label_dict(cls, dataset, keys:list):
-		compactor = cls(dataset, keys=keys, channels=['vibration'])
-		return compactor.label_dict
+# 	@classmethod
+# 	def get_label_dict(cls, dataset, keys:list):
+# 		compactor = cls(dataset, keys=keys, channels=['vibration'])
+# 		return compactor.label_dict
 
-	def compact(self, dataset):
-		@tf.function  # necessary for infering the size of tensor
-		def _has_channels(X):
-			"""Test if channels are present in data."""
-			flag = True
-			for ch in self._channels:
-				if tf.size(X['signal'][ch]) == 0:
-					flag = False
-					# break or return False are not supported by tensorflow
-			return flag
+# 	def compact(self, dataset):
+# 		@tf.function  # necessary for infering the size of tensor
+# 		def _has_channels(X):
+# 			"""Test if channels are present in data."""
+# 			flag = True
+# 			for ch in self._channels:
+# 				if tf.size(X['signal'][ch]) == 0:
+# 					flag = False
+# 					# break or return False are not supported by tensorflow
+# 			return flag
 
-		@tf.function
-		def _compact(X):
-			d = [X['metadata'][k] for k in self._keys]
+# 		@tf.function
+# 		def _compact(X):
+# 			d = [X['metadata'][k] for k in self._keys]
 
-			return {
-				'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
-				'metadata': {
-					'RPM_Nominal': X['metadata']['RotatingSpeed'],
-					'LoadForce': X['metadata']['LoadForce'],
-					'SamplingRate': X['metadata']['SamplingRate'],
-					'FileName': X['metadata']['FileName'],
-				},
-				'signal': [X['signal'][ch] for ch in self._channels],
-			}
-		# return dataset.filter(_has_channels)
-		ds = dataset.filter(lambda X:_has_channels(X))
-		return ds.map(lambda X:_compact(X), num_parallel_calls=tf.data.AUTOTUNE)
-
-
-class FeatureTransformer(AbstractFeatureTransformer):
-	"""Feature transform for CWRU dataset.
-	"""
-	@classmethod
-	def get_output_signature(cls, tensor_shape:tuple=None):
-		return {
-			'label': tf.TensorSpec(shape=(), dtype=tf.string),
-			'metadata': {
-				'RPM_Nominal': tf.TensorSpec(shape=(), dtype=tf.uint32),  # real rpm
-				'LoadForce': tf.TensorSpec(shape=(), dtype=tf.uint32),
-				'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
-				'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
-			},
-			# 'feature': tf.TensorSpec(shape=(None, None, None), dtype=tf.float64, name='feature'),
-			'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
-		}
+# 			return {
+# 				'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
+# 				'metadata': {
+# 					'RPM_Nominal': X['metadata']['RotatingSpeed'],
+# 					'LoadForce': X['metadata']['LoadForce'],
+# 					'SamplingRate': X['metadata']['SamplingRate'],
+# 					'FileName': X['metadata']['FileName'],
+# 				},
+# 				'signal': [X['signal'][ch] for ch in self._channels],
+# 			}
+# 		# return dataset.filter(_has_channels)
+# 		ds = dataset.filter(lambda X:_has_channels(X))
+# 		return ds.map(lambda X:_compact(X), num_parallel_calls=tf.data.AUTOTUNE)
 
 
-class Preprocessor(AbstractPreprocessor):
-	pass
+# class FeatureTransformer(AbstractFeatureTransformer):
+# 	"""Feature transform for CWRU dataset.
+# 	"""
+# 	@classmethod
+# 	def get_output_signature(cls, tensor_shape:tuple=None):
+# 		return {
+# 			'label': tf.TensorSpec(shape=(), dtype=tf.string),
+# 			'metadata': {
+# 				'RPM_Nominal': tf.TensorSpec(shape=(), dtype=tf.uint32),  # real rpm
+# 				'LoadForce': tf.TensorSpec(shape=(), dtype=tf.uint32),
+# 				'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
+# 				'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
+# 			},
+# 			# 'feature': tf.TensorSpec(shape=(None, None, None), dtype=tf.float64, name='feature'),
+# 			'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
+# 		}
 
 
-__all__ = ['DatasetCompactor', 'FeatureTransformer', 'Preprocessor']
+# class Preprocessor(AbstractPreprocessor):
+# 	pass
+
+
+# __all__ = ['DatasetCompactor', 'FeatureTransformer', 'Preprocessor']
 

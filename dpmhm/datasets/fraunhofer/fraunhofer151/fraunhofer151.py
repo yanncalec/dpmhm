@@ -1,17 +1,20 @@
-"""Fraunhofer_151 dataset."""
+"""Fraunhofer_151 dataset.
 
-import os
+Type of experiments: labelled data.
+"""
+
+# import os
 from pathlib import Path
 # import itertools
 # import json
-import numpy as np
+# import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import pandas as pd
 # from scipy.io import loadmat
 
-from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
-from dpmhm.datasets import _DTYPE
+# from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
+from dpmhm.datasets import _DTYPE, _ENCODING
 
 
 _DESCRIPTION = """
@@ -29,11 +32,11 @@ Overview of the dataset components:
 
 |   ID	 |	Radius [mm]  | Mass [g] |
 |--------|---------------|----------|
-| 0D/ 0E | -		         | -        |
-| 1D/ 1E | 14		         | 3.281    |
+| 0D/ 0E | -		     | -        |
+| 1D/ 1E | 14		     | 3.281    |
 | 2D/ 2E | 18.5	         | 3.281    |
-| 3D/ 3E | 23		         | 3.281    |
-| 4D/ 4E | 23		         | 6.614    |
+| 3D/ 3E | 23		     | 3.281    |
+| 4D/ 4E | 23		     | 6.614    |
 
 Homepage
 --------
@@ -62,16 +65,19 @@ Split: ['train', 'test'].
 
 Features
 --------
-'signal': {'V_in', 'Measured_RPM', 'Vibration_1', 'Vibration_2', 'Vibration_3'}
+'signal': {'V_in', 'Measured_RPM', 'Vibration_1', 'Vibration_2', 'Vibration_3'},
+'sampling_rate: 4096,
 'label': ['Normal', 'Unbalanced']
 'metadata': {
-	'SamplingRate': 4096 Hz,
+	'LoadRadius': radius of the load,
+	'LoadMass': mass of the load,
+	'TrunkIndex': time index of the signal in the original file.
 	'FileName': original file name,
 }
 
 Notes
 =====
-The original record consists of two periods where the rotation speed increases linearly. Their durations are almost the same but depend on the split set. In the processed data these two periods are separated. Moreover, we truncate the few seconds (~10s) near the beginning and the end of each period which seem to correspond to initialization.
+The original record consists of two periods where the rotation speed increases linearly. Their durations are almost the same but depend on the split set. In the processed data these two periods are separated. Moreover, we truncate the few seconds (~10s) near the beginning and the end of each period which seem to correspond to initialization. The field `TrunkIndex` was added in `metadata` for record.
 """
 
 _CITATION = """
@@ -102,43 +108,45 @@ class Fraunhofer151(tfds.core.GeneratorBasedBuilder):
 
 	VERSION = tfds.core.Version('1.0.0')
 	RELEASE_NOTES = {
-			'1.0.0': 'Initial release.',
+		'1.0.0': 'Initial release.',
 	}
 
 	def _info(self) -> tfds.core.DatasetInfo:
 		return tfds.core.DatasetInfo(
-				builder=self,
-				description=_DESCRIPTION,
-				features=tfds.features.FeaturesDict({
-					# 'signal': tfds.features.Tensor(shape=(5, None), dtype=_DTYPE),
+			builder=self,
+			description=_DESCRIPTION,
+			features=tfds.features.FeaturesDict({
+				# 'signal': tfds.features.Tensor(shape=(5, None), dtype=_DTYPE),
 
-					'signal': {
-						'V_in': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
-						'Measured_RPM': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
-						'Vibration_1': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
-						'Vibration_2': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
-						'Vibration_3': tfds.features.Tensor(shape=(None,), dtype=_DTYPE),
-					},
+				'signal': {
+					'V_in': tfds.features.Tensor(shape=(None,), dtype=_DTYPE, encoding=_ENCODING),
+					'Measured_RPM': tfds.features.Tensor(shape=(None,), dtype=_DTYPE, encoding=_ENCODING),
+					# 'Vibration_1': tfds.features.Tensor(shape=(None,), dtype=_DTYPE, encoding=_ENCODING),
+					# 'Vibration_2': tfds.features.Tensor(shape=(None,), dtype=_DTYPE, encoding=_ENCODING),
+					# 'Vibration_3': tfds.features.Tensor(shape=(None,), dtype=_DTYPE, encoding=_ENCODING),
+					'Vibration': tfds.features.Tensor(shape=(3, None), dtype=_DTYPE, encoding=_ENCODING),
+				},
 
-					# 	# 'Vibration': tfds.features.Tensor(shape=(3, None), dtype=_DTYPE),
 
-					'label': tfds.features.ClassLabel(names=['Normal', 'Unbalanced']),
+				'label': tfds.features.ClassLabel(names=['Normal', 'Unbalanced']),
 
-					'metadata': {
-						'SamplingRate': tf.uint32,
-						'LoadRadius': tf.float32,
-						'LoadMass': tf.float32,
-						'TrunkIndex': tf.uint32,
-						'FileName': tf.string,  # Original filename with path in the dataset
-					},
-				}),
-				# If there's a common (input, target) tuple from the
-				# features, specify them here. They'll be used if
-				# `as_supervised=True` in `builder.as_dataset`.
-				# supervised_keys=('signal', 'label'),  # Set to `None` to disable
-				supervised_keys=None,
-				homepage='https://fordatis.fraunhofer.de/handle/fordatis/151',
-				citation=_CITATION,
+				'sampling_rate': tf.uint32,
+
+				'metadata': {
+					# 'SamplingRate': tf.uint32,
+					'LoadRadius': tf.float32,
+					'LoadMass': tf.float32,
+					'TrunkIndex': tf.uint32,
+					'FileName': tf.string,  # Original filename with path in the dataset
+				},
+			}),
+			# If there's a common (input, target) tuple from the
+			# features, specify them here. They'll be used if
+			# `as_supervised=True` in `builder.as_dataset`.
+			# supervised_keys=('signal', 'label'),  # Set to `None` to disable
+			supervised_keys=None,
+			homepage='https://fordatis.fraunhofer.de/handle/fordatis/151',
+			citation=_CITATION,
 		)
 
 	def _split_generators(self, dl_manager: tfds.download.DownloadManager):
@@ -150,8 +158,8 @@ class Fraunhofer151(tfds.core.GeneratorBasedBuilder):
 			raise NotImplementedError()
 
 		return {
-				'train': self._generate_examples(datadir, 'train'),
-				'test': self._generate_examples(datadir, 'test'),
+			'train': self._generate_examples(datadir, 'train'),
+			'test': self._generate_examples(datadir, 'test'),
 		}
 
 	def _generate_examples(self, path, split):
@@ -161,7 +169,7 @@ class Fraunhofer151(tfds.core.GeneratorBasedBuilder):
 
 		for fp in fpaths:
 			metadata = {
-				'SamplingRate': 4096,
+				# 'SamplingRate': 4096,
 				'LoadRadius': _RADIUS[fp.name[0]],
 				'LoadMass': _MASS[fp.name[0]],
 				'FileName': fp.name
@@ -183,12 +191,12 @@ class Fraunhofer151(tfds.core.GeneratorBasedBuilder):
 					'signal': {
 						'V_in': df['V_in'].values.astype(_DTYPE.as_numpy_dtype),
 						'Measured_RPM': df['Measured_RPM'].values.astype(_DTYPE.as_numpy_dtype),
-						'Vibration_1': df['Vibration_1'].values.astype(_DTYPE.as_numpy_dtype),
-						'Vibration_2': df['Vibration_2'].values.astype(_DTYPE.as_numpy_dtype),
-						'Vibration_3': df['Vibration_3'].values.astype(_DTYPE.as_numpy_dtype),
-						# 'Vibration': df[['Vibration_1', 'Vibration_2', 'Vibration_3']].values.astype(_DTYPE.as_numpy_dtype),
+						# 'Vibration_1': df['Vibration_1'].values.astype(_DTYPE.as_numpy_dtype),
+						# 'Vibration_2': df['Vibration_2'].values.astype(_DTYPE.as_numpy_dtype),
+						# 'Vibration_3': df['Vibration_3'].values.astype(_DTYPE.as_numpy_dtype),
+						'Vibration': df[['Vibration_1', 'Vibration_2', 'Vibration_3']].values.T.astype(_DTYPE.as_numpy_dtype),
 					},
-
+					'sampling_rate': 4096,
 					'label': label,
 					'metadata': metadata
 				}
@@ -202,47 +210,47 @@ class Fraunhofer151(tfds.core.GeneratorBasedBuilder):
 			pass
 
 
-class DatasetCompactor(AbstractDatasetCompactor):
-	_all_keys = []
-	_all_channels = ['V_in', 'Measured_RPM', 'Vibration_1', 'Vibration_2', 'Vibration_3']
+# class DatasetCompactor(AbstractDatasetCompactor):
+# 	_all_keys = []
+# 	_all_channels = ['V_in', 'Measured_RPM', 'Vibration_1', 'Vibration_2', 'Vibration_3']
 
-	def compact(self, dataset):
-		@tf.function
-		def _compact(X):
-			d = [X['label']] + [X['metadata'][k] for k in self._keys]
+# 	def compact(self, dataset):
+# 		@tf.function
+# 		def _compact(X):
+# 			d = [X['label']] + [X['metadata'][k] for k in self._keys]
 
-			return {
-				'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
-				'metadata': # X['metadata'],
-				{
-					'SamplingRate': X['metadata']['SamplingRate'],
-					'LoadRadius': X['metadata']['LoadRadius'],
-					'LoadMass': X['metadata']['LoadMass'],
-					'FileName': X['metadata']['FileName'],
-				},
-				'signal': [X['signal'][ch] for ch in self._channels],
-			}
-		return dataset.map(lambda X:_compact(X), num_parallel_calls=tf.data.AUTOTUNE)
-
-
-class FeatureTransformer(AbstractFeatureTransformer):
-	@classmethod
-	def get_output_signature(cls, tensor_shape:tuple=None):
-		return {
-			'label': tf.TensorSpec(shape=(), dtype=tf.string),
-			'metadata': {
-				'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
-				'LoadRadius': tf.TensorSpec(shape=(), dtype=tf.float32),
-				'LoadMass': tf.TensorSpec(shape=(), dtype=tf.float32),
-				'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
-			},
-			'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
-		}
+# 			return {
+# 				'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
+# 				'metadata': # X['metadata'],
+# 				{
+# 					'SamplingRate': X['metadata']['SamplingRate'],
+# 					'LoadRadius': X['metadata']['LoadRadius'],
+# 					'LoadMass': X['metadata']['LoadMass'],
+# 					'FileName': X['metadata']['FileName'],
+# 				},
+# 				'signal': [X['signal'][ch] for ch in self._channels],
+# 			}
+# 		return dataset.map(lambda X:_compact(X), num_parallel_calls=tf.data.AUTOTUNE)
 
 
-class Preprocessor(AbstractPreprocessor):
-	pass
+# class FeatureTransformer(AbstractFeatureTransformer):
+# 	@classmethod
+# 	def get_output_signature(cls, tensor_shape:tuple=None):
+# 		return {
+# 			'label': tf.TensorSpec(shape=(), dtype=tf.string),
+# 			'metadata': {
+# 				'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
+# 				'LoadRadius': tf.TensorSpec(shape=(), dtype=tf.float32),
+# 				'LoadMass': tf.TensorSpec(shape=(), dtype=tf.float32),
+# 				'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
+# 			},
+# 			'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
+# 		}
 
 
-__all__ = ['DatasetCompactor', 'FeatureTransformer', 'Preprocessor']
+# class Preprocessor(AbstractPreprocessor):
+# 	pass
+
+
+# __all__ = ['DatasetCompactor', 'FeatureTransformer', 'Preprocessor']
 

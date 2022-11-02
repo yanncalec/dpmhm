@@ -9,7 +9,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from pathlib import Path
 
-from dpmhm.datasets import _DTYPE
+# from dpmhm.datasets import _DTYPE
 
 
 _DESCRIPTION = """
@@ -39,14 +39,18 @@ Split: ['train', 'test', 'query']
 
 Features
 --------
-'signal': audio,
+'signal': {'1': audio},
+'sampling_rate': {'1': 16000},
 'label': ['normal', 'anomaly', 'unknown'],
 'metadata': {
-	'SamplingRate': 16000,
 	'Machine': type of machine,
 	'ID': machine ID,
 	'FileName': original file name,
 }
+
+Notes
+=====
+The training data contains only normal samples while the test data contains both normal and anomal samples.
 """
 
 _CITATION = """
@@ -72,34 +76,32 @@ class DCASE2020(tfds.core.GeneratorBasedBuilder):
 
 	def _info(self) -> tfds.core.DatasetInfo:
 		return tfds.core.DatasetInfo(
-				builder=self,
-				description=_DESCRIPTION,
-				features=tfds.features.FeaturesDict({
-						'signal': {
-							'1': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.BYTES)
-						},
+			builder=self,
+			description=_DESCRIPTION,
+			features=tfds.features.FeaturesDict({
+				'signal': {
+					'1': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.BYTES)
+				},
 
-						# 'signal': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.BYTES),  # shape=(1, None) doesn't work
+				# 'signal': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.BYTES),  # shape=(1, None) doesn't work
 
-						# 'signal': tfds.features.Tensor(shape=(1,None), dtype=tf.float64),  # much slower on wav files
+				# 'signal': tfds.features.Tensor(shape=(1,None), dtype=tf.float64),  # much slower on wav files
 
-						'sampling_rate': {
-							'1': tf.uint32,
-						},
+				'sampling_rate': tf.uint32,
 
-						'label': tfds.features.ClassLabel(names=['normal', 'anomaly', 'unknown']),
+				'label': tfds.features.ClassLabel(names=['normal', 'anomaly', 'unknown']),
 
-						'metadata': {
-							'Machine': tf.string,
-							'ID': tf.string,
-							'FileName': tf.string,
-						},
-				}),
+				'metadata': {
+					'Machine': tf.string,
+					'ID': tf.string,
+					'FileName': tf.string,
+				},
+			}),
 
-				# supervised_keys=('signal', 'label'),  # Set to `None` to disable
-				supervised_keys=None,
-				homepage='https://dcase.community/challenge2020/task-unsupervised-detection-of-anomalous-sounds',
-				citation=_CITATION,
+			# supervised_keys=('signal', 'label'),  # Set to `None` to disable
+			supervised_keys=None,
+			homepage='https://dcase.community/challenge2020/task-unsupervised-detection-of-anomalous-sounds',
+			citation=_CITATION,
 		)
 
 	def _split_generators(self, dl_manager: tfds.download.DownloadManager):
@@ -118,9 +120,9 @@ class DCASE2020(tfds.core.GeneratorBasedBuilder):
 		# print(len(train_list), len(test_list), len(query_list))
 
 		return {
-				'train': self._generate_examples(train_list),
-				'test': self._generate_examples(test_list),
-				'query': self._generate_examples(query_list),
+			'train': self._generate_examples(train_list),
+			'test': self._generate_examples(test_list),
+			'query': self._generate_examples(query_list),
 		}
 
 	@classmethod
@@ -167,47 +169,8 @@ class DCASE2020(tfds.core.GeneratorBasedBuilder):
 				# 'signal': fp,
 				# 'signal': x.reshape((1,-1)),
 				'signal': {'1': fp},
-				'sampling_rate': {'1': 16000},
+				'sampling_rate': 16000,
 				'label': _label,
 				'metadata': metadata
 			}
-
-
-# class DatasetCompactor(AbstractDatasetCompactor):
-# 	_all_keys = ['Machine', 'ID']
-# 	_all_channels = [1]
-
-# 	def compact(self, dataset):
-# 		@tf.function
-# 		def _compact(X):
-# 			d = [X['label']] + [X['metadata'][k] for k in self._keys]
-
-# 			return {
-# 				'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
-# 				'metadata': X['metadata'],
-# 				'signal': [X['signal'][ch] for ch in self._channels],
-# 			}
-# 		return dataset.map(lambda X:_compact(X), num_parallel_calls=tf.data.AUTOTUNE)
-
-
-# class FeatureTransformer(AbstractFeatureTransformer):
-# 	@classmethod
-# 	def get_output_signature(cls, tensor_shape:tuple=None):
-# 		return {
-# 			'label': tf.TensorSpec(shape=(), dtype=tf.string),
-# 			'metadata': {
-# 				'SamplingRate': tf.TensorSpec(shape=(), dtype=tf.uint32),
-# 				'Machine': tf.TensorSpec(shape=(), dtype=tf.string),  # machine type
-# 				'ID': tf.TensorSpec(shape=(), dtype=tf.string),  # machine id
-# 				'FileName': tf.TensorSpec(shape=(), dtype=tf.string),  # filename
-# 			},
-# 			'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
-# 		}
-
-
-# class Preprocessor(AbstractPreprocessor):
-# 	pass
-
-
-# __all__ = ['DatasetCompactor', 'FeatureTransformer', 'Preprocessor']
 

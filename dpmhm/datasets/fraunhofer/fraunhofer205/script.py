@@ -1,4 +1,4 @@
-# Run this script to generate `metainfor.csv`
+# Run this script to generate `metainfo.csv`
 
 import pandas as pd
 
