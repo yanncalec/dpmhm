@@ -23,7 +23,7 @@ class TDense(layers.Layer):
 
 
 class TConv1D(layers.Layer):
-    """Not tested.
+    """Transposed 1D convolution layer.
     """
     def __init__(self, fwd, **kwargs):
         super(TConv1D, self).__init__(**kwargs)
@@ -58,7 +58,7 @@ class TConv1D(layers.Layer):
 
 
 class TConv2D(layers.Layer):
-    """Not tested.
+    """Transposed 2D convolution layer.
     """
     def __init__(self, fwd, **kwargs):
         super(TConv2D, self).__init__(**kwargs)

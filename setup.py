@@ -11,7 +11,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = ['Click>=7.0',
-'tensorflow', 'tensorflow-datasets', 'pandas', 'scipy', 'numpy', 'pydub', 'librosa', 'patool']
+'tensorflow', 'tensorflow-datasets', 'pandas', 'scipy', 'numpy', 'pydub', 'librosa', 'patool', 'tensorflow_addons']
 
 test_requirements = [ ]
 

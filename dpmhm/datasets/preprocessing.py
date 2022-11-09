@@ -1,14 +1,21 @@
 """Class for dataset transformer.
+
+
+Convention
+----------
+We follow the convention of channel first: The original dataset as well as the transformed dataset has the channel as the first dimension and time as the last dimension.
 """
 
 # from typing import List, Dict
-# from abc import ABC, abstractmethod, abstractproperty, abstractclassmethod
+from abc import ABC, abstractmethod, abstractproperty, abstractclassmethod
 # from importlib import import_module
 # import tempfile
+import itertools
 
 import os
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
+import itertools
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.data import Dataset
@@ -17,13 +24,67 @@ import librosa
 # import scipy
 
 import logging
-Logger = logging.getLogger('dpmhm')
+Logger = logging.getLogger(__name__)
 
 # from . import utils, _DTYPE
 from dpmhm.datasets import utils, _DTYPE, _ENCLEN
 
+# _SIGNAL = 'signal'
+# _FEATURE = 'feature'
+# _SAMPLING_RATE = 'sampling_rate'
 
-class DatasetCompactor:
+
+class AbstractDatasetTransformer(ABC):
+	@abstractmethod
+	def build(self) -> Dataset:
+		"""Build the transformed dataset.
+		"""
+		pass
+
+	@property
+	def dataset(self):
+		"""Transformed dataset.
+		"""
+		try:
+			return self._dataset
+		except:
+			self._dataset = self.build()
+			return self._dataset
+
+	# @dataset.setter
+	# def dataset(self, df):
+	# 	self._dataset = df
+
+	def serialize(self, outdir:str, *, compression:str=None):
+		"""Serialize the dataset to disk.
+
+		Serialization consists of saving the dataset and reloading it from a file. This can boost the subsequent performance of a dataset at the cost of storage. Compression by 'GZIP' method can be used.
+		"""
+		Dataset.save(self.dataset, outdir, compression=compression)
+		self._dataset = Dataset.load(outdir, compression=compression)
+
+	# @property
+	# def data_dim(self):
+	# 	"""Dimension of the data vector.
+	# 	"""
+	# 	try:
+	# 		self._data_dim
+	# 	except:
+	# 		self._data_dim = tuple(list(self.dataset.take(1))[0][self.data_key].shape)
+	# 	return self._data_dim
+
+	# @abstractproperty
+	# def data_key(self) -> str:
+	# 	"""Key name of the data field.
+	# 	"""
+	# 	pass
+
+	# @abstractproperty
+	# def data_dim(self):
+	# 	pass
+
+
+class DatasetCompactor(AbstractDatasetTransformer):
 	"""Class for dataset compactor.
 
 	This class performs the following preprocessing steps on the raw signal:
@@ -36,7 +97,7 @@ class DatasetCompactor:
 
 	Convention
 	----------
-	We follow the convention of channel first: The data included in the field `signal` of the original dataset must be either 1D tensor or 2D tensor of shape `(channel, time)`.
+	The data included in the field `signal` of the original dataset must be either 1D tensor or 2D tensor of shape `(channel, time)`.
 	"""
 
 	def __init__(self, dataset, *, channels:list, keys:list=[], n_trunk:int=1, resampling_rate:int=None, filters:dict={}):
@@ -90,14 +151,7 @@ class DatasetCompactor:
 			ds = ds.filter(lambda X: _filter(X, k, v))
 		return ds
 
-	@property
-	def dataset(self):
-		"""Preprocessed (resampled and compacted) original dataset.
-		"""
-		# if self._resampling_rate == 0:
-		# 	ds = self.compact(self._dataset_filtered)
-		# else:
-		# 	ds = self.compact(self.resample(self._dataset_filtered))
+	def build(self):
 		ds = self.compact(self.resample(self._dataset_origin, self._resampling_rate))
 		if self._n_trunk > 1:
 			ds = Dataset.from_generator(
@@ -144,6 +198,24 @@ class DatasetCompactor:
 		self._label_dict[lb] = v
 		return lb
 
+	@property
+	def full_label_dict(self):
+		"""Full dictionary of compacted labels.
+		"""
+		try:
+			return self._full_label_dict
+		except:
+			channels = list(self._dataset_origin.element_spec['signal'].keys())
+
+			for ch in channels:
+				compactor = DatasetCompactor(self._dataset_origin, keys=self._keys, channels=[ch])
+				try:
+					ld.update(compactor.label_dict)
+				except:
+					ld = compactor.label_dict
+			self._full_label_dict = ld
+			return ld
+
 	@classmethod
 	def resample(cls, dataset, rsr:int):
 		"""Resample the dataset to a common target rate.
@@ -152,12 +224,17 @@ class DatasetCompactor:
 		def _resample(X):
 			Y = X.copy()
 			if rsr is None:
-				vsr = tf.stack(list(X['sampling_rate'].values()))
-				tf.Assert(
-					tf.reduce_all(tf.equal(vsr[0], vsr)),  #
-					['All channels must have the sampling rate:', vsr]
-				)
-				Y['sampling_rate'] = vsr[0]
+				try:
+					# if the original sampling rate is a dict
+					vsr = tf.stack(list(X['sampling_rate'].values()))
+					tf.Assert(
+						tf.reduce_all(tf.equal(vsr[0], vsr)),  #
+						['All channels must have the sampling rate:', vsr]
+					)  # must be all constant
+					Y['sampling_rate'] = vsr[0]
+				except:
+					# if the original sampling rate is a number
+					Y['sampling_rate'] = X['sampling_rate']
 			else:
 				xs = {}
 				for k in X['signal'].keys():
@@ -225,19 +302,14 @@ class DatasetCompactor:
 		return ds.map(lambda X:_compact(X), num_parallel_calls=tf.data.AUTOTUNE)
 
 
-class FeatureTransformer:
-	"""Abstract class for feature transformer.
+class FeatureExtractor(AbstractDatasetTransformer):
+	"""Class for feature extractor.
 
 	This class performs the following preprocessing steps:
 	- feature transform,
-	- sliding window view with downsampling.
-
-	Convention
-	----------
-	We follow the convention of channel first: The original dataset (before feature transform) as well as the transformed dataset has the shape `(channel, frequency, time)`.
 	"""
 
-	def __init__(self, dataset, extractor:callable, *, window_shape:tuple, downsample:tuple):
+	def __init__(self, dataset, extractor:callable):
 		"""
 		Args
 		----
@@ -245,49 +317,15 @@ class FeatureTransformer:
 			original dataset
 		extractor: callable
 			a callable taking arguments (signal, sampling_rate) and returning extracted features.
-		window_shape: tuple or int
-			either a tuple `(frequency, time)`, i.e. the size of the sliding window in frequency and time axes, or an int which is the size of the sliding window in time axis (the the whole frequency axis is used in this case). No windowed view is created if set to `None`.
-		downsample: tuple or int
-			downsampling rate in frequency and time axes, either tuple or int, corresponding to the given `frame_size`. No downsampling if set to `None`.
 		"""
 		self._dataset_origin = dataset
 		self._extractor = extractor
-		self._window_shape = window_shape
-		self._downsample = downsample
 
-	@property
-	def dataset_feature(self):
-		"""Feature-transformed dataset.
-		"""
-		try:
-			return self._dataset_feature
-		except:
-			ds = self.to_feature(self._dataset_origin)
-			# ds.__dpmhm_class__ = self.__class__
-			return ds
+	def build(self):
+		return self.to_feature(self._dataset_origin, self._extractor)
 
-	@dataset_feature.setter
-	def dataset_feature(self, df):
-		self._dataset_feature = df
-		# self._dataset_feature.__dpmhm_class__ = self.__class__
-
-	@property
-	def dataset_windows(self):
-		"""Windowed view of the feature dataset.
-		"""
-		try:
-			return self._dataset_windows
-		except:
-			ds = self.to_windows(self.dataset_feature, self._window_shape, self._downsample)
-			# ds.__dpmhm_class__ = self.__class__
-			return ds
-
-	@dataset_windows.setter
-	def dataset_windows(self, df):
-		self._dataset_windows = df
-		# self._dataset_windows.__dpmhm_class__ = self.__class__
-
-	def to_feature(self, ds):
+	@classmethod
+	def to_feature(cls, ds, extractor:callable):
 		"""Feature transform of a compacted dataset of signal.
 
 		This method transforms a waveform to spectral features. The transformed database has a dictionary structure which contains the fields {'label', 'metadata', 'feature'}.
@@ -295,7 +333,9 @@ class FeatureTransformer:
 		Args
 		----
 		ds: Dataset
-			compacted/resampled signal dataset, must have the fields {'label', 'metadata', 'signal'}.
+			compacted/resampled signal dataset, with fields {'label', 'metadata', 'signal'}.
+		extractor: callable
+			method for feature extraction
 
 		Notes
 		-----
@@ -304,21 +344,41 @@ class FeatureTransformer:
 		def _feature_map(X):
 			return {
 				'label': X['label'],  # string label
-				# 'label': tf.py_function(
-				#   func=lambda s: self.label_dict_index[s.numpy().decode('utf-8')],
-				#   inp=[X['label']],
-				#   Tout=tf.uint32
-				#   ),  # integer label
-				# 'info': (X['filename'], X['rpm'], X['rpm_nominal']),
 				'metadata': X['metadata'],
 				'feature': tf.py_function(
-					func=lambda x, sr: self._extractor(x.numpy(), sr),  # makes it a tf callable. x.numpy() must be used inside the method `extractor()`
+					func=lambda x, sr: extractor(x.numpy(), sr),  # makes it a tf callable. x.numpy() must be used inside the method `extractor()`
 					inp=[X['signal'], X['sampling_rate']],
 					Tout=_DTYPE
 					)  # the most compact way
 			}
 
 		return ds.map(_feature_map, num_parallel_calls=tf.data.AUTOTUNE)
+
+
+class WindowSlider(AbstractDatasetTransformer):
+	"""Windowed view for dataset.
+
+	This class performs the following preprocessing steps:
+	- sliding window view with downsampling.
+	"""
+
+	def __init__(self, dataset, *, window_shape:tuple, downsample:tuple):
+		"""
+		Args
+		----
+		dataset: input
+			original dataset
+		window_shape: tuple or int
+			either a tuple `(frequency, time)`, i.e. the size of the sliding window in frequency and time axes, or an int which is the size of the sliding window in time axis (the the whole frequency axis is used in this case). No windowed view is created if set to `None`.
+		downsample: tuple or int
+			downsampling rate in frequency and time axes, either tuple or int, corresponding to the given `frame_size`. No downsampling if set to `None`.
+		"""
+		self._dataset_origin = dataset
+		self._window_shape = window_shape
+		self._downsample = downsample
+
+	def build(self):
+		return self.to_windows(self._dataset_origin, self._window_shape, self._downsample)
 
 	@classmethod
 	def to_windows(cls, dataset, window_shape:tuple, downsample:tuple=None):
@@ -342,7 +402,9 @@ class FeatureTransformer:
 		- The field 'info' should contain context information of the frame, e.g. the orginal signal from which the frame is extracted.
 		- We follow the convertion of channel first here for both the input and the output dataset.
 		"""
-		def _slider(S, ws, ds):
+		def _slider(S, ws:tuple, ds:tuple):
+			"""Sliding window view of array `S` with window shape `ws` and downsampling rate `ds`.
+			"""
 			# assert ws is int or tuple, ds
 			# assert S.ndim == 3
 			if ws is None:
@@ -388,6 +450,7 @@ class FeatureTransformer:
 			'label': dataset.element_spec['label'],
 			'metadata': dataset.element_spec['metadata'],
 			'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
+			# 'feature': tuple([tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE)]*fold),
 		}
 
 		# output signature, see:
@@ -397,128 +460,64 @@ class FeatureTransformer:
 		)
 
 	@property
-	def feature_dim(self):
-		"""Dimension of the feature.
+	def data_dim(self):
+		"""Dimension of the data vector.
 		"""
 		try:
-			self._feature_dim
+			self._data_dim
 		except:
-			self._feature_dim = tuple(list(self.dataset_feature.take(1))[0]['feature'].shape)
-		return self._feature_dim
-
-	@property
-	def window_dim(self):
-		"""Dimension of the windowed feature.
-		"""
-		try:
-			self._window_dim
-		except:
-			self._window_dim = tuple(list(self.dataset_windows.take(1))[0]['feature'].shape)
-		return self._window_dim
+			self._data_dim = tuple(list(self.dataset.take(1))[0]['feature'].shape)
+			# self._data_dim = tuple(list(self.dataset.take(1))[0]['feature'][0].shape)
+		return self._data_dim
 
 
-class Preprocessor:
-	"""Preprocessor class.
+class PairedView(AbstractDatasetTransformer):
+	"""Paired view (positive or negative) of a dataset.
 	"""
-	def __init__(self, dataset, extractor:callable, *, dc_kwargs:dict, ft_kwargs:dict, outdir:str=None):
-		# module = import_module(self.__module__)
-		# self._compactor = module.DatasetCompactor(dataset, **dc_kwargs)
-		# self._transformer = module.FeatureTransformer(self._compactor.dataset, extractor, **ft_kwargs)
-		self._compactor = DatasetCompactor(dataset, **dc_kwargs)
-		self._transformer = FeatureTransformer(self._compactor.dataset, extractor, **ft_kwargs)
-		self.label_dict = self.get_label_dict(dataset, self._compactor._keys)
-
-		# save & reload to boost performance of the dataset
-		if outdir is not None:
-			# try:
-			#   self._transformer.dataset_feature = self.load(outdir, 'feature')
-			# except:
-			#   self.save(outdir, 'feature')
-			#   self._transformer.dataset_feature = self.load(outdir, 'feature')
-			try:
-				self._transformer.dataset_windows = self.load(outdir, 'windows')
-			except:
-				self.save(outdir, 'windows')
-				self._transformer.dataset_windows = self.load(outdir, 'windows')
-
-	@classmethod
-	def get_label_dict(cls, dataset, keys:list, channels:list=None) -> dict:
-		"""Get the full dictionary of labels.
+	def __init__(self, dataset, *, keys:list=[], positive:bool=True):
 		"""
-		if channels is None:
-			channels = list(dataset.element_spec['signal'].keys())
+		Args
+		----
+		keys: list
+			keys of the field `metadata` for pair comparison along with `label`.
+		positive: bool
+			if True the positive pair (same label and metadata) will be retained.
+		"""
+		# self._fold = fold
+		self._keys = keys
+		self._positive = positive
+		self._dataset_origin = dataset
 
-		for ch in channels:
-			compactor = DatasetCompactor(dataset, keys=keys, channels=[ch])
-			try:
-				ld.update(compactor.label_dict)
-			except:
-				ld = compactor.label_dict
+	def build(self):
+		@tf.function
+		def _filter(X, Y):
+			v = tf.reduce_all(
+				[tf.equal(X['label'], Y['label'])] +
+				[tf.equal(X['metadata'][k], Y['metadata'][k]) for k in self._keys]
+				)
+			if self._positive:
+				return v
+			else:
+				return tf.logical_not(v)
 
-		return ld
+		def _generator():
+			for eles in itertools.product(*([self._dataset_origin]*2)):
+				yield eles
 
-	def save(self, outdir:str, name:str):
-		if name == 'feature':
-			self._transformer.dataset_feature.save(os.path.join(outdir, 'feature'))
-		elif name == 'windows':
-			self._transformer.dataset_windows.save(os.path.join(outdir, 'windows'))
-		# elif name == 'signal':
-		#   self._compactor.dataset.save(outdir)
-		else:
-			raise NameError(name)
+		ds = tf.data.Dataset.from_generator(
+			_generator,
+			output_signature=(self._dataset_origin.element_spec,)*2
+			)
+		return ds.filter(_filter)
 
-	def load(self, outdir:str, name:str) -> Dataset:
-		if name == 'feature':
-			ds = Dataset.load(os.path.join(outdir, 'feature'))
-		elif name == 'windows':
-			ds = Dataset.load(os.path.join(outdir, 'windows'))
-		# elif name == 'signal':
-		#   self._compactor.dataset = Dataset.load(outdir)
-		else:
-			raise NameError(name)
-		return ds
-
-	@property
-	def dataset(self):
-		return self._compactor.dataset
-
-	@property
-	def dataset_feature(self):
-		return self._transformer.dataset_feature
-
-	@property
-	def dataset_windows(self):
-		return self._transformer.dataset_windows
-
-	# def save(self, outdir:str):
-	#   self._transformer.dataset_windows.save(outdir)
-	#   self._dataset_windows_reloaded = Dataset.load(outdir)
-
-	# @property
-	# def dataset_windows(self):
-	#   try:
-	#     return self._dataset_windows_reloaded
-	#   except:
-	#     return self._transformer.dataset_windows
-
-	# @abstractproperty
-	# def label_dict(self):
-	#   pass
-		# return import_module('dpmhm.datasets.'+module_name).DatasetCompactor.get_label_dict(dataset, keys)
-
-	# def wav2frames_pipeline(dataset, module_name:str, extractor:callable, *,
-	# dc_kwargs:dict, ft_kwargs:dict, export_dir:str=None):
-	#   """Transform a dataset of waveform to sliding windowed-view of feature.
-	#   """
-	#   # module = import_module('..'+module_name, __name__)
-	#   module = import_module('dpmhm.datasets.'+module_name)
-	#   compactor = module.DatasetCompactor(dataset, **dc_kwargs)
-	#   transformer = module.FeatureTransformer(compactor.dataset, extractor, **ft_kwargs)
-	#   dw = transformer.dataset_windows
-	#   if export_dir is not None:
-	#     dw.save(export_dir)
-	#     dw = Dataset.load(export_dir)
-	#   return dw, compactor, transformer
+		# if self._positive:
+		# 	return ds.map(lambda X,Y: {
+		# 		'label': X['label'],
+		# 		'metadata': X['metadata'],
+		# 		'feature': (X['feature'], Y['feature'])
+		# 	})
+		# else:
+		# 	return ds
 
 
 def get_keras_preprocessing_model(ds, labels:list=None, normalize:bool=False):
@@ -586,3 +585,4 @@ def get_keras_preprocessing_model(ds, labels:list=None, normalize:bool=False):
 	# }
 
 	return keras.Model(inputs, outputs)
+

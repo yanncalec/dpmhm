@@ -1,0 +1,19 @@
+[project]
+name = ""
+version = ""
+description = ""
+authors = [
+    {name = "Han Wang", email = "han.wang.fr@gmail.com"},
+]
+dependencies = [
+    "tensorflow>=2.6.5",
+]
+requires-python = ">=3.8"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"
+
+
+[tool.pdm]

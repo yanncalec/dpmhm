@@ -1,7 +1,7 @@
 """Auto-Encoder"""
 
 import tensorflow as tf
-from keras import layers, models, regularizers
+from keras import layers, models #, regularizers
 from dataclasses import dataclass
 from .custom import TConv2D, TDense
 

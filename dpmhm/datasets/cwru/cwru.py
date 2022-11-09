@@ -74,11 +74,7 @@ Features
 		'FE': fan end accelerometer data,
 }
 
-'sampling_rate': {
-		'BA': base accelerometer data,
-		'DE': drive end accelerometer data,
-		'FE': fan end accelerometer data,
-}
+'sampling_rate': 12 or 48 kHz
 
 Notes
 =====
@@ -135,16 +131,12 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 
 				'label': tfds.features.ClassLabel(names=['None', 'DriveEnd', 'FanEnd']),
 
-				'sampling_rate': {
-					'DE': tf.uint32,
-					'FE': tf.uint32,
-					'BA': tf.uint32,
-				}, # {12000, 48000} Hz
+				'sampling_rate': tf.uint32,  # {12000, 48000} Hz
 
 				'metadata': {
 					'NominalRPM': tf.uint32,  # nominal RPM: [1797, 1772, 1750, 1730]
 					'RPM': tf.uint32,  # real RPM
-					'LoadForce': tf.uint32, # {0, 1, 2 ,3}, corresponding average RPM: [1797, 1772, 1750, 1730]
+					'LoadForce': tf.uint32, # {0, 1, 2 ,3}, corresponding nominal RPM: [1797, 1772, 1750, 1730]
 					'FaultLocation': tf.string, # {'DriveEnd', 'FanEnd', 'None'}
 					'FaultComponent': tf.string,  # {'InnerRace', 'Ball', 'OuterRace3', 'OuterRace6', 'OuterRace12', 'None'}
 					'FaultSize': tf.float32,  # {0.007, 0.014, 0.021, 0.028, 0}
@@ -232,11 +224,7 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 					'FE': xfe.astype(_DTYPE.as_numpy_dtype),
 					'BA': xba.astype(_DTYPE.as_numpy_dtype),
 				},  # if not empty all three have the same length
-				'sampling_rate': {
-					'DE': sr,
-					'FE': sr,
-					'BA': sr,
-				},
+				'sampling_rate': sr,
 				'label': metadata['FaultLocation'],
 				'metadata': metadata,
 			}
