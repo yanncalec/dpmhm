@@ -36,7 +36,7 @@ def spectrogram(x, sampling_rate:int, *, time_window:float, hop_step:float, n_ff
   hop_length = int(hop_step * sr)
 
   if n_fft is None:
-    n_fft = 2**(int(np.ceil(np.math.log2(win_length))))
+    n_fft = 2**(int(np.ceil(np.log2(win_length))))
 
   # Compute the spectrogram
   if normalize:
@@ -85,7 +85,7 @@ def melspectrogram(x, sampling_rate:int, *, time_window:float, hop_step:float, n
   hop_length = int(hop_step * sr)
 
   if n_fft is None:
-    n_fft = 2**(int(np.ceil(np.math.log2(win_length))))
+    n_fft = 2**(int(np.ceil(np.log2(win_length))))
 
   # Compute the melspectrogram
   if normalize:
@@ -102,3 +102,6 @@ _EXTRACTOR_SPEC = lambda x, sr: spectrogram(x, sr, time_window=0.025, hop_step=0
 
 _EXTRACTOR_MEL = lambda x, sr: melspectrogram(x, sr, time_window=0.025, hop_step=0.01, n_mels=64)[0]
 
+
+
+__all__ = ['spectrogram', 'melspectrogram', '_EXTRACTOR_SPEC', '_EXTRACTOR_MEL']

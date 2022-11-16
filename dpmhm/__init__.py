@@ -5,3 +5,4 @@ __email__ = 'han.wang@cea.fr'
 __version__ = '0.1.0'
 
 from . import datasets
+from . import models

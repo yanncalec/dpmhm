@@ -1,2 +1,0 @@
-"""MobileNetV2
-"""

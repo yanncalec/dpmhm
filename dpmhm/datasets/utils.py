@@ -38,7 +38,7 @@ def extract_by_category(ds, labels:list):
   Args
   ----
   ds: tf.data.Dataset
-    input dataset of dictionary structure which contains the field 'label'.
+    can either have a dictionary structure which contains the field 'label', or a tuple structure `(data, label)`.
   labels: list
     label of categories to be extracted.
 
@@ -48,7 +48,11 @@ def extract_by_category(ds, labels:list):
   """
   dp = {}
   for l in set(labels):
-    dp[l] = ds.filter(lambda x: tf.equal(x['label'],l))
+    if type(ds.element_spec) is dict:  # dictionary structure
+      dp[l] = ds.filter(lambda x: tf.equal(x['label'],l))
+    else:  # otherwise must be a tuple structure
+      dp[l] = ds.filter(lambda x: tf.equal(x[1],l))
+
   return dp
 
 
@@ -121,12 +125,12 @@ def random_split_dataset(ds, splits:dict, *, shuffle_size:int=None, **kwargs):
 
 
 def split_dataset(ds, splits:dict={'train':0.7, 'val':0.2, 'test':0.1}, *, labels:list=None, **kwargs):
-  """Randomly split a dataset either on either global or per category basis.
+  """Randomly split a dataset globally or per category.
 
   Args
   ----
   ds: tf.data.Dataset
-    input dataset with element of type (value, label).
+    input dataset.
   splits: dict
     dictionary specifying the name and ratio of the splits.
   labels: list

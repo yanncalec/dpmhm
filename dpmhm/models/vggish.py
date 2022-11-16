@@ -26,7 +26,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class Params:
+class VGGish_Params:
 	"""Global parameters for VGGish.
 
 	See also:
@@ -52,7 +52,7 @@ class Params:
 	strides:tuple = (2,2)
 
 
-def get_ConvNet_A(params:Params) -> keras.models.Model:
+def get_ConvNet_A(params:VGGish_Params) -> keras.models.Model:
 	"""ConvNet model A or VGG 11 layers.
 	"""
 	input_dim = (params.n_bands, params.n_frames, params.n_channels)
@@ -99,7 +99,7 @@ def get_ConvNet_A(params:Params) -> keras.models.Model:
 	return models.Sequential(layers=_layers, name='VGGish-A')
 
 
-def get_ConvNet_B(params:Params) -> keras.models.Model:
+def get_ConvNet_B(params:VGGish_Params) -> keras.models.Model:
 	"""ConvNet model B or VGG 13 layers.
 	"""
 	input_dim = (params.n_bands, params.n_frames, params.n_channels)

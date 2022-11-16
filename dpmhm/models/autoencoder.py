@@ -7,7 +7,7 @@ from .custom import TConv2D, TDense
 
 
 @dataclass
-class Params:
+class CAE_Params:
 	"""Global parameters.
 	"""
 	# Dimension of input feature (data format: channel last)
@@ -35,7 +35,7 @@ class CAES(models.Model):
   -----
   Use more blocks and larger kernel size to get more smoothing in the reconstruction.
   """
-  def __init__(self, params:Params):
+  def __init__(self, params:CAE_Params):
     input_dim = (params.n_bands, params.n_frames, params.n_channels)
     kernel_size = params.kernel_size
     activation = params.activation
@@ -100,7 +100,7 @@ class CAES_ws(models.Model):
   - The model fails to train with `decoder.trainable=False`.
   - MSE much larger than the case of no weight sharing.
   """
-  def __init__(self, params:Params):
+  def __init__(self, params:CAE_Params):
     input_dim = (params.n_bands, params.n_frames, params.n_channels)
     kernel_size = params.kernel_size
     activation = params.activation
