@@ -1,3 +1,13 @@
+"""BYOL.
+
+References
+----------
+- Grill, J.-B., Strub, F., Altché, F., Tallec, C., Richemond, P., Buchatskaya, E., Doersch, C., Avila Pires, B., Guo, Z., Gheshlaghi Azar, M., Piot, B., kavukcuoglu,  koray, Munos, R., Valko, M., 2020. Bootstrap Your Own Latent - A New Approach to Self-Supervised Learning, in: Advances in Neural Information Processing Systems. Curran Associates, Inc., pp. 21271–21284.
+- Niizumi, D., Takeuchi, D., Ohishi, Y., Harada, N., Kashino, K., 2021. Byol for audio: Self-supervised learning for general-purpose audio representation, in: 2021 International Joint Conference on Neural Networks (IJCNN). IEEE, pp. 1–8.
+- Niizumi, D., Takeuchi, D., Ohishi, Y., Harada, N., Kashino, K., 2022. BYOL for Audio: Exploring Pre-trained General-purpose Audio Representations. https://doi.org/10.48550/arXiv.2204.07402
+- Elbanna, G., Scheidwasser-Clow, N., Kegler, M., Beckmann, P., Hajal, K.E., Cernak, M., 2022. BYOL-S: Learning Self-supervised Speech Representations by Bootstrapping. https://doi.org/10.48550/arXiv.2206.12038
+"""
+
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import models, layers, regularizers, callbacks, losses

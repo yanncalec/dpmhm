@@ -14,7 +14,7 @@ import random
 """
 import matplotlib.patches as patches
 
-Y, hh, ww = dpmhm.datasets.spec_augment.random_crop(X, (64,64), area_ratio=(0.01,1.), shape_ratio=(1/2,2), channel_axis=0)
+Y, hh, ww = dpmhm.datasets.spec_augment.random_crop(X, (64,64), area_ratio=(0.01,1.), aspect_ratio=(1/2,2), channel_axis=0)
 print(hh, ww)
 
 plt.figure(); ax=plt.gca()
@@ -27,26 +27,30 @@ plt.imshow(Y[0])
 """
 
 
-def random_crop(X:np.ndarray, output_shape:tuple, *, area_ratio:tuple=(0.01, 1.), shape_ratio:tuple=(3/4, 4/3), channel_axis=None, **kwargs):
+def random_crop(X:np.ndarray, output_shape:tuple, *, area_ratio:tuple=(0.01, 1.), aspect_ratio:tuple=(3/4, 4/3), channel_axis=None, max_attempts=1000, seed:int=None, **kwargs):
 	"""Randomly crop an image to small patch.
+
+	See also:
+	https://www.tensorflow.org/api_docs/python/tf/image/sample_distorted_bounding_box
 
 	Arguments
 	---------
-	shape_ratio: tuple
-
+	aspect_ratio: tuple
 	"""
 	# # sanity check
 	# assert (3 >= X.ndim >= 2) and (X.ndim == len(output_shape))
 	# assert (X.ndim != 3) or (X.shape[0] == output_shape[0])  # channel-first
 	# # assert X.ndim == len(output_shape) == 3 and X.shape[0] == output_shape[0]
+	random.seed(seed)
 
 	x_area = X.shape[-1]*X.shape[-2]
 	valid_crop = False
 	r = output_shape[0]/output_shape[1]
-	# output_shape_ratio = (min(r, 1/r), max(r, 1/r))
-	sr_min, sr_max = min(shape_ratio)*min(r, 1/r), max(shape_ratio)*max(r, 1/r)
+	# output_aspect_ratio = (min(r, 1/r), max(r, 1/r))
+	sr_min, sr_max = min(aspect_ratio)*min(r, 1/r), max(aspect_ratio)*max(r, 1/r)
 
-	while not valid_crop:
+	# while not valid_crop:
+	for _ in range(max_attempts):
 		hp = random.randint(0, X.shape[-2]-output_shape[1])
 		wp = random.randint(0, X.shape[-1]-output_shape[0])
 
@@ -69,6 +73,9 @@ def random_crop(X:np.ndarray, output_shape:tuple, *, area_ratio:tuple=(0.01, 1.)
 			patch = X[tuple(sl)]
 			# return transform.resize(patch, output_shape, **kwargs), (hp, dh), (wp, dw)  # output_shape must have the same dimension as X
 			return transform.resize_local_mean(patch, output_shape, channel_axis=channel_axis), (hp, dh), (wp, dw)
+			# break
+	else:
+		return X
 
 
 # def blur(X:np.ndarray):

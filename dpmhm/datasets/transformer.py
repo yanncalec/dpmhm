@@ -590,7 +590,7 @@ class Product(AbstractDatasetTransformer):
 
 	A product dataset has samples `(x,y,flag)` with `x,y` sampled from an original dataset, and `flag` is the indicator that `x` and `y` are positive samples.
 
-	By construction of the product dataset, iteration on the dataset will show repeated `x` in the output `(x,y,flag)`, which is the expected behavior.
+	By construction of the product dataset, iteration on the dataset will show repeated `x` in the output `(x,y,flag)`, which is the expected behavior. To break this partial determinism, use `shuffle()`.
 	"""
 	def __init__(self, dataset, dataset2=None, *, keys:list=[], positive:bool=None):
 		"""
