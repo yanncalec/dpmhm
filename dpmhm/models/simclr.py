@@ -30,7 +30,7 @@ V2 = losses.cosine_similarity(tf.expand_dims(X,1), Y)
 V1-V2 is all zero
 """
 
-@tf.function
+# @tf.function
 def _NT_Xent_norm_vec(X, Y, full:bool=False) -> tf.Tensor:
     """Compute the normalization vector of the NT-Ext loss.
     """
@@ -88,10 +88,10 @@ class SimCLR(models.Model):
         self._encoder.trainable = train_encoder
 
         self._projector = models.Sequential([
-            layers.Flatten(name="flatten"),
-            layers.Dense(4096, activation="relu", name="fc1"),
+            layers.Flatten(name='flatten'),
+            layers.Dense(4096, activation='relu', name='fc1'),
             layers.BatchNormalization(),
-            layers.Dense(256, activation=None, name="fc2"),
+            layers.Dense(256, activation=None, name='fc2'),
         ], name='projector')
 
     @tf.function
@@ -110,7 +110,7 @@ class SimCLR(models.Model):
     #     return y1, y2
 
     def train_step(self, inputs):
-        print(f"Eager execution mode: {tf.executing_eagerly()}")
+        # print(f"Eager execution mode: {tf.executing_eagerly()}")
         # https://keras.io/guides/customizing_what_happens_in_fit
         with tf.GradientTape() as tape:
             loss = self._loss_func(*self.call(inputs))

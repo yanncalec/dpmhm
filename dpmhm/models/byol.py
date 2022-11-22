@@ -39,7 +39,7 @@ class BYOL_Callback(callbacks.Callback):
         except:
             rate = self.model._ema_rate_base
         self.model._ema_rate.assign(rate)
-        # Call `set_weights` in graphical model would raise `NotImplementedError`
+        # Call `set_weights` in graph mode would raise `NotImplementedError`
         self.model._target.set_weights([self.model._ema.average(v)
                                         for v in self.model._encoder_projector.variables])
 
@@ -105,7 +105,7 @@ class BYOL(models.Model):
         self._ema.apply(self._encoder_projector.variables)  # create shadow copy of weights
 
     def call(self, inputs):
-        # `call()` takes only one argument:
+        # `call()` can take only one argument:
         # `def call(self, x1, x2)` will raise error
         x1, x2 = inputs
         # # https://keras.io/guides/making_new_layers_and_models_via_subclassing/#the-addloss-method
