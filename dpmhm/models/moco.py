@@ -70,7 +70,7 @@ class MoCo(models.Model):
         self._loss_func = lambda X,Y,K: tf.reduce_sum(InfoNCE(X,Y,K,tau))
 
         self._memory = deque(maxlen=self._msize)  # queue of preceding encoded mini-batches
-        self.loss_tracker = keras.metrics.Mean(name="loss")
+        self.loss_tracker = keras.metrics.Mean(name='loss')
         # self.mae_metric = keras.metrics.MeanAbsoluteError(name="mae")
 
         # config for the network
@@ -137,5 +137,5 @@ class MoCo(models.Model):
         # Compute our own metrics
         self.loss_tracker.update_state(loss)
         # self.mae_metric.update_state(y, y_pred)
-        # return {"loss": self.loss_tracker.result(), "mae": self.mae_metric.result()}
-        return {"loss": self.loss_tracker.result()}
+        # return {'loss': self.loss_tracker.result(), "mae": self.mae_metric.result()}
+        return {'loss': self.loss_tracker.result()}

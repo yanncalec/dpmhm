@@ -63,7 +63,7 @@ Then `similarity(X,Y)` has the same value as `keras.losses.cosine_similarity(X,Y
 class BYOL(models.Model):
     def __init__(self, input_shape, train_encoder:bool=True, **kwargs):
         super().__init__()
-        self.loss_tracker = keras.metrics.Mean(name="loss")
+        self.loss_tracker = keras.metrics.Mean(name='loss')
         # self.mae_metric = keras.metrics.MeanAbsoluteError(name="mae")
 
         # config for the network
@@ -72,17 +72,17 @@ class BYOL(models.Model):
         self._encoder.trainable = train_encoder
 
         self._projector = models.Sequential([
-            layers.Flatten(name="flatten"),
-            layers.Dense(4096, activation="relu", name="fc1"),
+            layers.Flatten(name='flatten'),
+            layers.Dense(4096, activation='relu', name='fc1'),
             layers.BatchNormalization(),
-            layers.Dense(256, activation=None, name="fc2"),
+            layers.Dense(256, activation=None, name='fc2'),
         ], name='projector')
 
         self._predictor = models.Sequential([
-            layers.Flatten(name="flatten"),
-            layers.Dense(4096, activation="relu", name="fc1"),
+            layers.Flatten(name='flatten'),
+            layers.Dense(4096, activation='relu', name='fc1'),
             layers.BatchNormalization(),
-            layers.Dense(256, activation=None, name="fc2"),
+            layers.Dense(256, activation=None, name='fc2'),
         ], name='predictor')
 
         self._encoder_projector = models.Sequential([
@@ -144,8 +144,8 @@ class BYOL(models.Model):
         # Compute our own metrics
         self.loss_tracker.update_state(loss)
         # self.mae_metric.update_state(y, y_pred)
-        # return {"loss": self.loss_tracker.result(), "mae": self.mae_metric.result()}
-        return {"loss": self.loss_tracker.result()}
+        # return {'loss': self.loss_tracker.result(), "mae": self.mae_metric.result()}
+        return {'loss': self.loss_tracker.result()}
 
 #     def test_step(self, data):
 #         pass

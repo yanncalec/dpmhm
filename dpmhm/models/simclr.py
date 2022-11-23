@@ -7,6 +7,8 @@ SimCLR v2:
 
 Code:
 https://github.com/google-research/simclr
+
+Note: use large batch size.
 """
 
 import sys
@@ -79,7 +81,7 @@ class SimCLR(models.Model):
         super().__init__()
         # self._loss_func = lambda X,Y: NT_Xent_sym(X,Y,tau)
         self._loss_func = lambda X,Y: NT_Xent(X,Y,tau) + NT_Xent(Y,X,tau)
-        self.loss_tracker = keras.metrics.Mean(name="loss")
+        self.loss_tracker = keras.metrics.Mean(name='loss')
         # self.mae_metric = keras.metrics.MeanAbsoluteError(name="mae")
 
         # config for the network
@@ -128,8 +130,8 @@ class SimCLR(models.Model):
         # Compute our own metrics
         self.loss_tracker.update_state(loss)
         # self.mae_metric.update_state(y, y_pred)
-        # return {"loss": self.loss_tracker.result(), "mae": self.mae_metric.result()}
-        return {"loss": self.loss_tracker.result()}
+        # return {'loss': self.loss_tracker.result(), "mae": self.mae_metric.result()}
+        return {'loss': self.loss_tracker.result()}
 
 # call and train_step:
 # https://github.com/tensorflow/tensorflow/issues/54281
