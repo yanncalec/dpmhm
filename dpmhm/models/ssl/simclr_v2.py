@@ -1,8 +1,7 @@
-"""
-SimCLR v1:
-- Chen, T., Kornblith, S., Norouzi, M., Hinton, G., 2020. A Simple Framework for Contrastive Learning of Visual Representations, in: International Conference on Machine Learning. Presented at the International Conference on Machine Learning, PMLR, pp. 1597–1607.
+""" SimCLR v2. TODO.
 
-SimCLR v2:
+References
+----------
 - Chen, T., Kornblith, S., Swersky, K., Norouzi, M., Hinton, G.E., 2020. Big Self-Supervised Models are Strong Semi-Supervised Learners, in: Advances in Neural Information Processing Systems. Curran Associates, Inc., pp. 22243–22255.
 
 Code:
@@ -11,7 +10,6 @@ https://github.com/google-research/simclr
 Note: use large batch size.
 """
 
-import sys
 import tensorflow as tf
 from tensorflow import keras, linalg
 from tensorflow.keras import models, layers, regularizers, callbacks, losses

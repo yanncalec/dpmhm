@@ -6,14 +6,30 @@ References
 - Niizumi, D., Takeuchi, D., Ohishi, Y., Harada, N., Kashino, K., 2021. Byol for audio: Self-supervised learning for general-purpose audio representation, in: 2021 International Joint Conference on Neural Networks (IJCNN). IEEE, pp. 1–8.
 - Niizumi, D., Takeuchi, D., Ohishi, Y., Harada, N., Kashino, K., 2022. BYOL for Audio: Exploring Pre-trained General-purpose Audio Representations. https://doi.org/10.48550/arXiv.2204.07402
 - Elbanna, G., Scheidwasser-Clow, N., Kegler, M., Beckmann, P., Hajal, K.E., Cernak, M., 2022. BYOL-S: Learning Self-supervised Speech Representations by Bootstrapping. https://doi.org/10.48550/arXiv.2206.12038
+
+Code
+----
+
+Notes
+-----
 """
 
+from dataclasses import dataclass, field
+
 import tensorflow as tf
+# import tensorflow_addons as tfa
+import tensorflow_models as tfm
+# import tensorflow_probability as tfp
+
 from tensorflow import keras
 from tensorflow.keras import models, layers, regularizers, callbacks, losses
-from keras.applications import resnet
+from tensorflow.keras.applications import resnet
 # import numpy as np
 from math import cos, pi
+
+import logging
+logger = logging.getLogger(__name__)
+
 
 # https://keras.io/guides/writing_your_own_callbacks/#writing-your-own-callbacks
 # https://keras.io/api/callbacks/base_callback/
@@ -24,6 +40,50 @@ ema = tf.train.ExponentialMovingAverage(rate)
 rate.assign(0.5)
 ema._decay # 0.5
 """
+
+@dataclass
+class Config:
+    # AUTO = tf.data.AUTOTUNE
+    # input_shape:tuple = (224, 224)
+    batch_size:int = 2048  # can work well with 256 too
+    epochs:int = 1000
+    # n_batch:int = ?  # data_size/batch_size
+    training_steps:int = 10**4  # epochs * n_batch
+
+    train_encoder:bool = True  # train the encoder?
+
+    projector_units:int = 8192  # dimension of the projector's layers
+    use_bias:bool = False  # use bias in the projector layers
+    # weight_decay:float = 1.5e-6  # l2 regularization
+
+    loss_lambda:float = 5e-3  # lambda for the off-diagonal terms
+
+    @classmethod
+    def from_dict(cls, obj: dict):
+        return cls(**obj)
+
+    def optimizer(self, learning_rate=0.2, weight_decay_rate=1.5e-6, momentum=0.9):
+        # Note: The original implementation uses a learning rate of 0.2 for the weights and 0.0048 for the biases and batch normalization parameters.
+
+        # with warmup
+        try:
+            lr = WarmupCosineDecay(
+                learning_rate * self.batch_size / 256,
+                0,
+                self.epochs // 10,
+                self.training_steps
+            )
+        except Exception as msg:
+            # without warmup
+            logger.exception(msg)
+            lr = keras.optimizers.schedules.CosineDecay(
+                learning_rate * self.batch_size / 256,
+                self.training_steps
+            )
+
+        # return keras.optimizers.SGD(learning_rate=lr, momentum=momentum)
+        return tfm.optimization.lars_optimizer.LARS(weight_decay_rate=weight_decay_rate, learning_rate=lr, momentum=momentum)
+
 
 class BYOL_Callback(callbacks.Callback):
     """

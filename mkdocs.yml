@@ -1,0 +1,12 @@
+site_name: dpmhm
+site_url: https://google.com/
+theme:
+  name: material
+  # name: readthedocs
+plugins:
+  - mkdocstrings
+nav:
+  - Home: index.md
+  - Dataset: dataset.md
+  - Models: dim.md
+  # - About: about.md
