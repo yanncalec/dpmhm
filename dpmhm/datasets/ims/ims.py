@@ -1,4 +1,37 @@
-"""ims dataset."""
+"""IMS dataset.
+
+Test-to-failure experiments on bearings. The data set was provided by the Center for Intelligent Maintenance Systems (IMS), University of Cincinnati.
+
+Description
+===========
+An AC motor, coupled by a rub belt, keeps the rotation speed constant. The four bearings are in the same shaft and are forced lubricated by a circulation system that regulates the flow and the temperature. It is announced on the provided “Readme Document for IMS Bearing Data” in the downloaded file, that the test was stopped when the accumulation of debris on a magnetic plug exceeded a certain level indicating the possibility of an impending failure. The four bearings are all of the same type. There are double range pillow blocks rolling elements bearing.
+
+Three (3) data sets are included in the data packet. Each data set describes a test-to-failure experiment. Each data set consists of individual files that are 1-second vibration signal snapshots recorded at specific intervals. Each file consists of 20,480 points with the sampling rate set at 20 kHz. The file name indicates when the data was collected. Each record (row) in the data file is a data point. Data collection was facilitated by NI DAQ Card 6062E. Larger intervals of time stamps (showed in file names) indicate resumption of the experiment in the next working day.
+
+For more details, see the descriptions in
+- `Readme Document for IMS Bearing Data.pdf` included in the downloaded data.
+
+Homepage
+--------
+http://imscenter.net/
+http://ti.arc.nasa.gov/project/prognostic-data-repository
+
+Download
+--------
+https://ti.arc.nasa.gov/c/3/
+
+Original Data
+=============
+Format: text
+Sampling rate: 20480 Hz
+Size: 6.1 Gb
+
+Notes
+=====
+- There is no `label` in this package since this is a run-to-failure dataset.
+- The original data has a single `.7z` file which extracts to three subsets.
+- The extracted subfolder named `4th_test` corresponds actually to the 3rd test.
+"""
 
 
 import os

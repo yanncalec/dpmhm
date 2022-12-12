@@ -2,13 +2,11 @@
 
 References
 ----------
-Oord, A. van den, Li, Y., Vinyals, O., 2018. Representation learning with contrastive predictive coding. arXiv preprint arXiv:1807.03748.
+Henaff, O., 2020. Data-Efficient Image Recognition with Contrastive Predictive Coding, in: Proceedings of the 37th International Conference on Machine Learning. Presented at the International Conference on Machine Learning, PMLR, pp. 4182–4192.
 
 Code
 ----
-https://github.com/Spijkervet/contrastive-predictive-coding
-https://github.com/giovannimaffei/contrastive_predictive_coding
-
+https://paperswithcode.com/paper/data-efficient-image-recognition-with#code
 """
 
 # import sys

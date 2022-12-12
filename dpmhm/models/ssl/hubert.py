@@ -70,7 +70,7 @@ class Config:
         return tfa.optimizers.SGDW(weight_decay=weight_decay, learning_rate=lr, momentum=momentum)
 
 
-class DIM(models.Model):
+class SimSiam(models.Model):
     def __init__(self, input_shape, c:Config):
         # input_shape, train_encoder:bool=True, tau:float=1e-1, **kwargs):
         super().__init__()

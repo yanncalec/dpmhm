@@ -1,29 +1,18 @@
-""" Deep InfoMax.
+""" Wav2Vec
 
 References
 ----------
-- Hjelm, R.D., Fedorov, A., Lavoie-Marchildon, S., Grewal, K., Bachman, P., Trischler, A., Bengio, Y., 2019. Learning deep representations by mutual information estimation and maximization. https://doi.org/10.48550/arXiv.1808.06670
-- Belghazi, M.I., Baratin, A., Rajeswar, S., Ozair, S., Bengio, Y., Courville, A., Hjelm, R.D., 2021. MINE: Mutual Information Neural Estimation. https://doi.org/10.48550/arXiv.1801.04062
-- Nowozin, S., Cseke, B., Tomioka, R., 2016. f-GAN: Training Generative Neural Samplers using Variational Divergence Minimization, in: Advances in Neural Information Processing Systems. Curran Associates, Inc.
-
+- v1: Schneider, S., Baevski, A., Collobert, R., Auli, M., 2019. wav2vec: Unsupervised Pre-training for Speech Recognition. https://doi.org/10.48550/arXiv.1904.05862
+- v2: Baevski, A., Zhou, Y., Mohamed, A., Auli, M., 2020. wav2vec 2.0: A Framework for Self-Supervised Learning of Speech Representations, in: Advances in Neural Information Processing Systems. Curran Associates, Inc., pp. 12449–12460.
 
 Code
 ----
-https://github.com/rdevon/DIM
+https://github.com/oliverguhr/wav2vec2-live
 
-https://github.com/rcalland/deep-INFOMAX
+https://github.com/eastonYi/wav2vec
 
-https://github.com/DuaneNielsen/DeepInfomaxPytorch
+https://github.com/pytorch/fairseq
 
-Baselines to be implemented:
-
-- VAE: Kingma, D.P., Welling, M., 2013. Auto-Encoding Variational Bayes. arXiv:1312.6114 [cs, stat].
-- beta-VAE: Higgins, I., Matthey, L., Pal, A., Burgess, C., Glorot, X., Botvinick, M., Mohamed, S., Lerchner, A., 2017. beta-VAE: Learning Basic Visual Concepts with a Constrained Variational Framework. ICLR 2, 6.
-Alemi, A.A., Fischer, I., Dillon, J.V., Murphy, K., 2019. Deep Variational Information Bottleneck. https://doi.org/10.48550/arXiv.1612.00410
-- Adversarial AE (AAE): Makhzani, A., Shlens, J., Jaitly, N., Goodfellow, I., Frey, B., 2016. Adversarial Autoencoders. https://doi.org/10.48550/arXiv.1511.05644
-- BiGAN: Donahue, J., Krähenbühl, P., Darrell, T., 2017. Adversarial Feature Learning. https://doi.org/10.48550/arXiv.1605.09782
-Dumoulin, V., Belghazi, I., Poole, B., Mastropietro, O., Lamb, A., Arjovsky, M., Courville, A., 2017. Adversarially Learned Inference. https://doi.org/10.48550/arXiv.1606.00704
-- Noise As Targets (NAT): Bojanowski, P., Joulin, A., 2017. Unsupervised Learning by Predicting Noise, in: Proceedings of the 34th International Conference on Machine Learning. Presented at the International Conference on Machine Learning, PMLR, pp. 517–526.
 """
 
 import sys
@@ -70,7 +59,7 @@ class Config:
         return tfa.optimizers.SGDW(weight_decay=weight_decay, learning_rate=lr, momentum=momentum)
 
 
-class DIM(models.Model):
+class Wav2Vec_v2(models.Model):
     def __init__(self, input_shape, c:Config):
         # input_shape, train_encoder:bool=True, tau:float=1e-1, **kwargs):
         super().__init__()
