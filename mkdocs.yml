@@ -1,7 +1,11 @@
-site_name: dpmhm
-site_url: https://google.com/
-repo_url: https://github.com/example/repository/
+# https://www.mkdocs.org/
 
+site_name: Documentation of DPMHM
+site_url: https://google.com/
+repo_url: https://github.com/yanncalec/dpmhm
+site_description: Documentation of dpmhm
+
+# https://github.com/mkdocs/mkdocs/wiki/MkDocs-Themes
 theme:
   name: material
   # name: readthedocs
@@ -9,13 +13,35 @@ theme:
 
 plugins:
   - search
-  - mkdocstrings
+  - mkdocstrings:
+  #     default_handler: python
+  #     handlers:
+  #       python:
+  #         selection:
+  #           docstring_style: "numpy"
+  #         rendering:
+  #           show_source: false
+  #     custom_templates: templates
+  # https://github.com/danielfrg/mkdocs-jupyter
+  - mkdocs-jupyter:
+    # ignore_h1_titles: True
+      include_source: True
 
 markdown_extensions:
-  # - toc:
-  #     permalink: True
+  - toc:
+      permalink: True
   - pymdownx.arithmatex:
       generic: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - tables
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+
 
 extra_javascript:
   - javascripts/mathjax.js
@@ -24,11 +50,31 @@ extra_javascript:
 
 nav:
   - Home: index.md
-  - Overview:
+  - Usage:
     - datasets.md
-    # - models.md
-  - Dataset:
-    - CWRU: datasets/cwru.md
-  # - Models:
-  # - Home: '../../README.md'
-  # - index.md
+    - models.md
+  - Topics:
+    - MHM and Deep Learning:
+      - Overview: topics/mhm.md
+      - Vibration Analysis: topics/vib.md
+    # - feature_extraction.ipynb
+    - Representation Learning:
+      - Overview: topics/ssl.md
+    - topics/few-shot.md
+    - topics/rul.md
+  - Tutorials:
+    - Installation:
+      - notebooks/datasets/installation.ipynb
+    # - Add new dataset: tutorials/misc.md
+  - Reference:
+    - Datasets:
+      - CWRU: datasets/cwru.md
+    - Models:
+      - SimCLR: models/simclr.md
+
+watch:
+  - dpmhm
+  - tests
+
+# docs_dir: docs
+# site_dir: site

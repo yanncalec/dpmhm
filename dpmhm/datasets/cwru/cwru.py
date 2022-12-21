@@ -18,12 +18,13 @@ Homepage
 --------
 https://engineering.case.edu/bearingdatacenter
 
-Original Data
-=============
+Original Dataset
+================
 - Type of experiments: initiated faults
-- Date of acquisition: 2000
+- Date of acquisition: Year 2000
 - Format: Matlab
-- Channels: up to 3 acclerometers, which are named Drive-End (DE), Fan-End (FE), Base (BA).
+- Size: ~ 656 Mb, unzipped
+- Channels: up to 3 accelerometers, named Drive-End (DE), Fan-End (FE), Base (BA).
 - Split: not specified.
 - Sampling rate: 12 kHz or 48 kHz, not fixed.
 - Recording duration: ~ 10 seconds, not fixed.
@@ -35,8 +36,8 @@ Original Data
     - RPM: real rpm during testing, contained by most files.
 
 
-Processed data
-==============
+Built Dataset
+=============
 - Split: ['train']
 
 Features
@@ -45,38 +46,27 @@ Features
     - 'BA': base accelerometer data.
     - 'DE': drive end accelerometer data.
     - 'FE': fan end accelerometer data.
-- 'label': ['None', 'DriveEnd', 'FanEnd'], location of fault.
+- 'label': ['None', 'DriveEnd', 'FanEnd'], or [0,1,2], location of the fault.
 - 'sampling_rate': 12 or 48 kHz.
 - 'metadata':
     - 'NominalRPM': nominal RPM.
     - 'RPM': real RPM.
     - 'LoadForce': {0, 1, 2, 3} nominal motor load in horsepower, corresponding to the nominal RPM: {1797, 1772, 1750, 1730}.
-    - 'FaultLocation': {'DriveEnd', 'FanEnd'}, a copy of the field 'label'. Note that this is the location of fault not that of accelerometer.
-    - 'FaultComponent': {'InnerRace', 'Ball', 'OuterRace6', 'OuterRace3', 'OuterRace12'}, component of fault.
-    - 'FaultSize': {0.007, 0.014, 0.021, 0.028}, diameter of fault in inches.
+    - 'FaultLocation': {'None', 'DriveEnd', 'FanEnd'}, a copy of the field 'label'. Note that this is the location of fault not that of accelerometer.
+    - 'FaultComponent': {'None', 'InnerRace', 'Ball', 'OuterRace6', 'OuterRace3', 'OuterRace12'}, component of fault.
+    - 'FaultSize': {0, 0.007, 0.014, 0.021, 0.028}, diameter of fault in inches.
     - 'FileName': original filename.
 
 Notes
 =====
-- An experiment with normal condition can be identified by any of the following: `FaultLocation==None`, `FaultComponent==None`, `FaultSize==0`.
-- The real RPM is known for most experiment, otherwise it is replaced by the nomial value.
+- Experiment with normal operating condition can be identified by any of the following clauses: `FaultLocation==None`, `FaultComponent==None`, `FaultSize==0`.
+- The value of 'RPM' (real RPM) is available for most experiments, otherwise it is replaced by the nominal value.
 
 References
 ==========
 Review of developments based on CWRU:
 
 - Wei, X. and Söffker, D. (2021) ‘Comparison of CWRU Dataset-Based Diagnosis Approaches: Review of Best Approaches and Results’, in P. Rizzo and A. Milazzo (eds) European Workshop on Structural Health Monitoring. Cham: Springer International Publishing (Lecture Notes in Civil Engineering), pp. 525–532. Available at: https://doi.org/10.1007/978-3-030-64594-6_51.
-
-Installation
-============
-Method 1:
-- Manually download all Matlab files from the official website (161 files, ~ 656 Mb)
-
-Method 2:
-```python
-
-tfds.load('CWRU')
-```
 """
 
 # import os
@@ -89,7 +79,6 @@ import pandas as pd
 # import mat4py
 # import librosa
 
-# from dpmhm.datasets.preprocessing import DatasetCompactor, FeatureTransformer, Preprocessor
 from dpmhm.datasets import _DTYPE, _ENCODING
 
 
@@ -110,6 +99,7 @@ _CITATION = """
 _METAINFO = pd.read_csv(Path(__file__).parent / 'metainfo.csv')
 
 # _DATA_URLS = ('https://engineering.case.edu/sites/default/files/'+_METAINFO['FileName']).tolist()
+_DATA_URLS = '/run/media/han/ExFAT/Database/dpmhm/cwru.zip'
 
 
 class CWRU(tfds.core.GeneratorBasedBuilder):
@@ -164,19 +154,11 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
         # If class labels are used for `meta`, add `.astype(str)` in the following before `to_dict()`
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
-            # _data_files = dl_manager._manual_dir.glob('*.mat')
-            # fp_dict = {str(fp): _METAINFO.loc[_METAINFO['FileName'] == fp.name].iloc[0].to_dict() for fp in _data_files}
         else:  # automatically download data
-            # Parallel download (may result in corrupted files):
-            # zipfile = dl_manager.download(_DATA_URLS)   # urls must be a list
-
-            # Sequential download:
-            # _data_files = [dl_manager.download(url) for url in _DATA_URLS]
-            raise NotImplementedError()
+            datadir = dl_manager.download_and_extract(_DATA_URLS) / 'cwru'
 
         return {
-                # 'train': self._generate_examples(fp_dict),
-                'train': self._generate_examples(datadir),
+            'train': self._generate_examples(datadir),
         }
 
     def _generate_examples(self, datadir):
