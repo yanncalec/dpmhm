@@ -1,8 +1,8 @@
 ::: dpmhm.datasets.cwru.cwru
 
 ## Tutorial
-For installation and preprocessing, see:
+- [Installing a dataset](../notebooks/datasets/installation.ipynb)
+- [Preprocessing a dataset](../notebooks/datasets/preprocessing.ipynb)
 
-[CWRU.ipynb](../notebooks/CWRU.ipynb)
 
 <!-- ::: notebooks/CWRU.ipynb -->

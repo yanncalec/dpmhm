@@ -60,7 +60,7 @@ def extract_by_category(ds:Dataset, labels:list) -> dict:
 	return dp
 
 
-def split_signal_generator(ds, key:str, n_chunk:int, *, axis:int=-1):
+def split_signal_generator(ds:Dataset, key:str, n_chunk:int, *, axis:int=-1) -> callable:
     """Generator function for splitting a signal into chunks.
 
     Args
@@ -84,13 +84,8 @@ def split_signal_generator(ds, key:str, n_chunk:int, *, axis:int=-1):
 def sliding_window_generator(ds:Dataset, key:str, window_size:Union[int,tuple], hop_size:Union[int,tuple]=None) -> callable:
     """Get the generator for sliding windows of view.
 
-
     Args
     ----
-
-    Returns
-    -------
-    Transformed dataset.
     """
     def _complete(s, w):
         if isinstance(w, int):

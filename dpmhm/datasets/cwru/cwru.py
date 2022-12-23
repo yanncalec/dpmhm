@@ -123,7 +123,7 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
                 # Can not save all channels in a tensor with unknown dimension, like
                 # 'signal': tfds.features.Tensor(shape=(None,1), dtype=tf.float64),
 
-                'label': tfds.features.ClassLabel(names=['None', 'DriveEnd', 'FanEnd']),
+                'label': tfds.features.ClassLabel(names=['None', 'DriveEnd', 'FanEnd']),  # [0, 1, 2]
 
                 'sampling_rate': tf.uint32,  # {12000, 48000} Hz
 
@@ -135,6 +135,7 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
                     'FaultComponent': tf.string,  # {'InnerRace', 'Ball', 'OuterRace3', 'OuterRace6', 'OuterRace12', 'None'}
                     'FaultSize': tf.float32,  # {0.007, 0.014, 0.021, 0.028, 0}
                     'FileName': tf.string,
+                    'Dataset': tf.string,
                 },
 
                 # Another possibility is to use class labels (string),
@@ -201,6 +202,7 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 
             # Use nominal value if the real value is not given.
             metadata['RPM'] = int(dm[krpm]) if krpm in dm else metadata['NominalRPM']
+            metadata['Dataset'] = 'CWRU'
 
             sr = metadata.pop('SamplingRate')  # pop out the field from metadata
 

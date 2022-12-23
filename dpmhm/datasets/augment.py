@@ -1,20 +1,23 @@
-"""Spectrogram Augmentation.
+"""Methods for spectrogram & waveform augmentation.
 
-https://github.com/DemisEom/SpecAugment/blob/master/SpecAugment/spec_augment_tensorflow.py
+See:
+- https://github.com/DemisEom/SpecAugment/blob/master/SpecAugment/spec_augment_tensorflow.py
+- https://github.com/facebookresearch/WavAugment
 """
 # import librosa
 # import librosa.display
-import tensorflow as tf
+# import tensorflow as tf
 # from tensorflow_addons.image import sparse_image_warp
-import numpy as np
 # import matplotlib.pyplot as plt
-from skimage import transform, filters
+
+import numpy as np
+from skimage import transform #, filters
 import random
 
 """
 import matplotlib.patches as patches
 
-Y, hh, ww = dpmhm.datasets.spec_augment.random_crop(X, (64,64), area_ratio=(0.01,1.), aspect_ratio=(1/2,2), channel_axis=0)
+Y, hh, ww = dpmhm.datasets.augment.random_crop(X, (64,64), area_ratio=(0.01,1.), aspect_ratio=(1/2,2), channel_axis=0)
 print(hh, ww)
 
 plt.figure(); ax=plt.gca()
@@ -26,8 +29,27 @@ plt.figure()
 plt.imshow(Y[0])
 """
 
+def randomly(p:float):
+    def wrapper(func):
+        def _func(X, *args, **kwargs):
+            if random.random() < p:
+                return func(X, *args, **kwargs)
+            else:
+                return X
+        return _func
+    return wrapper
 
-def random_crop(X:np.ndarray, output_shape:tuple, *, area_ratio:tuple=(0.01, 1.), aspect_ratio:tuple=(3/4, 4/3), channel_axis=None, max_attempts=1000, seed:int=None, **kwargs):
+
+# def random_flip(X:np.ndarray, p:float, axis:int=-1) -> np.ndarray:
+#     """Randomly flip an array along the given axis.
+#     """
+#     if random.random() < p:
+#         return np.flip(X, axis=axis)
+#     else:
+#         return X
+
+
+def random_crop(X:np.ndarray, output_shape:tuple, *, area_ratio:tuple=(0.01, 1.), aspect_ratio:tuple=(3/4, 4/3), channel_axis:int=None, max_attempts:int=1000, seed:int=None, **kwargs) -> tuple:
     """Randomly crop an image to small patch.
 
     See also:
@@ -35,7 +57,10 @@ def random_crop(X:np.ndarray, output_shape:tuple, *, area_ratio:tuple=(0.01, 1.)
 
     Arguments
     ---------
+    X: input array
+    area_ratio:
     aspect_ratio: tuple
+    channel_axis:
     """
     # # sanity check
     # assert (3 >= X.ndim >= 2) and (X.ndim == len(output_shape))
@@ -75,18 +100,20 @@ def random_crop(X:np.ndarray, output_shape:tuple, *, area_ratio:tuple=(0.01, 1.)
             return transform.resize_local_mean(patch, output_shape, channel_axis=channel_axis), (hp, dh), (wp, dw)
             # break
     else:
-        return X
+        return X, None, None
+
+
+def fade(X:np.ndarray, ratio:float=0.5, axis:int=-1) -> np.ndarray:
+    """Fade.
+    """
+    f = np.linspace(1., ratio, X.shape[axis])
+    rs = [1]*X.ndim; rs[axis]=-1
+    return X*f.reshape(rs)
 
 
 # def blur(X:np.ndarray):
 # 	Y = filters.gaussian(X, sigma=2, channel_axis=0)
 
-def fade(X:np.ndarray, ratio:tuple=(1, 0.5), axis=-1):
-    """Fade.
-    """
-    f = np.linspace(*ratio, X.shape[axis])
-    rs = [1]*X.ndim; rs[axis]=-1
-    return X*f.reshape(rs)
+__all__ = ['randomly', 'random_crop', 'fade']
 
 
-__all__ = ['random_crop', 'fade']

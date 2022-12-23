@@ -1,4 +1,84 @@
 # Obsolete functions
+
+def to_windows(dataset, window_shape:tuple, downsample:tuple=None):
+	"""Sliding windows of view of a time-frequency feature dataset.
+
+	Windows of view are time-frequency patches of a complete spectral feature. It is obtained by sliding a small window along the time-frequency axes.
+
+	Args
+	----
+	dataset: Dataset
+		feature dataset, must have a dictionary structure and contain the fields {'label', 'info', 'feature'} which corresponds to respectively the label, the context information and the spectral feature of shape (channel, freqeuncy, time).
+	window_shape: tuple or int
+	downsample: tuple or int
+
+	Returns
+	-------
+	Transformed dataset of tuple form (label, info, window).
+
+	Notes
+	-----
+	- The field 'info' should contain context information of the frame, e.g. the orginal signal from which the frame is extracted.
+	- We follow the convertion of channel first here for both the input and the output dataset.
+	"""
+	def _slider(S, ws:tuple, ds:tuple):
+		"""Sliding window view of array `S` with window shape `ws` and downsampling rate `ds`.
+		"""
+		# assert ws is int or tuple, ds
+		# assert S.ndim == 3
+		if ws is None:
+			ws = S.shape[1:]
+		elif type(ws) is int:
+			ws = (S.shape[1], ws)
+
+		if ds is None:
+			return  sliding_window_view(S, (S.shape[0], *ws))[0]
+		elif type(ds) is int:
+			return  sliding_window_view(S, (S.shape[0], *ws))[0, :, ::ds]
+		else:
+			return  sliding_window_view(S, (S.shape[0], *ws))[0, ::ds[0], ::ds[1]]
+
+	def _generator(dataset):
+		def _get_generator():
+			for label, metadata, windows in dataset:
+				# `windows` has dimension :
+				# (n_view_frequency, n_view_time, n_channel, window_shape[0], window_shape[1])
+				for F in windows:  # iteration on frequency axis
+					for x in F:  # iteration on time axis
+						# if channel_last:
+						#   x = tf.transpose(x, [1,2,0])  # convert to channel last
+						yield {
+							'label': label,
+							'metadata': metadata,
+							'feature': x,
+							# 'feature': tf.cast(x, _DTYPE),
+						}
+						# yield label, metadata, x
+		return _get_generator
+
+	ds = dataset.map(lambda X: (X['label'], X['metadata'], tf.py_function(
+		func=lambda S: _slider(S.numpy(), window_shape, downsample),
+		inp=[X['feature']],
+		Tout=_DTYPE)),
+		num_parallel_calls=tf.data.AUTOTUNE)
+
+	tensor_shape = tuple(list(ds.take(1))[0][-1].shape[-3:])  # drop the first two dimensions of sliding view
+
+	# Output signature for the windowed view on the feature dataset.
+	_output_signature = {
+		'label': dataset.element_spec['label'],
+		'metadata': dataset.element_spec['metadata'],
+		'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
+		# 'feature': tuple([tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE)]*fold),
+	}
+
+	# output signature, see:
+	# https://www.tensorflow.org/api_docs/python/tf/data/Dataset#from_generator
+	return Dataset.from_generator(_generator(ds),
+		output_signature=_output_signature
+	)
+
+
 def _wav2feature_pipeline_obslt(ds, module_name, extractor:callable, *,
 dc_kwargs:dict, ft_kwargs:dict,
 splits:dict=None, sp_mode:str='uniform', sp_kwargs:dict={}):

@@ -63,9 +63,10 @@ nav:
     - topics/few-shot.md
     - topics/rul.md
   - Tutorials:
-    - Installation:
+    # - Overview: tutorials/tuto.md
+    - Datasets:
       - notebooks/datasets/installation.ipynb
-    # - Add new dataset: tutorials/misc.md
+      - notebooks/datasets/preprocessing.ipynb
   - Reference:
     - Datasets:
       - CWRU: datasets/cwru.md

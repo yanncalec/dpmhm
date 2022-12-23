@@ -15,7 +15,7 @@ import itertools
 # import os
 import numpy as np
 import random
-from numpy.lib.stride_tricks import sliding_window_view
+# from numpy.lib.stride_tricks import sliding_window_view
 import itertools
 import tensorflow as tf
 # from tensorflow import keras
@@ -33,11 +33,8 @@ Logger = logging.getLogger(__name__)
 
 # from . import utils, _DTYPE
 from dpmhm.datasets import utils, _DTYPE, _ENCLEN
-from dpmhm.datasets import spec_augment
-
-# _SIGNAL = 'signal'
-# _FEATURE = 'feature'
-# _SAMPLING_RATE = 'sampling_rate'
+# from dpmhm.datasets import spec_augment
+from dpmhm.datasets.augment import randomly, random_crop, fade
 
 
 class AbstractDatasetTransformer(ABC):
@@ -383,46 +380,20 @@ class FeatureExtractor(AbstractDatasetTransformer):
 
 
 class WindowSlider(AbstractDatasetTransformer):
-    """Windowed view for dataset.
+    """Sliding window view of a time-frequency feature dataset.
 
-    This class performs the sliding window view with downsampling on a feature-transformed dataset.
+    This class performs the sliding window view with downsampling on a feature-transformed dataset. Window views are time-frequency patches of a complete spectral feature. It is obtained by sliding a small window along the time-frequency axes.
     """
 
-    def __init__(self, dataset, *, window_shape:tuple, downsample:tuple):
+    def __init__(self, dataset:Dataset, *, window_size:Union[tuple,int], hop_size:Union[tuple,int]=None):
         """
         Args
         ----
-        dataset: input
-            original dataset
-        window_shape: tuple or int
-            either a tuple `(frequency, time)`, i.e. the size of the sliding window in frequency and time axes, or an int which is the size of the sliding window in time axis (the the whole frequency axis is used in this case). No windowed view is created if set to `None`.
-        downsample: tuple or int
-            downsampling rate in frequency and time axes, either tuple or int, corresponding to the given `frame_size`. No downsampling if set to `None`.
-        """
-        assert dataset.__transformer__ is FeatureExtractor
-        self._dataset_origin = dataset
-        self._window_shape = window_shape
-        self._downsample = downsample
+        dataset:
+            feature dataset, must have a dictionary structure with the field 'feature', which contains the spectral feature and has dimension (channel, freqeuncy, time).
+        window_size:
 
-    def build(self):
-        return self.to_windows(self._dataset_origin, self._window_shape, self._downsample)
-
-    # @property
-    # def full_label_dict(self) -> dict:
-    # 	return self._dataset_origin.full_label_dict
-
-    @classmethod
-    def to_windows(cls, dataset, window_shape:tuple, downsample:tuple=None):
-        """Sliding windows of view of a time-frequency feature dataset.
-
-        Windows of view are time-frequency patches of a complete spectral feature. It is obtained by sliding a small window along the time-frequency axes.
-
-        Args
-        ----
-        dataset: Dataset
-            feature dataset, must have a dictionary structure and contain the fields {'label', 'info', 'feature'} which corresponds to respectively the label, the context information and the spectral feature of shape (channel, freqeuncy, time).
-        window_shape: tuple or int
-        downsample: tuple or int
+        hop_size:
 
         Returns
         -------
@@ -430,64 +401,28 @@ class WindowSlider(AbstractDatasetTransformer):
 
         Notes
         -----
-        - The field 'info' should contain context information of the frame, e.g. the orginal signal from which the frame is extracted.
-        - We follow the convertion of channel first here for both the input and the output dataset.
+        We follow the convertion of channel first here for both the input and the output dataset.
         """
-        def _slider(S, ws:tuple, ds:tuple):
-            """Sliding window view of array `S` with window shape `ws` and downsampling rate `ds`.
-            """
-            # assert ws is int or tuple, ds
-            # assert S.ndim == 3
-            if ws is None:
-                ws = S.shape[1:]
-            elif type(ws) is int:
-                ws = (S.shape[1], ws)
+        assert dataset.__transformer__ is FeatureExtractor
+        self._dataset_origin = dataset
+        self._window_size = window_size
+        self._hop_size = hop_size
 
-            if ds is None:
-                return  sliding_window_view(S, (S.shape[0], *ws))[0]
-            elif type(ds) is int:
-                return  sliding_window_view(S, (S.shape[0], *ws))[0, :, ::ds]
-            else:
-                return  sliding_window_view(S, (S.shape[0], *ws))[0, ::ds[0], ::ds[1]]
+    def build(self):
+        return self.to_windows(self._dataset_origin, self._window_size, self._hop_size)
 
-        def _generator(dataset):
-            def _get_generator():
-                for label, metadata, windows in dataset:
-                    # `windows` has dimension :
-                    # (n_view_frequency, n_view_time, n_channel, window_shape[0], window_shape[1])
-                    for F in windows:  # iteration on frequency axis
-                        for x in F:  # iteration on time axis
-                            # if channel_last:
-                            #   x = tf.transpose(x, [1,2,0])  # convert to channel last
-                            yield {
-                                'label': label,
-                                'metadata': metadata,
-                                'feature': x,
-                                # 'feature': tf.cast(x, _DTYPE),
-                            }
-                            # yield label, metadata, x
-            return _get_generator
+    # @property
+    # def full_label_dict(self) -> dict:
+    # 	return self._dataset_origin.full_label_dict
 
-        ds = dataset.map(lambda X: (X['label'], X['metadata'], tf.py_function(
-            func=lambda S: _slider(S.numpy(), window_shape, downsample),
-            inp=[X['feature']],
-            Tout=_DTYPE)),
-            num_parallel_calls=tf.data.AUTOTUNE)
-
-        tensor_shape = tuple(list(ds.take(1))[0][-1].shape[-3:])  # drop the first two dimensions of sliding view
-
-        # Output signature for the windowed view on the feature dataset.
-        _output_signature = {
-            'label': dataset.element_spec['label'],
-            'metadata': dataset.element_spec['metadata'],
-            'feature': tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE),
-            # 'feature': tuple([tf.TensorSpec(shape=tf.TensorShape(tensor_shape), dtype=_DTYPE)]*fold),
-        }
-
+    @classmethod
+    def to_windows(cls, dataset, window_size, hop_size):
         # output signature, see:
         # https://www.tensorflow.org/api_docs/python/tf/data/Dataset#from_generator
-        return Dataset.from_generator(_generator(ds),
-            output_signature=_output_signature
+
+        return Dataset.from_generator(
+            utils.sliding_window_generator(dataset, 'feature', window_size, hop_size),
+            output_signature=dataset.element_spec,
         )
 
     @property
@@ -498,37 +433,50 @@ class WindowSlider(AbstractDatasetTransformer):
             self._data_dim
         except:
             self._data_dim = tuple(list(self.dataset.take(1))[0]['feature'].shape)
-            # self._data_dim = tuple(list(self.dataset.take(1))[0]['feature'][0].shape)
         return self._data_dim
 
 
-def _flip_func(x:np.ndarray, p:float):
-    if random.random() < p:
-        return np.flip(x, axis=-1)
-    else:
-        return x
-
-
 class SpecAugment(AbstractDatasetTransformer):
-    """Spec augment of a feature dataset.
+    """Spectrogram augmentation of a dataset.
+
+    This class performs random augmentations on a feature dataset:
+
+    1. crop a random rectangle patch of the spectrogram
+    2. randomly flip the time axis
+    3. randomly blur the spectrogram
+    4. randomly fade along the time axis
+
+    These augmentations are applied in order and independently with probability (for step 2,3,4, step 1 is always applied).
     """
-    def __init__(self, dataset, *, output_shape:tuple=(64,64), flip_prob:float=0, blur_sigma:float=None, fade_ratio:tuple=None, rc_kwargs:dict={}, **kwargs):
+    def __init__(self, dataset:Dataset, *, output_shape:tuple=(64,64), crop_kwargs:dict={}, flip_kwargs:dict={'prob':0.5, 'axis':-1}, blur_kwargs:dict={'sigma':1., 'prob':0.5}, fade_kwargs:dict={'ratio':0.5, 'prob':0.5}, **kwargs):
         # print(dataset.__transformer__)
         assert dataset.__transformer__ is FeatureExtractor
         self._dataset_origin = dataset
-        # self._n_view = n_view
 
-        _random_crop = lambda x: spec_augment.random_crop(x, output_shape, channel_axis=0, **rc_kwargs)
-        _flip = lambda x: _flip_func(x, flip_prob)
-        if blur_sigma is None:
-            _blur = lambda x: x
-        else:
-            _blur = lambda x: skimage.filters.gaussian(x, sigma=blur_sigma, channel_axis=0)
-        if fade_ratio is None:
-            _fade = lambda x: x
-        else:
-            _fade = lambda x: spec_augment.fade(x, fade_ratio)
-        self.spec_aug = lambda x: _fade(_blur(_flip(_random_crop(x))))
+        def _crop(x):
+            return random_crop(x, output_shape, channel_axis=0, **crop_kwargs)[0]
+
+        @randomly(flip_kwargs['prob'])
+        def _flip(x):
+            return np.flip(x, axis=flip_kwargs['axis'])
+
+        @randomly(blur_kwargs['prob'])
+        def _blur(x):
+            return skimage.filters.gaussian(x, sigma=blur_kwargs['sigma'], channel_axis=0)
+
+        @randomly(fade_kwargs['prob'])
+        def _fade(x):
+            return fade(x, fade_kwargs['ratio'])
+
+        # _crop = lambda x: random_crop(x, output_shape, channel_axis=0, **crop_kwargs)
+
+        # _flip = lambda x: randomly(flip_kwargs['prob'])(np.flip)(x, axis=flip_kwargs['axis'])
+
+        # _blur = lambda x: randomly(blur_kwargs['prob'])(skimage.filters.gaussian)(x, sigma=blur_kwargs['sigma'], channel_axis=0)
+
+        # _fade = lambda x: randomly(fade_kwargs['prob'])(fade)(x, fade_kwargs['ratio'])
+
+        self.spec_aug = lambda x: _fade(_blur(_flip(_crop(x))))
 
     def build(self):
         def _mapper(X):
@@ -589,7 +537,7 @@ class Product(AbstractDatasetTransformer):
 
     By construction of the product dataset, iteration on the dataset will show repeated `x` in the output `(x,y,flag)`, which is the expected behavior. To break this partial determinism, use `shuffle()`.
     """
-    def __init__(self, dataset, dataset2=None, *, keys:list=[], positive:bool=None):
+    def __init__(self, dataset:Dataset, dataset2:Dataset=None, *, keys:list=[], positive:bool=None):
         """
         Args
         ----
