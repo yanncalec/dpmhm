@@ -1,19 +1,6 @@
-"""DCASE2021 Task2 dataset.
-
-Type of experiments: labelled data.
 """
+DCASE2021 Task2 dataset:
 
-import os
-# import json
-import tensorflow as tf
-import tensorflow_datasets as tfds
-from pathlib import Path
-
-# from dpmhm.datasets import _DTYPE
-
-
-_DESCRIPTION = """
-DCASE2021 Task2:
 Unsupervised Anomalous Sound Detection for Machine Condition Monitoring under Domain Shifted Conditions.
 
 Description
@@ -24,32 +11,42 @@ Homepage
 --------
 http://dcase.community/challenge2021/task-unsupervised-detection-of-anomalous-sounds
 
-Original data
-=============
-Format: wav file, int16
-Sampling rate: 16000 Hz
-Recording duration: 10 seconds
-Number of channels: 1
-Domain: source, target
-Label: normal, anomaly or unknown
-Split: train, test, query
+Original Dataset
+================
+- Type of experiments: labelled data
+- Format: wav file, int16
+- Sampling rate: 16000 Hz
+- Recording duration: 10 seconds
+- Number of channels: 1
+- Domain: source, target
+- Label: normal, anomaly or unknown
+- Split: train, test, query
 
-Processed data
-==============
+Built Dataset
+=============
 Split: ['train', 'test', 'query']
 
 Features
 --------
-'signal': {'1': audio},
-'sampling_rate': {'1': 16000},
-'label': ['normal', 'anomaly', 'unknown'],
-'metadata': {
-	'Machine': name of machine,
-	'Section': section ID,
-	'Domain': source or target domain,
-	'FileName': original file name,
-}
+- 'signal': {'1': audio},
+- 'sampling_rate': 16000
+- 'label': ['normal', 'anomaly', 'unknown'],
+- 'metadata': {
+		'Machine': name of machine,
+		'Section': section ID,
+		'Domain': source or target domain,
+		'FileName': original file name,
+	}
 """
+
+import os
+# import json
+import tensorflow as tf
+import tensorflow_datasets as tfds
+from pathlib import Path
+
+from dpmhm.datasets import _DTYPE
+
 
 _CITATION = """
 @article{Kawaguchi_arXiv2021_01,
@@ -79,24 +76,11 @@ _CITATION = """
 
 # _CONDITION = ['normal', 'anomaly', 'unknown']
 
-# Manual installation:
-# Pass the path of downloaded data to the command `tfds build dcase2021 --manual_dir ${path}` or use the keyword argument `download_and_prepare_kwargs` in the method `tfds.load()`.
-
 
 class DCASE2021(tfds.core.GeneratorBasedBuilder):
 	"""DatasetBuilder for DCASE 2021 task2 dataset."""
 
 	VERSION = tfds.core.Version('1.0.0')
-
-	MANUAL_DOWNLOAD_INSTRUCTIONS = """
-	Automatic download is disabled. Please download manually all zip files (without extraction) via the following links
-
-	- Development dataset: https://zenodo.org/record/4562016#.YdanYooo9hE
-	- Additional training dataset: https://zenodo.org/record/4660992#.YdanZIoo9hE
-	- Evaluation dataset: https://zenodo.org/record/4884786#.YdanZooo9hE
-
-	and proceed the installation manually.
-	"""
 
 	RELEASE_NOTES = {
 			'1.0.0': 'Initial release.',
@@ -105,7 +89,7 @@ class DCASE2021(tfds.core.GeneratorBasedBuilder):
 	def _info(self) -> tfds.core.DatasetInfo:
 		return tfds.core.DatasetInfo(
 			builder=self,
-			description=_DESCRIPTION,
+            description=__doc__,
 			features=tfds.features.FeaturesDict({
 				'signal': {
 					'1': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.BYTES),

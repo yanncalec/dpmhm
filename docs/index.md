@@ -64,7 +64,7 @@ See the page [Models](models.md) for more details.
 
 
 ## Tutorials
-We provide a lot of tutorials and examples of usage to improve the users' experience with the package. Most of tutorials come in form of Jupyter notebooks and can be modified by users for their own purpose. See the Tutorial section for more details.
+Tutorials and examples of usage are provided. Most of them come in form of Jupyter notebooks and can be modified by users for their own purpose. See the Tutorial section for more details.
 
 ## Reference
 Documentation on the API can be found in the Reference section.

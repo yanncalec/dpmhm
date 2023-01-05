@@ -1,5 +1,6 @@
 """Classes for dataset transformer.
 
+Transformers allows to define a pipeline of preprocessing.
 
 Convention
 ----------
@@ -8,17 +9,12 @@ We follow the convention of channel first: The original dataset as well as the t
 
 from typing import Union # List, Dict
 from abc import ABC, abstractmethod, abstractproperty, abstractclassmethod
-# from importlib import import_module
-# import tempfile
 import itertools
 
-# import os
 import numpy as np
 import random
-# from numpy.lib.stride_tricks import sliding_window_view
 import itertools
 import tensorflow as tf
-# from tensorflow import keras
 from tensorflow.data import Dataset
 # from tensorflow.python.data.ops.dataset_ops import DatasetV2
 
@@ -31,9 +27,7 @@ import librosa
 import logging
 Logger = logging.getLogger(__name__)
 
-# from . import utils, _DTYPE
 from dpmhm.datasets import utils, _DTYPE, _ENCLEN
-# from dpmhm.datasets import spec_augment
 from dpmhm.datasets.augment import randomly, random_crop, fade
 
 
@@ -67,32 +61,6 @@ class AbstractDatasetTransformer(ABC):
         """
         Dataset.save(self.dataset, outdir, compression=compression)
         self.dataset = Dataset.load(outdir, compression=compression)
-
-    # @abstractmethod
-    # def init_preprocess_model_supervised(cls):
-    # 	pass
-
-    # @abstractmethod
-    # def apply_preprocess_model_supervised(cls):
-    # 	pass
-
-    # @abstractmethod
-    # def init_preprocess_model_unsupervised(cls):
-    # 	pass
-
-    # @abstractmethod
-    # def apply_preprocess_model_unsupervised(cls):
-    # 	pass
-
-    # @property
-    # def data_dim(self):
-    # 	"""Dimension of the data vector.
-    # 	"""
-    # 	try:
-    # 		self._data_dim
-    # 	except:
-    # 		self._data_dim = tuple(list(self.dataset.take(1))[0][self.data_key].shape)
-    # 	return self._data_dim
 
     # @abstractproperty
     # def data_key(self) -> str:
@@ -310,12 +278,14 @@ class DatasetCompactor(AbstractDatasetTransformer):
         @tf.function
         def _compact(X):
             d = [X['label']] + [X['metadata'][k] for k in self._keys]
+            x = [X['signal'][ch] for ch in self._channels]
 
             return {
                 'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
                 'metadata': X['metadata'],
                 'sampling_rate': X['sampling_rate'],
-                'signal': [X['signal'][ch] for ch in self._channels],
+                # 'signal': x,
+                'signal': tf.reshape(x, (len(self._channels), -1))
             }
         # return dataset.filter(_has_channels)
         ds = dataset.filter(lambda X:_has_channels(X))
@@ -325,7 +295,7 @@ class DatasetCompactor(AbstractDatasetTransformer):
 class FeatureExtractor(AbstractDatasetTransformer):
     """Class for feature extractor.
 
-    This class performs the feature transform on a compacted dataset.
+    This class performs the feature transform on a compacted dataset. A feature transform increases the dimension of data by 1, e.g. from 1D signal to 2D spectrogram. The feature transformed dataset has fields {'label', 'metadata', 'feature'}.
     """
 
     def __init__(self, dataset, extractor:callable):
@@ -333,9 +303,9 @@ class FeatureExtractor(AbstractDatasetTransformer):
         Args
         ----
         dataset:
-            compacted dataset
+            compacted dataset, with fields {'label', 'metadata', 'signal'}.
         extractor:
-            a callable taking arguments (signal, sampling_rate) and returning extracted features.
+            a callable taking arguments (signal, sampling_rate) and returning extracted 2D features.
         """
         assert dataset.__transformer__ is DatasetCompactor
         self._dataset_origin = dataset
@@ -349,31 +319,26 @@ class FeatureExtractor(AbstractDatasetTransformer):
     # 	return self._dataset_origin.full_label_dict
 
     @classmethod
-    def to_feature(cls, ds:Dataset, extractor:callable):
+    def to_feature(cls, ds:Dataset, extractor:callable) -> Dataset:
         """Feature transform of a compacted dataset of signal.
 
-        This method transforms a waveform to spectral features. The transformed database has a dictionary structure which contains the fields {'label', 'metadata', 'feature'}.
-
-        Args
-        ----
-        ds: Dataset
-            compacted/resampled signal dataset, with fields {'label', 'metadata', 'signal'}.
-        extractor: callable
-            method for feature extraction
-
-        Notes
-        -----
-        Unless the shape of the returned value by self._extractor can be pre-determined, there's no way to make lazy evaluation here (for e.g.faster scanning of the mapped dataset).
+        The transformed database has a dictionary structure which contains
         """
+        n_channels = ds.element_spec['signal'].shape[0]
+
+        @tf.function
         def _feature_map(X):
-            return {
-                'label': X['label'],  # string label
-                'metadata': X['metadata'],
-                'feature': tf.py_function(
+            Xf = tf.py_function(
                     func=lambda x, sr: extractor(x.numpy(), sr),  # makes it a tf callable. x.numpy() must be used inside the method `extractor()`
                     inp=[X['signal'], X['sampling_rate']],
                     Tout=_DTYPE
-                    )  # the most compact way
+                )
+            Xf.set_shape((n_channels, None, None))
+            return {
+                'label': X['label'],  # string label
+                'metadata': X['metadata'],
+                # 'feature': tf.reshape(Xf, tf.shape(Xf))  # has no effect
+                'feature': Xf
             }
 
         return ds.map(_feature_map, num_parallel_calls=tf.data.AUTOTUNE)
@@ -451,7 +416,9 @@ class SpecAugment(AbstractDatasetTransformer):
     def __init__(self, dataset:Dataset, *, output_shape:tuple=(64,64), crop_kwargs:dict={}, flip_kwargs:dict={'prob':0.5, 'axis':-1}, blur_kwargs:dict={'sigma':1., 'prob':0.5}, fade_kwargs:dict={'ratio':0.5, 'prob':0.5}, **kwargs):
         # print(dataset.__transformer__)
         assert dataset.__transformer__ is FeatureExtractor
+
         self._dataset_origin = dataset
+        self._output_shape = output_shape
 
         def _crop(x):
             return random_crop(x, output_shape, channel_axis=0, **crop_kwargs)[0]
@@ -479,6 +446,7 @@ class SpecAugment(AbstractDatasetTransformer):
         self.spec_aug = lambda x: _fade(_blur(_flip(_crop(x))))
 
     def build(self):
+        @tf.function
         def _mapper(X):
             Y = X.copy()
             Y['feature'] = tf.py_function(
@@ -486,6 +454,8 @@ class SpecAugment(AbstractDatasetTransformer):
                 inp=[X['feature']],
                 Tout=_DTYPE
             )
+            tf.reshape(Y['feature'], (-1, *self._output_shape))
+
             return Y
 
         return self._dataset_origin.map(_mapper, num_parallel_calls=tf.data.AUTOTUNE)

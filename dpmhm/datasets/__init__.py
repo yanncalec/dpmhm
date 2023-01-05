@@ -1,13 +1,6 @@
+"""Collection of open source datasets.
 """
-Collection of open source datasets.
 
-Installation
-------------
-Run from the subfolder `datasets`:
-```
-$ tfds build $NAME_OF_DATABASE --manual_dir $PATH_OF_UNZIPPED_FILES
-```
-"""
 # from .cwru import CWRU
 # from .dcase import DCASE2021
 # from .seuc import SEUC
@@ -22,19 +15,21 @@ $ tfds build $NAME_OF_DATABASE --manual_dir $PATH_OF_UNZIPPED_FILES
 # from .phmdc import Phmap2021
 
 _DATASET_LIST = ['CWRU',
+    'DCASE2020',
     'DCASE2021',
+    'DCASE2022',
     'DIRG',
     'FEMTO',
     'FRAUNHOFER151',
     'FRAUNHOFER205',
-    'IMS',
-    'MAFAULDA',
-    'MFPT',
-    'OTTAWA',
-    'PADERBORN',
-    'PHMAP2021',
-    'SEUC',
-    'XJTU'
+    # 'IMS',
+    # 'MAFAULDA',
+    # 'MFPT',
+    # 'OTTAWA',
+    # 'PADERBORN',
+    # 'PHMAP2021',
+    # 'SEUC',
+    # 'XJTU'
 ]
 
 def get_dataset_list():

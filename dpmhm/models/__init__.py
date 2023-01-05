@@ -1,4 +1,27 @@
-# from . import vggish
-# from .sl import *
+"""Collection of machine learning models.
+"""
+
+# from .sl import vggish
+# from .ul import autoencoder
 # from .ssl import *
 
+from dataclasses import dataclass
+from abc import ABC, abstractmethod
+
+
+@dataclass
+class AbstractConfig(ABC):
+    """Abstract class of configuration.
+    """
+    input_shape:tuple  	# Dimension of input feature (data format: channel last)
+    batch_size:int = 256
+    epochs:int = 100
+    training_steps:int = 1000
+
+    @classmethod
+    def from_dict(cls, obj: dict):
+        return cls(**obj)
+
+    @abstractmethod
+    def optimizer(self):
+        pass

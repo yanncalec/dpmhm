@@ -26,7 +26,7 @@ def nested_type_spec(sp):
     return tp
 
 
-def keras_model_supervised(ds:Dataset, labels:list=None, normalize:bool=False):
+def keras_model_supervised(ds:Dataset, labels:list=None, normalize:bool=False, *, shape:tuple=None, feature_field:str='feature', label_field:str='label') -> models.Model:
     """Initialize a Keras preprocessing model for supervised training.
 
     The processing model performs the following transformation on a dataset:
@@ -36,20 +36,28 @@ def keras_model_supervised(ds:Dataset, labels:list=None, normalize:bool=False):
 
     Args
     ----
-    ds: input dataset of structure `(data, label)`
-        the data field is channel-first.
-    labels: list of string labels for lookup
-        if not given the labels will be automatically determined from the dataset.
+    ds:
+        input dataset. The feature field is supposed channel-first.
+    labels:
+        list of string labels for lookup. If not given the labels will be automatically determined from the dataset.
     normalize:
         if True estimate the mean and variance by channel and apply the normalization.
+    shape:
+        restore shape information of the feature
 
     Returns
     -------
-    model: a Keras model
-        the model can be applied on a dataset as `ds.map(lambda x: model(x))`
+    model:
+        the Keras preprocessing model that can be applied on a dataset as `ds.map(lambda x: model(x))`
     """
-    # inputs = nested_type_spec(ds.element_spec)
-    inputs = (layers.Input(type_spec=v) for v in ds.element_spec)
+    # For nested dataset
+    inputs = nested_type_spec(ds.element_spec)
+    feature_input = inputs[feature_field]
+    label_input = inputs[label_field]
+
+    # # For dataset of type (feature, label)
+    # inputs = tuple(layers.Input(type_spec=v) for v in ds.element_spec)
+    # feature_input, label_input = inputs
 
     # Label conversion: string to int/one-hot
     # Gotcha: by default the converted integer label is zero-based and has zero as the first label which represents the off-class. This increases the number of class by 1 and must be taken into account in the model fitting.
@@ -62,7 +70,7 @@ def keras_model_supervised(ds:Dataset, labels:list=None, normalize:bool=False):
         # Adaptation depends on the given dataset
         label_layer.adapt([x[-1].numpy() for x in ds])
 
-    label_output = label_layer(inputs[-1])
+    label_output = label_layer(label_input)
 
     # Normalization
     # https://keras.io/api/layers/preprocessing_layers/numerical/normalization/
@@ -74,7 +82,7 @@ def keras_model_supervised(ds:Dataset, labels:list=None, normalize:bool=False):
         variance = X.var(axis=-1)
 
         feature_layer = layers.Normalization(axis=0, mean=mean, variance=variance)  # have to provide mean and variance if axis=0 is used
-        feature_output = feature_layer(inputs[0])
+        feature_output = feature_layer(feature_input)
         #
         # # The following works but will generate extra dimensions when applied on data
         # X = np.asarray([x[data_name].numpy() for x in ds]).transpose([0,2,3,1])
@@ -86,13 +94,29 @@ def keras_model_supervised(ds:Dataset, labels:list=None, normalize:bool=False):
         # layer = keras.layers.Normalization(axis=0)
         # layer.adapt(X)  # complain about the unknown shape at dimension 0
     else:
-        feature_output = inputs[0]
+        feature_output = feature_input
 
     # to channel-last
-    outputs = (tf.transpose(feature_output, [1,2,0]), label_output)
+    feature_output = tf.transpose(feature_output, [1,2,0])
+
+    # Restore the shape information
+    if shape is not None:
+        feature_output = tf.reshape(feature_output, shape)
+    label_output = tf.reshape(label_output, ())
+    outputs = (feature_output, label_output)
 
     model = models.Model(inputs, outputs)
-    # ds.map(lambda x: model(x), num_parallel_calls=tf.data.AUTOTUNE)
+
+    # def model(X):
+    #     # Restore the shape information.
+    #     x, y = _model(X)
+    #     if shape is not None:
+    #         # assert tf.size(x) == np.prod(shape)  # doesn't work
+    #         # x.set_shape(shape)
+    #         x = tf.reshape(x, shape)
+    #     y.set_shape(())
+    #     return x, y
+
     return model
 
 

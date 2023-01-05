@@ -1,22 +1,6 @@
-"""DCASE2022 Task2 dataset.
-
-Type of experiments: labelled data.
 """
+DCASE2022 Task2 dataset:
 
-import os
-# import json
-import tensorflow as tf
-import tensorflow_datasets as tfds
-from pathlib import Path
-# import pandas as pd
-# import numpy as np
-
-# from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
-# from dpmhm.datasets import _DTYPE
-
-
-_DESCRIPTION = """
-DCASE2022 Task2:
 Unsupervised Anomalous Sound Detection for Machine Condition Monitoring under Domain Shifted Conditions.
 
 Description
@@ -35,13 +19,13 @@ https://dcase.community/challenge2022/task-unsupervised-anomalous-sound-detectio
 
 Original data
 =============
-Format: wav file, int16
-Sampling rate: 16000 Hz
-Recording duration: 10 seconds
-Number of channels: 1
-Domain: source, target
-Label: normal, anomaly or unknown
-Split: train, test, query
+- Format: wav file, int16
+- Sampling rate: 16000 Hz
+- Recording duration: 10 seconds
+- Number of channels: 1
+- Domain: source, target
+- Label: normal, anomaly or unknown
+- Split: train, test, query
 
 Processed data
 ==============
@@ -49,17 +33,29 @@ Split: ['train', 'test', 'query']
 
 Features
 --------
-'signal': {'1': audio},
-'sampling_rate': {'1': 16000},
-'label': ['normal', 'anomaly', 'unknown'],
-'metadata': {
-	'Machine': name of machine,
-	'Section': section ID,
-	'Domain': source or target domain,
-	'Attribute': attribute of domain,
-	'FileName': original file name,
-}
+- 'signal': {'1': audio},
+- 'sampling_rate': 16000,
+- 'label': ['normal', 'anomaly', 'unknown'],
+- 'metadata': {
+		'Machine': name of machine,
+		'Section': section ID,
+		'Domain': source or target domain,
+		'Attribute': attribute of domain,
+		'FileName': original file name,
+	}
 """
+
+import os
+# import json
+import tensorflow as tf
+import tensorflow_datasets as tfds
+from pathlib import Path
+# import pandas as pd
+# import numpy as np
+
+# from dpmhm.datasets.preprocessing import AbstractDatasetCompactor, AbstractFeatureTransformer, AbstractPreprocessor
+from dpmhm.datasets import _DTYPE
+
 
 _CITATION = """
 @article{Dohi_arXiv2022_02,
@@ -75,9 +71,6 @@ class DCASE2022(tfds.core.GeneratorBasedBuilder):
 
 	VERSION = tfds.core.Version('1.0.0')
 
-	MANUAL_DOWNLOAD_INSTRUCTIONS = """
-	"""
-
 	RELEASE_NOTES = {
 			'1.0.0': 'Initial release.',
 	}
@@ -85,7 +78,7 @@ class DCASE2022(tfds.core.GeneratorBasedBuilder):
 	def _info(self) -> tfds.core.DatasetInfo:
 		return tfds.core.DatasetInfo(
 			builder=self,
-			description=_DESCRIPTION,
+			description=__doc__,
 			features=tfds.features.FeaturesDict({
 				'signal': {
 					'1': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.BYTES),
@@ -118,7 +111,7 @@ class DCASE2022(tfds.core.GeneratorBasedBuilder):
 		if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
 			datadir = Path(dl_manager._manual_dir)
 		else:
-			raise FileNotFoundError(self.MANUAL_DOWNLOAD_INSTRUCTIONS)
+			raise NotImplementedError()
 
 		train_list = [str(x) for x in datadir.rglob('*train*.wav')]
 		test_list = [str(x) for x in datadir.rglob('*test*anomaly*.wav')] + [str(x) for x in datadir.rglob('*test*norm*.wav')]

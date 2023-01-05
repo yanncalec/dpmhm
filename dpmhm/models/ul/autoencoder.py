@@ -1,31 +1,30 @@
 """Auto-Encoder"""
 
 import tensorflow as tf
-from keras import layers, models #, regularizers
+from tensorflow.keras import layers, models #, regularizers
 from dataclasses import dataclass
-from .custom import TConv2D, TDense
+from ..custom import TConv2D, TDense
+from .. import AbstractConfig
 
 
 @dataclass
-class CAE_Params:
-	"""Global parameters.
-	"""
-	# Dimension of input feature (data format: channel last)
-	n_channels:int = 3
-	n_bands:int = 64
-	n_frames:int = 64
+class Config(AbstractConfig):
+    """Global parameters.
+    """
+    # Dimension of hidden representation
+    n_embedding:int = 128
 
-	# Dimension of hidden representation
-	n_embedding:int = 128
+    # Parameters of ConvNet
+    kernel_size:tuple = (3,3)
+    activation:str = 'relu'
+    padding:str = 'same' # 'valid' or 'same'
+    pool_size:tuple = (2,2)
+    strides:tuple = (2,2)
+    # use_bias:bool = False
+    # activity_regularizer = None
 
-	# Parameters of ConvNet
-	kernel_size:tuple = (3,3)
-	activation:str = 'relu'
-	padding:str = 'same' # 'valid' or 'same'
-	pool_size:tuple = (2,2)
-	strides:tuple = (2,2)
-	# use_bias:bool = False
-  # activity_regularizer = None
+    def optimizer(self):
+        return tf.keras.optimizers.Adam()
 
 
 class CAES(models.Model):
@@ -35,28 +34,29 @@ class CAES(models.Model):
     -----
     Use more blocks and larger kernel size to get more smoothing in the reconstruction.
     """
-    def __init__(self, params:CAE_Params):
-        input_dim = (params.n_bands, params.n_frames, params.n_channels)
-        kernel_size = params.kernel_size
-        activation = params.activation
-        padding = params.padding
-        strides = params.strides
-        pool_size = params.pool_size
-        n_embedding  = params.n_embedding
+    def __init__(self, c:Config):
+        self._config = c
+        input_shape = c.input_shape  # n_bands, n_frames, c.n_channels
+        kernel_size = c.kernel_size
+        activation = c.activation
+        padding = c.padding
+        strides = c.strides
+        pool_size = c.pool_size
+        n_embedding  = c.n_embedding
 
         super().__init__()
 
         layers_encoder = [
-            layers.Input(shape=input_dim, name='input_enc'),
+            layers.Input(shape=input_shape, name='input_enc'),
             # Block 1
             layers.Conv2D(32, kernel_size=kernel_size, activation=activation, padding=padding, name='conv1_enc'),
             layers.MaxPooling2D(pool_size=pool_size, strides=strides, name='pool1_enc'),
             # Block 2
             layers.Conv2D(64, kernel_size=kernel_size, activation=activation, padding=padding, name='conv2_enc'),
             layers.MaxPooling2D(pool_size=pool_size, strides=strides, name='pool2_enc'),
-            # # Block 3
-            # layers.Conv2D(128, kernel_size=kernel_size, activation=activation, padding=padding, name='conv3_enc'),
-            # layers.MaxPooling2D(pool_size=pool_size, strides=strides, name='pool3_enc'),
+            # Block 3
+            layers.Conv2D(128, kernel_size=kernel_size, activation=activation, padding=padding, name='conv3_enc'),
+            layers.MaxPooling2D(pool_size=pool_size, strides=strides, name='pool3_enc'),
             # Block fc
             layers.Flatten(name='flatten'),
             layers.Dense(n_embedding, activation=activation,
@@ -73,22 +73,22 @@ class CAES(models.Model):
             # activity_regularizer=regularizers.L1(1e-5),
             name='fc1_dec'),
             layers.Reshape(self.encoder.layers[-3].output_shape[1:], name='reshape'),
-            # # Block 3
-            # layers.UpSampling2D(strides, name='ups3_dec'),
-            # layers.Conv2DTranspose(64, kernel_size=kernel_size, activation=activation, padding=padding, name='tconv3_dec'),
+            # Block 3
+            layers.UpSampling2D(strides, name='ups3_dec'),
+            layers.Conv2DTranspose(64, kernel_size=kernel_size, activation=activation, padding=padding, name='tconv3_dec'),
             # Block 2
             layers.UpSampling2D(strides, name='ups2_dec'),
             layers.Conv2DTranspose(32, kernel_size=kernel_size, activation=activation, padding=padding, name='tconv2_dec'),
             # Block 1
             layers.UpSampling2D(strides, name='ups1_dec'),
-            layers.Conv2DTranspose(input_dim[-1], kernel_size=kernel_size, activation=None, padding=padding, name='tconv1_dec'),
+            layers.Conv2DTranspose(input_shape[-1], kernel_size=kernel_size, activation=None, padding=padding, name='tconv1_dec'),
         ]
 
         self.decoder = models.Sequential(layers_decoder, name='decoder')
         # self.decoder.build()
 
         self.autoencoder = models.Sequential(layers_encoder+layers_decoder, name='auto-encoder')
-        # self.build(input_shape=(None, *input_dim))
+        # self.build(input_shape=(None, *input_shape))
 
     def call(self, x):
         return self.decoder(self.encoder(x))
@@ -101,19 +101,20 @@ class CAES_ws(models.Model):
     - The model fails to train with `decoder.trainable=False`.
     - MSE much larger than the case of no weight sharing.
     """
-    def __init__(self, params:CAE_Params):
-        input_dim = (params.n_bands, params.n_frames, params.n_channels)
-        kernel_size = params.kernel_size
-        activation = params.activation
-        padding = params.padding
-        strides = params.strides
-        pool_size = params.pool_size
-        n_embedding  = params.n_embedding
+    def __init__(self, c:Config):
+        self._config = c
+        input_shape = c.input_shape
+        kernel_size = c.kernel_size
+        activation = c.activation
+        padding = c.padding
+        strides = c.strides
+        pool_size = c.pool_size
+        n_embedding  = c.n_embedding
 
         super().__init__()
 
         layers_encoder = [
-            layers.Input(shape=input_dim, name='input_enc'),
+            layers.Input(shape=input_shape, name='input_enc'),
             # Block 1
             layers.Conv2D(32, kernel_size=kernel_size, activation=activation, padding=padding, name='conv1_enc'),
             layers.MaxPooling2D(pool_size=pool_size, strides=strides, name='pool1_enc'),
@@ -161,7 +162,7 @@ class CAES_ws(models.Model):
         # self.decoder.trainable = False
 
         self.autoencoder = models.Sequential(layers_encoder+layers_decoder, name='auto-encoder')
-        # self.build(input_shape=(None, *input_dim))
+        # self.build(input_shape=(None, *input_shape))
 
     def call(self, x):
         return self.decoder(self.encoder(x))

@@ -1,4 +1,4 @@
-"""
+"""TODO
 Yu, H., Wang, K., Li, Y., Zhao, W., 2019. Representation Learning With Class Level Autoencoder for Intelligent Fault Diagnosis. IEEE Signal Processing Letters 26, 1476–1480. https://doi.org/10.1109/LSP.2019.2936310
 
 https://github.com/KWflyer/CLAE

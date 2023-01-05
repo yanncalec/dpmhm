@@ -98,11 +98,14 @@ _CITATION = """
 # Load meta-information of all datafiles
 _METAINFO = pd.read_csv(Path(__file__).parent / 'metainfo.csv')
 
+# URL to the zip file
+_DATA_URLS = 'SOME_ONLINE_SERVER/cwru.zip'
 # _DATA_URLS = ('https://engineering.case.edu/sites/default/files/'+_METAINFO['FileName']).tolist()
-_DATA_URLS = '/run/media/han/ExFAT/Database/dpmhm/cwru.zip'
 
 
 class CWRU(tfds.core.GeneratorBasedBuilder):
+    """DatasetBuilder for CWRU dataset."""
+
     VERSION = tfds.core.Version('1.0.0')
 
     RELEASE_NOTES = {
@@ -156,8 +159,7 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
         else:  # automatically download data
-            datadir = dl_manager.download_and_extract(_DATA_URLS) / 'cwru'
-
+            datadir = list(dl_manager.download_and_extract(_DATA_URLS).iterdir())[0]  # only one subfolder
         return {
             'train': self._generate_examples(datadir),
         }

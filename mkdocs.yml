@@ -15,12 +15,12 @@ plugins:
   - search
   - mkdocstrings:
   #     default_handler: python
-  #     handlers:
-  #       python:
+      handlers:
+        python:
   #         selection:
   #           docstring_style: "numpy"
-  #         rendering:
-  #           show_source: false
+          rendering:
+            show_source: false
   #     custom_templates: templates
   # https://github.com/danielfrg/mkdocs-jupyter
   - mkdocs-jupyter:
@@ -53,24 +53,32 @@ nav:
   - Usage:
     - datasets.md
     - models.md
-  - Topics:
-    - MHM and Deep Learning:
-      - Overview: topics/mhm.md
-      - Vibration Analysis: topics/vib.md
-    # - feature_extraction.ipynb
-    - Representation Learning:
-      - Overview: topics/ssl.md
-    - topics/few-shot.md
-    - topics/rul.md
+  # - Topics:
+  #   - MHM and Deep Learning:
+  #     - Overview: topics/mhm.md
+  #     - Vibration Analysis: topics/vib.md
+  #   # - feature_extraction.ipynb
+  #   - Representation Learning:
+  #     - Overview: topics/ssl.md
+  #   - topics/few-shot.md
+  #   - topics/rul.md
   - Tutorials:
     # - Overview: tutorials/tuto.md
     - Datasets:
       - notebooks/datasets/installation.ipynb
       - notebooks/datasets/preprocessing.ipynb
+    - Models:
+      - notebooks/models/supervised_vggish.ipynb
   - Reference:
     - Datasets:
       - CWRU: datasets/cwru.md
+      - DCASE:
+        - datasets/dcase2020.md
+        - datasets/dcase2021.md
+        - datasets/dcase2022.md
+      - DIRG: datasets/dirg.md
     - Models:
+      - VGGish: models/vggish.md
       - SimCLR: models/simclr.md
 
 watch:
