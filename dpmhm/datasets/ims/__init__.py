@@ -1,3 +1,3 @@
 """ims dataset."""
 
-from .ims import IMS
+from .ims import *

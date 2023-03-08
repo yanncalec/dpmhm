@@ -15,21 +15,21 @@
 # from .phmdc import Phmap2021
 
 _DATASET_LIST = ['CWRU',
-    'DCASE2020',
-    'DCASE2021',
-    'DCASE2022',
+    'Dcase2020',
+    'Dcase2021',
+    'Dcase2022',
     'DIRG',
     'FEMTO',
-    'FRAUNHOFER151',
-    'FRAUNHOFER205',
-    # 'IMS',
-    # 'MAFAULDA',
-    # 'MFPT',
-    # 'OTTAWA',
-    # 'PADERBORN',
-    # 'PHMAP2021',
-    # 'SEUC',
-    # 'XJTU'
+    'Fraunhofer151',
+    'Fraunhofer205',
+    'IMS',
+    'Mafaulda',
+    'Ottawa',
+    'Paderborn',
+    'Phmap2021',
+    # 'Phm2022',
+    'SEUC',
+    'XJTU'
 ]
 
 def get_dataset_list():
@@ -40,7 +40,7 @@ import os
 
 # Data type
 try:
-    _DTYPE = tf.as_dtype(os.environ['DPMHM_DTYPE'])  # from the environment variable
+    _DTYPE = tf.as_dtype(os.environ['DPMHM_DTYPE'])
 except:
     _DTYPE = tf.float32
 
@@ -48,7 +48,7 @@ except:
 try:
     _ENCLEN = int(os.environ['DPMHM_ENCLEN'])
 except:
-    _ENCLEN = 8
+    _ENCLEN = 16
 
 try:
     _ENCODING = os.environ['DPMHM_ENCODING']

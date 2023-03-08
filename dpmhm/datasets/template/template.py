@@ -11,26 +11,27 @@ Further information
 Homepage
 --------
 
-Original data
-=============
-Format:
-Date of acquisition:
-Channels:
-Split:
-Operating conditions:
-Faults:
-Size:
-Sampling rate:
-Recording duration:
-Recording period:
+Original Dataset
+================
+- Type of experiments: initiated faults or run-to-failure
+- Format:
+- Date of acquisition:
+- Size:
+- Channels:
+- Split:
+- Sampling rate:
+- Recording duration:
+- Recording period:
+- Operating conditions:
+- Data fields:
 
 Download
 --------
 
-Processed data
-==============
+Built Dataset
+=============
 
-Split:
+- Split:
 
 Features
 --------
@@ -65,8 +66,6 @@ _DATA_URLS = ['']
 
 
 class TEMPLATE(tfds.core.GeneratorBasedBuilder):
-    """DatasetBuilder for TEMPLATE dataset."""
-
     VERSION = tfds.core.Version('1.0.0')
 
     RELEASE_NOTES = {
@@ -81,28 +80,37 @@ class TEMPLATE(tfds.core.GeneratorBasedBuilder):
             description=__doc__,
             features=tfds.features.FeaturesDict({
                 # Both number of channels and length are fixed
-                'signal': tfds.features.Tensor(shape=(None, 2), dtype=tf.float64),
+                'signal': tfds.features.Tensor(shape=(None, 3), dtype=_DTYPE, encoding=_ENCODING),
 
-                'label': tfds.features.ClassLabel(names=['Healthy', 'Faulty', 'Unknown']),
+                # 'signal': {
+                #     'Channel_1': tfds.features.Tensor(shape=(None, ), dtype=_DTYPE, encoding=_ENCODING),
+                #     'Channel_2': tfds.features.Tensor(shape=(None, 2), dtype=_DTYPE, encoding=_ENCODING),
+                # }
+
+                # 'label': tfds.features.ClassLabel(names=['Healthy', 'Faulty', 'Unknown']),
+
+                'sampling_rate': tf.uint32,  # Sampling rate of the signal
 
                 'metadata': {
+                    'Label': tf.string, # label information
                     'ID': tf.string,  # ID of the bearing or experiment
-                    'SamplingRate': tf.uint32,  # Sampling rate of the signal
                     'RotatingSpeed': tf.float32,  # Rotation speed of the shaft
+                    'RPM': tf.float32, # real rpm
+                    'NominalRPM': tf.float32, # nominal rpm
                     'LoadForce': tf.float32,  # Load force
                     'OperatingCondition': tf.string,  # More details about the operating conditions
                     'SensorName': tf.string,  # name of sensor
                     'SensorLocation': tf.string,  # Location of the sensor, e.g. {'Gearbox', 'Bearing'}
                     'FaultName': tf.string,  # Name of the fault, e.g. {'Unbalance', 'Lossness'}
                     'FaultLocation': tf.string,  # Location of the fault, e.g. {'FanEnd', 'DriveEnd'}
-                    'FaultComponent': tf.string, # Component of the fault, e.g. {'Ball', 'Cage' ,'InnerRace', 'OuterRace'}
+                    'FaultComponent': tf.string, # Component of the fault, e.g. {'Ball', 'Cage' ,'InnerRace', 'OuterRace', 'Imbalance', 'Misalignment'}
                     'FaultSize': tf.float32,  # Size of the fault
                     'FaultExtend': tf.int32,  # Extend of the fault, e.g. mild, severe etc
-                    'FaultType': tf.string,  # Type of damage: e.g. EDM, Engraver, Lifetime (fatigue, plastic indentation),
+                    'FaultType': tf.string,  # Type of damage: e.g. EDM, Engraver, Lifetime (fatigue, plastic indentation)
                     'Lifetime': tf.float32,  # Time of the run-to-failure experiment
                     'OriginalSplit': tf.string,  # Original split that the signal belongs to
-                    'DataLabel': tf.string, # Other uncategorized information
                     'FileName': tf.string,  # Original filename with path in the dataset
+                    'Dataset': tf.string, # name of the dataset
                 },
             }),
             # If there's a common (input, target) tuple from the
@@ -119,7 +127,7 @@ class TEMPLATE(tfds.core.GeneratorBasedBuilder):
             datadir = Path(dl_manager._manual_dir)
         else:  # automatically download data
             # For too large dataset or unsupported format
-            # raise NotImplementedError("Automatic download not supported.")
+            raise NotImplementedError("Automatic download not supported.")
 
             # Parallel download (may result in corrupted files):
             #   _resource = tfds.download.Resource(url=_DATA_URLS, extract_method=tfds.download.ExtractMethod.ZIP)  # in case that the extraction method cannot be deduced automatically from files

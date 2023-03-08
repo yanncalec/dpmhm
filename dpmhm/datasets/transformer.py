@@ -109,6 +109,8 @@ class DatasetCompactor(AbstractDatasetTransformer):
             hop size for the sliding window. No hop if None or `hop_size=1` (no downsampling). Effective only when `window_size` is given.
         """
         self._channels = channels
+        _spec = dataset.element_spec['signal']
+        self._channels_dim = np.sum(_spec[c].shape[0] for c in channels)
         self._keys = keys
         # self._n_chunk = n_chunk
         self._resampling_rate = resampling_rate
@@ -277,15 +279,18 @@ class DatasetCompactor(AbstractDatasetTransformer):
 
         @tf.function
         def _compact(X):
-            d = [X['label']] + [X['metadata'][k] for k in self._keys]
+            # d = [X['label']] + [X['metadata'][k] for k in self._keys]
+            d = [X['metadata'][k] for k in self._keys]
             x = [X['signal'][ch] for ch in self._channels]
+            x = tf.squeeze(x)
 
             return {
                 'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
                 'metadata': X['metadata'],
                 'sampling_rate': X['sampling_rate'],
-                # 'signal': x,
-                'signal': tf.reshape(x, (len(self._channels), -1))
+                # 'signal': tf.squeeze(x),
+                'signal': tf.reshape(x, (self._channels_dim, -1))
+                # 'signal': tf.reshape(x, (len(self._channels), -1))  # this works only for the case where each channel contains only one 1d signal
             }
         # return dataset.filter(_has_channels)
         ds = dataset.filter(lambda X:_has_channels(X))

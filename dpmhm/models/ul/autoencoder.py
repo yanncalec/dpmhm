@@ -1,7 +1,8 @@
-"""Auto-Encoder"""
+"""Classes of Auto-Encoder.
+"""
 
 import tensorflow as tf
-from tensorflow.keras import layers, models #, regularizers
+from tensorflow.keras import layers, models, regularizers
 from dataclasses import dataclass
 from ..custom import TConv2D, TDense
 from .. import AbstractConfig
@@ -9,7 +10,7 @@ from .. import AbstractConfig
 
 @dataclass
 class Config(AbstractConfig):
-    """Global parameters.
+    """Global parameters for AE.
     """
     # Dimension of hidden representation
     n_embedding:int = 128
@@ -21,7 +22,9 @@ class Config(AbstractConfig):
     pool_size:tuple = (2,2)
     strides:tuple = (2,2)
     # use_bias:bool = False
-    # activity_regularizer = None
+
+    # Regularization
+    activity_regularizer:float = 0.  # if >0 apply L1 regularization in the dense layer (sparse AE)
 
     def optimizer(self):
         return tf.keras.optimizers.Adam()
@@ -30,9 +33,85 @@ class Config(AbstractConfig):
 class CAES(models.Model):
     """Convolution Auto-Encoder stacks.
 
+
     Notes
     -----
-    Use more blocks and larger kernel size to get more smoothing in the reconstruction.
+    Shape (H,W) of the input tensor must be power of 2.
+    """
+    def __init__(self, c:Config):
+        self._config = c
+        input_shape = c.input_shape  # n_bands, n_frames, c.n_channels
+        kernel_size = c.kernel_size
+        activation = c.activation
+        padding = c.padding
+        strides = c.strides
+        pool_size = c.pool_size
+        n_embedding  = c.n_embedding
+        a_reg = c.activity_regularizer
+
+        super().__init__()
+
+        # Use more blocks and larger kernel size to get more smoothing in the reconstruction.
+
+        layers_encoder = [
+            layers.Input(shape=input_shape, name='input_enc'),
+            # Block 1
+            layers.Conv2D(32, kernel_size=kernel_size, activation=activation, padding=padding, name='conv1_enc'),
+            layers.MaxPooling2D(pool_size=pool_size, strides=strides, name='pool1_enc'),
+            layers.BatchNormalization(name='bn1_enc'), # by default axis=-1 for channel-last
+
+            # Block 2
+            layers.Conv2D(64, kernel_size=kernel_size, activation=activation, padding=padding, name='conv2_enc'),
+            layers.MaxPooling2D(pool_size=pool_size, strides=strides, name='pool2_enc'),
+            layers.BatchNormalization(name='bn2_enc'),
+
+            # Block 3
+            layers.Conv2D(128, kernel_size=kernel_size, activation=activation, padding=padding, name='conv3_enc'),
+            layers.MaxPooling2D(pool_size=pool_size, strides=strides, name='pool3_enc'),
+            layers.BatchNormalization(name='bn3_enc'),
+
+            # Block fc
+            layers.Flatten(name='flatten'),
+            layers.Dense(n_embedding, activation=activation,activity_regularizer=regularizers.L1(a_reg), name='fc1_enc') if a_reg > 0
+            else layers.Dense(n_embedding, activation=activation, name='fc1_enc')
+        ]
+
+        self.encoder = models.Sequential(layers_encoder, name='encoder')
+
+        layers_decoder = [
+            layers.Input(shape=self.encoder.layers[-1].output_shape[1:], name='input_dec'),
+            # Block fc
+            layers.Dense(self.encoder.layers[-2].output_shape[-1], activation=activation, activity_regularizer=regularizers.L1(a_reg), name='fc1_dec') if a_reg > 0 else layers.Dense(self.encoder.layers[-2].output_shape[-1], activation=activation, name='fc1_dec'),
+            layers.Reshape(self.encoder.layers[-3].output_shape[1:], name='reshape'),
+
+            # Block 3
+            layers.BatchNormalization(name='bn3_dec'),
+            layers.UpSampling2D(strides, name='ups3_dec'),
+            layers.Conv2DTranspose(64, kernel_size=kernel_size, activation=activation, padding=padding, name='tconv3_dec'),
+
+            # Block 2
+            layers.BatchNormalization(name='bn2_dec'),
+            layers.UpSampling2D(strides, name='ups2_dec'),
+            layers.Conv2DTranspose(32, kernel_size=kernel_size, activation=activation, padding=padding, name='tconv2_dec'),
+
+            # Block 1
+            layers.BatchNormalization(name='bn1_dec'),
+            layers.UpSampling2D(strides, name='ups1_dec'),
+            layers.Conv2DTranspose(input_shape[-1], kernel_size=kernel_size, activation=None, padding=padding, name='tconv1_dec'),
+        ]
+
+        self.decoder = models.Sequential(layers_decoder, name='decoder')
+        # self.decoder.build()
+
+        self.autoencoder = models.Sequential(layers_encoder+layers_decoder, name='auto-encoder')
+        # self.build(input_shape=(None, *input_shape))
+
+    def call(self, x):
+        return self.decoder(self.encoder(x))
+
+
+class CAES_1D(models.Model):
+    """Convolution Auto-Encoder stacks for signal.
     """
     def __init__(self, c:Config):
         self._config = c
@@ -49,14 +128,14 @@ class CAES(models.Model):
         layers_encoder = [
             layers.Input(shape=input_shape, name='input_enc'),
             # Block 1
-            layers.Conv2D(32, kernel_size=kernel_size, activation=activation, padding=padding, name='conv1_enc'),
-            layers.MaxPooling2D(pool_size=pool_size, strides=strides, name='pool1_enc'),
+            layers.Conv1D(32, kernel_size=kernel_size, activation=activation, padding=padding, name='conv1_enc'),
+            layers.MaxPooling1D(pool_size=pool_size, strides=strides, name='pool1_enc'),
             # Block 2
-            layers.Conv2D(64, kernel_size=kernel_size, activation=activation, padding=padding, name='conv2_enc'),
-            layers.MaxPooling2D(pool_size=pool_size, strides=strides, name='pool2_enc'),
+            layers.Conv1D(64, kernel_size=kernel_size, activation=activation, padding=padding, name='conv2_enc'),
+            layers.MaxPooling1D(pool_size=pool_size, strides=strides, name='pool2_enc'),
             # Block 3
-            layers.Conv2D(128, kernel_size=kernel_size, activation=activation, padding=padding, name='conv3_enc'),
-            layers.MaxPooling2D(pool_size=pool_size, strides=strides, name='pool3_enc'),
+            layers.Conv1D(128, kernel_size=kernel_size, activation=activation, padding=padding, name='conv3_enc'),
+            layers.MaxPooling1D(pool_size=pool_size, strides=strides, name='pool3_enc'),
             # Block fc
             layers.Flatten(name='flatten'),
             layers.Dense(n_embedding, activation=activation,
@@ -73,15 +152,18 @@ class CAES(models.Model):
             # activity_regularizer=regularizers.L1(1e-5),
             name='fc1_dec'),
             layers.Reshape(self.encoder.layers[-3].output_shape[1:], name='reshape'),
+
             # Block 3
-            layers.UpSampling2D(strides, name='ups3_dec'),
-            layers.Conv2DTranspose(64, kernel_size=kernel_size, activation=activation, padding=padding, name='tconv3_dec'),
+            layers.UpSampling1D(strides, name='ups3_dec'),
+            layers.Conv1DTranspose(64, kernel_size=kernel_size, activation=activation, padding=padding, name='tconv3_dec'),
+
             # Block 2
-            layers.UpSampling2D(strides, name='ups2_dec'),
-            layers.Conv2DTranspose(32, kernel_size=kernel_size, activation=activation, padding=padding, name='tconv2_dec'),
+            layers.UpSampling1D(strides, name='ups2_dec'),
+            layers.Conv1DTranspose(32, kernel_size=kernel_size, activation=activation, padding=padding, name='tconv2_dec'),
+
             # Block 1
-            layers.UpSampling2D(strides, name='ups1_dec'),
-            layers.Conv2DTranspose(input_shape[-1], kernel_size=kernel_size, activation=None, padding=padding, name='tconv1_dec'),
+            layers.UpSampling1D(strides, name='ups1_dec'),
+            layers.Conv1DTranspose(input_shape[-1], kernel_size=kernel_size, activation=None, padding=padding, name='tconv1_dec'),
         ]
 
         self.decoder = models.Sequential(layers_decoder, name='decoder')
@@ -99,7 +181,7 @@ class CAES_ws(models.Model):
 
     Notes:
     - The model fails to train with `decoder.trainable=False`.
-    - MSE much larger than the case of no weight sharing.
+    - MSE much larger than that of no weight sharing.
     """
     def __init__(self, c:Config):
         self._config = c

@@ -12,26 +12,69 @@ theme:
   language: en
 
 plugins:
+  # # Export to pdf
+  # - pdf-export
+  - with-pdf:  # https://github.com/orzih/mkdocs-with-pdf
+      author: Han WANG
+      copyright: 2023 CEA/LIST
+      #
+      cover: True
+      #back_cover: true
+      cover_title: Report for HIASCI GT3
+      cover_subtitle: DPMHM
+      #custom_template_path: TEMPLATES PATH
+      #
+      #toc_title: TOC TITLE TEXT
+      #heading_shift: false
+      #toc_level: 3
+      #ordered_chapter_level: 2
+      #excludes_children:
+      #    - 'release-notes/:upgrading'
+      #    - 'release-notes/:changelog'
+      #
+      #exclude_pages:
+      #    - 'bugs/'
+      #    - 'appendix/contribute/'
+      #convert_iframe:
+      #    - src: IFRAME SRC
+      #      img: POSTER IMAGE URL
+      #      text: ALTERNATE TEXT
+      #    - src: ...
+      #two_columns_level: 3
+      #
+      #render_js: true
+      #headless_chrome_path: headless-chromium
+      #
+      #output_path: any-place/document.pdf
+      enabled_if_env: ENABLE_PDF_EXPORT
+      #
+      #debug_html: true
+      #show_anchors: true
+      #verbose: true
   - search
+  - bibtex:
+      bib_file: docs/HIASCI.bib
+      # csl_file: https://github.com/citation-style-language/styles/blob/master/elsevier-harvard.csl
   - mkdocstrings:
-  #     default_handler: python
+      default_handler: python
       handlers:
         python:
-  #         selection:
-  #           docstring_style: "numpy"
+          # selection:
+          #   docstring_style: "numpy"
           rendering:
             show_source: false
-  #     custom_templates: templates
-  # https://github.com/danielfrg/mkdocs-jupyter
-  - mkdocs-jupyter:
-    # ignore_h1_titles: True
-      include_source: True
+      # custom_templates: templates
+  # # https://github.com/danielfrg/mkdocs-jupyter
+  # - mkdocs-jupyter:
+  #     # ignore_h1_titles: True
+  #     include_source: True
 
 markdown_extensions:
   - toc:
       permalink: True
   - pymdownx.arithmatex:
       generic: true
+  - footnotes
   - admonition
   - pymdownx.details
   - pymdownx.superfences
@@ -50,36 +93,59 @@ extra_javascript:
 
 nav:
   - Home: index.md
+  # - Datasets: datasets.md
+  # - Models: models.md
   - Usage:
     - datasets.md
     - models.md
-  # - Topics:
-  #   - MHM and Deep Learning:
-  #     - Overview: topics/mhm.md
-  #     - Vibration Analysis: topics/vib.md
-  #   # - feature_extraction.ipynb
-  #   - Representation Learning:
-  #     - Overview: topics/ssl.md
-  #   - topics/few-shot.md
-  #   - topics/rul.md
+    # - rul.md
+  - Topics:
+    - Overview: topics/mhm.md
+    - Feature Extraction: topics/vibration.md
+    - Baseline Methods: topics/baseline.md
+    - Architectures:
+      - CNN: topics/architectures/cnn.md
+      - Auto-Encoder: topics/architectures/ae.md
+      - DBN: topics/architectures/dbn.md
+      - GAN: topics/architectures/gan.md
+      - RNN: topics/architectures/rnn.md
+    - Transfer Learning: topics/transfer.md
+    # - Few-shot Learning: topics/few-shot.md
+    - Representation Learning: topics/representation.md
+    - RUL: topics/rul.md
+    - Visualization: topics/visualize.md
+    - Advanced Topics:
+      - Sensor Fusions: topics/sensors.md
+      - Explainability: topics/explainability.md
   - Tutorials:
     # - Overview: tutorials/tuto.md
     - Datasets:
-      - notebooks/datasets/installation.ipynb
-      - notebooks/datasets/preprocessing.ipynb
+      - Installation: notebooks/datasets/installation.ipynb
+      # - Installation: notebooks/datasets/installation.html
+      - Preprocessing: notebooks/datasets/preprocessing.ipynb
     - Models:
-      - notebooks/models/supervised_vggish.ipynb
+      - Supervised VGGish: notebooks/models/supervised_vggish.ipynb
   - Reference:
     - Datasets:
       - CWRU: datasets/cwru.md
-      - DCASE:
-        - datasets/dcase2020.md
-        - datasets/dcase2021.md
-        - datasets/dcase2022.md
+      - datasets/dcase2020.md
+      - datasets/dcase2021.md
+      - datasets/dcase2022.md
       - DIRG: datasets/dirg.md
+      - Fraunhofer151: datasets/fraunhofer151.md
+      - Fraunhofer205: datasets/fraunhofer205.md
+      - FEMTO: datasets/femto.md
+      - IMS: datasets/ims.md
+      - Mafaulda: datasets/mafaulda.md
+      - Ottawa: datasets/ottawa.md
+      - Paderborn: datasets/paderborn.md
+      - Phmap2021: datasets/phmap2021.md
+      - SEUC: datasets/seuc.md
+      - XJTU: datasets/xjtu.md
     - Models:
       - VGGish: models/vggish.md
       - SimCLR: models/simclr.md
+  # - Misc: --8<-- "README.md"
 
 watch:
   - dpmhm

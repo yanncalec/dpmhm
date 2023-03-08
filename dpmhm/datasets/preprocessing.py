@@ -30,9 +30,9 @@ def keras_model_supervised(ds:Dataset, labels:list=None, normalize:bool=False, *
     """Initialize a Keras preprocessing model for supervised training.
 
     The processing model performs the following transformation on a dataset:
-    - string label to integer conversion
-    - data normalization
-    - channel first to channel last conversion
+    - conversion of label from string to integer
+    - normalization of data
+    - conversion from the format of channel first to channel last
 
     Args
     ----
@@ -41,14 +41,18 @@ def keras_model_supervised(ds:Dataset, labels:list=None, normalize:bool=False, *
     labels:
         list of string labels for lookup. If not given the labels will be automatically determined from the dataset.
     normalize:
-        if True estimate the mean and variance by channel and apply the normalization.
+        if True, estimate the mean and variance by channel and apply the normalization.
     shape:
         restore shape information of the feature
+    feature_field:
+        name of the field of feature
+    label_field:
+        name of the field of label
 
     Returns
     -------
     model:
-        the Keras preprocessing model that can be applied on a dataset as `ds.map(lambda x: model(x))`
+        Keras preprocessing model that can be applied on a dataset as `ds.map(lambda x: model(x))`
     """
     # For nested dataset
     inputs = nested_type_spec(ds.element_spec)

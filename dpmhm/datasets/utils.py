@@ -88,6 +88,10 @@ def sliding_window_generator(ds:Dataset, key:str, window_size:Union[int,tuple], 
     ----
     """
     def _complete(s, w):
+		# try:
+		# 	return (*s[:-len(w)], *w)  # tuple or list
+		# except:
+		# 	return (*s[:-len(w)], w)  # int
         if isinstance(w, int):
             w = (*s[:-1], w)
         else:  # tuple or list

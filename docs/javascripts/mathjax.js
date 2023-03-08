@@ -24,7 +24,9 @@ window.MathJax = {
       Z: "\\mathbb{Z}",
       Q: "\\mathbb{Q}",
       C: "\\mathrm{C}",
+      // loss: "\\mathcal{L}",
       rank: '\\operatorname{rank}',
+      loss: '\\operatorname{\\mathcal{L}}',
       bold: ["{\\bf #1}", 1],
       // abc: ['(#1)', 1, [null, '\\cba']]  // equivalent to \def\abc#1\cba{(#1)}
     },

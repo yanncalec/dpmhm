@@ -1,3 +1,1 @@
-"""seuc dataset."""
-
-from .seuc import SEUC
+from .seuc import *

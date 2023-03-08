@@ -1,1 +1,0 @@
-# Vibration Analysis

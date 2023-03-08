@@ -1,1 +1,0 @@
-# Self-supervised Representation Learning

@@ -1,19 +1,4 @@
-"""XJTU dataset."""
-
-import os
-from pathlib import Path
-import itertools
-import json
-import numpy as np
-import tensorflow as tf
-import tensorflow_datasets as tfds
-import pandas as pd
-# from scipy.io import loadmat
-
-_METAINFO = pd.read_csv(Path(__file__).parent/'metainfo.csv')
-
-_DESCRIPTION = """
-XJTU-SY Bearing Datasets.
+"""XJTU-SY Bearing Datasets.
 
 Description
 ===========
@@ -28,26 +13,67 @@ Homepage
 --------
 https://biaowang.tech/xjtu-sy-bearing-datasets/
 
-Original data
-=============
-Sampling rate: 25.6 kHz
-Duration: 1.28 seconds
-Signal length: 32768
-Sampling period: 1 minute
-Number of channels: 2, horizontal and vertical acceleration
-Original split: 3 operating conditions (rotating speed and radial force) on 5 bearings
-- 1) 2100 rpm (35 Hz) and 12 kN;
-- 2) 2250 rpm (37.5 Hz) and 11 kN;
-- 3) 2400 rpm (40 Hz) and 10 kN.
+Original Dataset
+================
+- Type of experiments: run-to-failure, with identification of fault element.
+- Size: ~ 11.4 Gb unzipped
+- Sampling rate: 25.6 kHz
+- Duration: 1.28 seconds
+- Signal length: 32768
+- Sampling period: 1 minute
+- Channels: 2, horizontal and vertical acceleration
+- Original split: 3 operating conditions (rotating speed and radial force) on 5 bearings
+    - 1) 2100 rpm (35 Hz) and 12 kN;
+    - 2) 2250 rpm (37.5 Hz) and 11 kN;
+    - 3) 2400 rpm (40 Hz) and 10 kN.
 
 Download
 --------
 https://www.dropbox.com/sh/qka3b73wuvn5l7a/AADdQk8ZCsNkzjz11JewU7cBa/Data?dl=0&subfolder_nav_tracking=1
 
+or via any other links listed on the author's [website](https://biaowang.tech/xjtu-sy-bearing-datasets/).
+
+
+Built Dataset
+=============
+- Split: ['condition1', 'condition2', 'condition3']
+
+Features
+--------
+- 'signal':
+    - 'vibration': horizontal & vertical vibration signals
+- 'sampling_rate: 25600 Hz
+- 'metadata':
+    - 'OperatingCondition': Operating condition 1,2,3
+    - 'BearingID': ID of the bearing
+    - 'FaultComponent': ['Inner', 'Ball', 'Cage', 'Outer', 'Inner+Outer', 'Inner+Ball+Cage+Outer']
+    - 'Lifetime': in minutes
+
 Notes
 =====
-The original dataset contains 6 rar files which needs to be extracted all together.
+- The original dataset contains 6 rar files which needs to be extracted all together (extract the first one `XJTU-SY_Bearing_Datasets.part01.rar` will automatically extract all other files).
+
+Installation
+============
+Download and unzip all files into a folder `LOCAL_DIR`, from terminal run
+
+```sh
+$ tfds build XJTU --imports dpmhm.datasets.xjtu --manual_dir LOCAL_DIR
+```
 """
+
+import os
+from pathlib import Path
+# import itertools
+# import json
+import numpy as np
+import tensorflow as tf
+import tensorflow_datasets as tfds
+import pandas as pd
+# from scipy.io import loadmat
+from dpmhm.datasets import _DTYPE, _ENCODING
+
+_METAINFO = pd.read_csv(Path(__file__).parent/'metainfo.csv')
 
 _CITATION = """
 @article{wang2018hybrid,
@@ -63,102 +89,86 @@ _CITATION = """
 """
 
 _SPLIT_PATH_MATCH = {
-  'contidion1': '35Hz12kN',
-  'contidion2': '37.5Hz11kN',
-  'contidion3': '40Hz10kN',
+    'condition1': '35Hz12kN',
+    'condition2': '37.5Hz11kN',
+    'condition3': '40Hz10kN',
 }
 
 # _PARSER_MATCH = {
 #   # 'file name pattern':
 # }
 
-
 # _DATA_URLS = ''
 
-
 class XJTU(tfds.core.GeneratorBasedBuilder):
-  """DatasetBuilder for XJTU dataset."""
-
-  VERSION = tfds.core.Version('1.0.0')
-  RELEASE_NOTES = {
-      '1.0.0': 'Initial release.',
-  }
-
-  MANUAL_DOWNLOAD_INSTRUCTIONS = """
-  Please download all data via the following link:
-  https://www.dropbox.com/sh/qka3b73wuvn5l7a/AADdQk8ZCsNkzjz11JewU7cBa/Data?dl=0&subfolder_nav_tracking=1
-  or via any other links listed on the author's website:
-  https://biaowang.tech/xjtu-sy-bearing-datasets/
-
-  and extract all 6 rar files located in the subfolder `Data` (unrar the first one `XJTU-SY_Bearing_Datasets.part01.rar` will automatically extract all other files). Then proceed the installation manually e.g. from the terminal via the command
-  `$ tfds build xjtu --manual_dir $PATH_TO_EXTRACTED_FILES`
-  """
-
-  def _info(self) -> tfds.core.DatasetInfo:
-    """Returns the dataset metadata."""
-    return tfds.core.DatasetInfo(
-        builder=self,
-        description=_DESCRIPTION,
-        features=tfds.features.FeaturesDict({
-          # Number of channels is fixed and length is fixed
-          'signal': tfds.features.Tensor(shape=(None, 2), dtype=tf.float64),
-
-          # 'label': tfds.features.ClassLabel(names=['Healthy', 'Faulty', 'Unknown']),
-
-          'metadata': {
-            'OperatingCondition': tf.int32,  # Operating condition
-            'BearingID': tf.int32,  # ID of the bearing
-            'FaultComponent': tf.string, # Component of the fault, e.g. {'Roller', 'InnerRing'}
-            'Lifetime': tf.float32,
-            'FileName': tf.string,  # Original filename with path
-          }
-        }),
-        # If there's a common (input, target) tuple from the
-        # features, specify them here. They'll be used if
-        # `as_supervised=True` in `builder.as_dataset`.
-        # supervised_keys=('signal', 'label'),  # Set to `None` to disable
-        supervised_keys=None,
-        homepage='',
-        citation=_CITATION,
-    )
-
-  def _split_generators(self, dl_manager: tfds.download.DownloadManager):
-    if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
-      datadir = dl_manager._manual_dir
-    else:  # automatically download data
-      # For too large dataset or unsupported format
-      raise FileNotFoundError(self.MANUAL_DOWNLOAD_INSTRUCTIONS)
-
-    return {
-        sp: self._generate_examples(datadir/fn) for sp, fn in _SPLIT_PATH_MATCH.items()
-        # 'train': self._generate_examples_all(datadir),
+    VERSION = tfds.core.Version('1.0.0')
+    RELEASE_NOTES = {
+        '1.0.0': 'Initial release.',
     }
 
-  def _generate_examples(self, path):
-    # assert path.exists()
+    def _info(self) -> tfds.core.DatasetInfo:
+        """Returns the dataset metadata."""
+        return tfds.core.DatasetInfo(
+            builder=self,
+            description=__doc__,
+            features=tfds.features.FeaturesDict({
+            # Number of channels is fixed and length is fixed
+                'signal': {
+                    'vibration': tfds.features.Tensor(shape=(2,None), dtype=_DTYPE, encoding=_ENCODING),
+                },
 
-    # If the download files are extracted
-    for fp in path.rglob('*.csv'):
-      # print(fp)
-      # parse the filename
-      _condition, _bearing = fp.parent.name[7:].split('_')
-      # print(int(_condition), int(_bearing))
+                'sampling_rate': tf.uint32,
 
-      metadata = _METAINFO.loc[(_METAINFO['OperatingCondition']==int(_condition)) & (_METAINFO['BearingID']==int(_bearing))].iloc[0].to_dict()
-      metadata['FileName'] = os.path.join(*fp.parts[-3:])
+                # 'label': tfds.features.ClassLabel(names=['Unknown']),
 
-      x = pd.read_csv(fp).values
+                'metadata': {
+                    'OperatingCondition': tf.int32,  # Operating condition
+                    'BearingID': tf.int32,  # ID of the bearing
+                    'FaultComponent': tf.string, # Component of the fault, e.g. {'Roller', 'InnerRing'}
+                    'Lifetime': tf.float32,
+                    'FileName': tf.string,  # Original filename with path
+                    'Dataset': tf.string,
+                },
+            }),
+            supervised_keys=None,
+            homepage='https://biaowang.tech/xjtu-sy-bearing-datasets/',
+            citation=_CITATION,
+        )
 
-      yield hash(frozenset(metadata.items())), {
-        'signal': x,
-        # 'label': 'Faulty',
-        'metadata': metadata
-      }
+    def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
+            datadir = Path(dl_manager._manual_dir)
+        else:  # automatically download data
+            raise NotImplementedError()
 
-  @staticmethod
-  def get_references():
-    try:
-      with open(Path(__file__).parent / 'Exported Items.bib') as fp:
-        return fp.read()
-    except:
-      pass
+        return {
+            sp: self._generate_examples(datadir/fn) for sp, fn in _SPLIT_PATH_MATCH.items()
+            # 'train': self._generate_examples_all(datadir),
+        }
+
+    def _generate_examples(self, path):
+        for fp in path.rglob('*.csv'):
+            # parse the filename
+            _condition, _bearing = fp.parent.name[7:].split('_')
+            # print(int(_condition), int(_bearing))
+
+            metadata = _METAINFO.loc[(_METAINFO['OperatingCondition']==int(_condition)) & (_METAINFO['BearingID']==int(_bearing))].iloc[0].to_dict()
+            metadata['FileName'] = os.path.join(*fp.parts[-3:])
+            metadata['Dataset'] = 'XJTU'
+
+            x = pd.read_csv(fp).T.values
+
+            yield hash(frozenset(metadata.items())), {
+                'signal': {'vibration': x.astype(_DTYPE.as_numpy_dtype)},
+                # 'label': 'Unknown',
+                'sampling_rate': 25600,
+                'metadata': metadata
+            }
+
+    @staticmethod
+    def get_references():
+        try:
+            with open(Path(__file__).parent / 'Exported Items.bib') as fp:
+                return fp.read()
+        except:
+            pass

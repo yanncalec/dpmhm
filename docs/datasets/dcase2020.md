@@ -1,10 +1,9 @@
-::: dpmhm.datasets.dcase.dcase2020
+::: dpmhm.datasets.dcase2020
     options:
       show_source: false
 
 ## Installation
-Due to the large size, fully automatic installation is not supported.
-Manually download all zip files from the provided link. Unzip all files into a same folder e.g. `~/tmp/dcase2020`, which will look like
+Only manual installation is supported. Download all zip files from the provided link. Unzip them into a same folder e.g. `~/tmp/dcase2020`
 ```sh
 .
 ├── fan
@@ -15,7 +14,12 @@ Manually download all zip files from the provided link. Unzip all files into a s
 └── valve
 ```
 
-Build the dataset either from python
+Build the dataset from terminal
+```sh
+$ tfds build dcase2020 --imports dpmhm.datasets.dcase.dcase2020 --manual_dir ~/tmp/dcase2020
+```
+
+or with the python code
 ```python
 import tensorflow_datasets as tfds
 import dpmhm.datasets.dcase.dcase2020
@@ -28,11 +32,6 @@ _ = tfds.load(
         )
     }
 )
-```
-
-or from terminal
-```sh
-$ tfds build dcase2020 --imports dpmhm.datasets.dcase.dcase2020 --manual_dir ~/tmp/dcase2020
 ```
 
 ## Tutorial

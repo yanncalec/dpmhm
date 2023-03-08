@@ -1,3 +1,1 @@
-"""xjtu dataset."""
-
-from .xjtu import Xjtu
+from .xjtu import *

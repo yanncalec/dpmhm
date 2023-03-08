@@ -1,7 +1,6 @@
 """
 Case Western Reserve University bearing dataset.
 
-
 Description
 ===========
 Motor bearings were seeded with faults using electro-discharge machining (EDM). Faults ranging from 0.007 inches in diameter to 0.040 inches in diameter were introduced separately at the inner raceway, rolling element (i.e. ball) and outer raceway. Faulted bearings were reinstalled into the test motor and vibration data was recorded for motor loads of 0 to 3 horsepower (motor speeds of 1797 to 1720 RPM).
@@ -21,7 +20,7 @@ https://engineering.case.edu/bearingdatacenter
 Original Dataset
 ================
 - Type of experiments: initiated faults
-- Date of acquisition: Year 2000
+- Year of acquisition: 2000
 - Format: Matlab
 - Size: ~ 656 Mb, unzipped
 - Channels: up to 3 accelerometers, named Drive-End (DE), Fan-End (FE), Base (BA).
@@ -35,7 +34,6 @@ Original Dataset
     - BA: base accelerometer data, contained by some files, in particular not those of normal data (faultless).
     - RPM: real rpm during testing, contained by most files.
 
-
 Built Dataset
 =============
 - Split: ['train']
@@ -46,13 +44,12 @@ Features
     - 'BA': base accelerometer data.
     - 'DE': drive end accelerometer data.
     - 'FE': fan end accelerometer data.
-- 'label': ['None', 'DriveEnd', 'FanEnd'], or [0,1,2], location of the fault.
 - 'sampling_rate': 12 or 48 kHz.
 - 'metadata':
     - 'NominalRPM': nominal RPM.
     - 'RPM': real RPM.
     - 'LoadForce': {0, 1, 2, 3} nominal motor load in horsepower, corresponding to the nominal RPM: {1797, 1772, 1750, 1730}.
-    - 'FaultLocation': {'None', 'DriveEnd', 'FanEnd'}, a copy of the field 'label'. Note that this is the location of fault not that of accelerometer.
+    - 'FaultLocation': {'None', 'DriveEnd', 'FanEnd'}. Note that this is the location of fault not that of accelerometer.
     - 'FaultComponent': {'None', 'InnerRace', 'Ball', 'OuterRace6', 'OuterRace3', 'OuterRace12'}, component of fault.
     - 'FaultSize': {0, 0.007, 0.014, 0.021, 0.028}, diameter of fault in inches.
     - 'FileName': original filename.
@@ -67,6 +64,14 @@ References
 Review of developments based on CWRU:
 
 - Wei, X. and Söffker, D. (2021) ‘Comparison of CWRU Dataset-Based Diagnosis Approaches: Review of Best Approaches and Results’, in P. Rizzo and A. Milazzo (eds) European Workshop on Structural Health Monitoring. Cham: Springer International Publishing (Lecture Notes in Civil Engineering), pp. 525–532. Available at: https://doi.org/10.1007/978-3-030-64594-6_51.
+
+Installation
+============
+Download and unzip all files into a folder `LOCAL_DIR`, from terminal run
+
+```sh
+$ tfds build CWRU --imports dpmhm.datasets.cwru --manual_dir LOCAL_DIR
+```
 """
 
 # import os
@@ -104,8 +109,6 @@ _DATA_URLS = 'SOME_ONLINE_SERVER/cwru.zip'
 
 
 class CWRU(tfds.core.GeneratorBasedBuilder):
-    """DatasetBuilder for CWRU dataset."""
-
     VERSION = tfds.core.Version('1.0.0')
 
     RELEASE_NOTES = {
@@ -126,7 +129,7 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
                 # Can not save all channels in a tensor with unknown dimension, like
                 # 'signal': tfds.features.Tensor(shape=(None,1), dtype=tf.float64),
 
-                'label': tfds.features.ClassLabel(names=['None', 'DriveEnd', 'FanEnd']),  # [0, 1, 2]
+                # 'label': tfds.features.ClassLabel(names=['None']),  # not used
 
                 'sampling_rate': tf.uint32,  # {12000, 48000} Hz
 
@@ -159,6 +162,10 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
         else:  # automatically download data
+            raise NotImplementedError()
+			# _resource = tfds.download.Resource(url=_DATA_URLS, extract_method=tfds.download.ExtractMethod.ZIP)  # in case that the extraction method cannot be deduced automatically from files
+			# datadir = dl_manager.download_and_extract(_resource)
+
             datadir = list(dl_manager.download_and_extract(_DATA_URLS).iterdir())[0]  # only one subfolder
         return {
             'train': self._generate_examples(datadir),
@@ -215,7 +222,7 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
                     'BA': xba.astype(_DTYPE.as_numpy_dtype),
                 },  # if not empty all three have the same length
                 'sampling_rate': sr,
-                'label': metadata['FaultLocation'],
+                # 'label': metadata['FaultLocation'],
                 'metadata': metadata,
             }
 

@@ -1,3 +1,3 @@
 """mafaulda dataset."""
 
-from .mafaulda import MAFAULDA
+from .mafaulda import *

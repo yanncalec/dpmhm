@@ -1,21 +1,21 @@
 """VGGish model for AudioSet.
 
 For implementations see:
-https://github.com/tensorflow/models/tree/master/research/audioset/vggish
-https://github.com/antoinemrcr/vggish2Keras
-https://github.com/DTaoo/VGGish
+
+- https://github.com/tensorflow/models/tree/master/research/audioset/vggish
+- https://github.com/antoinemrcr/vggish2Keras
+- https://github.com/DTaoo/VGGish
 
 For usage see:
-https://github.com/DTaoo/VGGish/blob/master/evaluation.py
+- https://github.com/DTaoo/VGGish/blob/master/evaluation.py
 
 For Keras implementation see:
-https://github.com/keras-team/keras/blob/master/keras/applications/vgg16.py
+- https://github.com/keras-team/keras/blob/master/keras/applications/vgg16.py
 
 References
 ----------
-Simonyan, K. and Zisserman, A. (2014) ‘Very Deep Convolutional Networks for Large-Scale Image Recognition’, arXiv:1409.1556 [cs] [Preprint]. Available at: http://arxiv.org/abs/1409.1556 (Accessed: 29 March 2019).
-
-Hershey, S. et al. (2017) ‘CNN architectures for large-scale audio classification’, in 2017 ieee international conference on acoustics, speech and signal processing (icassp). IEEE, pp. 131–135.
+- Simonyan, K. and Zisserman, A. (2014) ‘Very Deep Convolutional Networks for Large-Scale Image Recognition’, arXiv:1409.1556 [cs] [Preprint]. Available at: http://arxiv.org/abs/1409.1556 (Accessed: 29 March 2019).
+- Hershey, S. et al. (2017) ‘CNN architectures for large-scale audio classification’, in 2017 ieee international conference on acoustics, speech and signal processing (icassp). IEEE, pp. 131–135.
 """
 
 import tensorflow as tf
