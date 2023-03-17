@@ -18,17 +18,7 @@ Some situations are frequently encountered in the data acquisition stage, e.g.
 sample imbalance (dominant healthy samples), domain imbalance (dominant samples from the source domain), inaccuracy in labelling and segmentation etc.
 
 ## Feature extraction
-In a classical workflow, feature extraction (or feature engineering) consists in transforming the raw signals (vibration/acoustic etc) into advanced forms using signal processing tools [@rai_review_2016]. Premilinary signal processings, e.g. signal separation and denoising, may be applied at this stage. Some popular features widely adopted in MHM are:
-
-- Linear Predictive Coding (LPC)
-- Kurtosis
-- Empirical Mode Decomposition (EMD)
-- [Cyclostationarity](https://en.wikipedia.org/wiki/Cyclostationary_process),
-- Wiener-Ville Distribution
-- Time-Scale Analysis: Wavelet Packet Transform (WPT)
-- Time-Frequency Analysis: spectrogram, cepstrum, [MFCC](https://en.wikipedia.org/wiki/Mel-frequency_cepstrum), etc.
-
-In place of raw signals, the handcrated features can be taken as input to a representation learning network. See discussions of representation learning below.
+In a classical workflow, feature extraction (or feature engineering) consists in transforming the raw signals (vibration/acoustic etc) into advanced forms using signal processing tools [@rai_review_2016]. Premilinary signal processings, e.g. signal separation and denoising, may be applied at this stage. Widely adopted feature extraction methods include: spectrogram, wavelet package transform etc. In place of raw signals, the handcrafted features can be taken as input to a representation learning network. See discussions of representation learning below and [Signal Processing Techniques](#topics/mhm.md).
 
 ## Model construction
 Over the last decades a lot of statistical machine learning models have been successfully applied to MHM, including support vector machine (SVM), k-nearest neighbors (KNN), random forest etc [@khan_review_2018, @liu_artificial_2018]. Compared to more recent end-to-end models based on deep learning, these "shallow" methods generally achieve lower accuracy in MHM tasks but enjoy better explainability. Some of them are implemented as baseline methods in the `dpmhm` package.

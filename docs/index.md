@@ -1,16 +1,16 @@
 # DPMHM
 
-**DPMHM** stands for **Diagnosis and Prognosis in Machine Health Monitoring (MHM)**. It is a library written in Python and Tensorflow for benchmark test of deep-learning based algorithms in the context of MHM, featuring
+**DPMHM** (prononced "Deep HM") stands for **Diagnosis and Prognosis in Machine Health Monitoring**. It is a library written in Python and Tensorflow for benchmark test of deep-learning based algorithms in the context of machine health monitoring (MHM), featuring
 
 - A collection of open-access database of vibration signals, standardized and formatted using [`tensorflow-datasets`](https://www.tensorflow.org/datasets/overview)
-- Automatic preprocessing & transformation of data
+- Pipelines for automatic preprocessing & transformation of data
 - Baseline algorithms: Supervised/Unsupervised/Self-Supervised representation learning, Transfer learning/Few-shot learning for fault diagnosis, Remaining Useful Life (RUL) prediction etc.
 
 #### About the name
 > A diagnosis is an identification of a disease via examination. What follows is a prognosis, which is a prediction of the course of the disease as well as the treatment and results. A helpful trick is that a diagnosis comes before a prognosis, and diagnosis is before prognosis alphabetically. Additionally, diagnosis and detection both start with "d" whereas prognosis and prediction both start with "p."
 > -- <cite>Merriam-Webster dictionary</cite>
 
-As the name suggests, DPMHM intends to cover *diagnosis* and *prognosis*, two main aspects of machine condition monitoring. In DPMHM, we implement *diagnosis* as anomaly detection and *prognosis* as RUL prediction.
+As the name suggests, `dpmhm` intends to cover *diagnosis* and *prognosis*, two main aspects of machine condition monitoring. In `dpmhm`, we implement *diagnosis* as anomaly detection and *prognosis* as RUL prediction.
 
 ### Purpose
 Data is of paramount importance for deep learning based model development. Many benchmark studies in MHM today are performed on several well-recognized datasets (such as [CWRU](https://engineering.case.edu/bearingdatacenter) and [NASA](https://www.nasa.gov/intelligent-systems-division#bearing)), despite the availability of alternative open access datasets. Possible reasons impeding the wide adoptation of alternative datasets by researchers include:

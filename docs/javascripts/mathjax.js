@@ -12,11 +12,12 @@ window.MathJax = {
   },
 
   tex: {
+    tags: 'ams',
     inlineMath: [["\\(", "\\)"]],
     displayMath: [["\\[", "\\]"]],
     processEscapes: true,
     processEnvironments: true,
-    packages: {'[+]': ['base','ams','newcommand','configmacros','noerrors']},
+    packages: {'[+]': ['base','ams','amsmath','newcommand','configmacros','noerrors']},
     // https://docs.mathjax.org/en/latest/input/tex/extensions/configmacros.html#tex-configmacros-options
     macros : {
       R: "\\mathbb{R}",
@@ -24,14 +25,55 @@ window.MathJax = {
       Z: "\\mathbb{Z}",
       Q: "\\mathbb{Q}",
       C: "\\mathrm{C}",
-      // loss: "\\mathcal{L}",
+      loss: '\\mathcal{L}',
+      dd: '\\mathrm{d}',
+      indic: '\\mathbbm{1}',
+
+      RUL:'\\operatorname{RUL}',
+
+      ELBO:'\\operatorname{ELBO}',
+      MMD: '\\operatorname{MMD}',
+
+      opKL:'\\operatorname{\\mathbb{D}_{KL}}',
+      // opprob:'\\operatorname{\\mathrm{p}}',
+      opProb:'\\operatorname{\\mathbb{P}}',
+      Exp:'\\operatorname*{\\mathbb{E}}',
+      Var:'\\operatorname*{\\mathbb{V}}',
       rank: '\\operatorname{rank}',
-      loss: '\\operatorname{\\mathcal{L}}',
-      bold: ["{\\bf #1}", 1],
+      opNormal: '\\operatorname{\\mathcal{N}}',
+
+      argmax: '\\operatornamewithlimits{arg\,max}',
+      argmin: '\\operatornamewithlimits{arg\,min}',
+      id: '\\operatorname{id}',
+      sign: '\\operatorname{sign}',
+      // supp: '\\operatorname{supp}',
+
+      integral: ['\\int_{#1}^{#2}{#3}\\dd{#4}', 4],
+      integrald: ['\\int_{#1}{#2}\\dd{#3}', 3],
+      integralR: ['\\int_{\\R}{#1}\\dd{#2}', 2],
+
+      // bold: ["{\\bf #1}", 1],
+      braced: ['\\left\\{ #1 \\right\\}', 1],
+      bracket: ['\\left\[ #1 \\right\]', 1],
+      paren: ['\\left( #1 \\right)', 1],
+      abs: ['\\left| #1 \\right|', 1],
+      norm: ['\\left\\| #1 \\right\\|', 1],
+      KL: ['\\opKL\\paren{#1 || #2}', 2],
+      Normal: ['\\opNormal\\paren{#1, #2}', 2],
+      // Exp: ['\\opExp\\bracket{#1}', 1],
+      // Var: ['\\opVar\\bracket{#1}', 1],
+      // dkl: ['\\left(#1 || #2\\right)', 2],
+      bold: ['\\boldsymbol{#1}',1] ,     // this macro has one parameter
+      // ddx: ['\\frac{d#2}{d#1}', 2, 'x'], // this macro has an optional parameter that defaults to 'x'
       // abc: ['(#1)', 1, [null, '\\cba']]  // equivalent to \def\abc#1\cba{(#1)}
     },
     environments: {
-      braced: ["\\left\\{", "\\right\\}"]
+      // Doesn't work:
+      // braced: ["\\left\\{", "\\right\\}"],
+      // paren: ["\\left(", "\\right)"],
+      // bracket: ["\\left[", "\\right]"],
+      // abs: ["\\left|", "\\right|"],
+      // norm: ["\\left\\|", "\\right\\|"],
     }
   },
 

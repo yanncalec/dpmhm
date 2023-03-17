@@ -72,6 +72,17 @@ class AbstractDatasetTransformer(ABC):
     # def data_dim(self):
     # 	pass
 
+def get_number_of_channels(spec, channels):
+    n = 0
+    for c in channels:
+        try:
+            # case `TensorSpec(shape=(?,None),...)`
+            n += spec[c].shape[0]
+        except:
+            # case `TensorSpec(shape=(None,),...)`
+            n += 1
+    return n
+
 
 class DatasetCompactor(AbstractDatasetTransformer):
     """Class for dataset compactor.
@@ -109,8 +120,7 @@ class DatasetCompactor(AbstractDatasetTransformer):
             hop size for the sliding window. No hop if None or `hop_size=1` (no downsampling). Effective only when `window_size` is given.
         """
         self._channels = channels
-        _spec = dataset.element_spec['signal']
-        self._channels_dim = np.sum(_spec[c].shape[0] for c in channels)
+        self._channels_dim = get_number_of_channels(dataset.element_spec['signal'], channels)
         self._keys = keys
         # self._n_chunk = n_chunk
         self._resampling_rate = resampling_rate

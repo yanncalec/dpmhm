@@ -65,9 +65,9 @@ plugins:
             show_source: false
       # custom_templates: templates
   # # https://github.com/danielfrg/mkdocs-jupyter
-  # - mkdocs-jupyter:
-  #     # ignore_h1_titles: True
-  #     include_source: True
+  - mkdocs-jupyter:
+      # ignore_h1_titles: True
+      include_source: True
 
 markdown_extensions:
   - toc:
@@ -119,12 +119,12 @@ nav:
       - Explainability: topics/explainability.md
   - Tutorials:
     # - Overview: tutorials/tuto.md
-    - Datasets:
-      - Installation: notebooks/datasets/installation.ipynb
-      # - Installation: notebooks/datasets/installation.html
-      - Preprocessing: notebooks/datasets/preprocessing.ipynb
-    - Models:
-      - Supervised VGGish: notebooks/models/supervised_vggish.ipynb
+    # - Datasets:
+    # - Models:
+    - Installation: notebooks/datasets/installation.ipynb
+    - Preprocessing: notebooks/datasets/preprocessing.ipynb
+    - Supervised VGGish: notebooks/models/supervised_vggish.ipynb
+    - Auto-Encoder: notebooks/models/auto-encoder.ipynb
   - Reference:
     - Datasets:
       - CWRU: datasets/cwru.md

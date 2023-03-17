@@ -78,9 +78,9 @@ Built datasets have standard interface that can be inspected using the property 
 | Name        | Type   | Description     |
 | :--------   | :----- |  :---------     |
 | `signal` | dict | data of this record |
-| `label`  | str or int| label of this record |
 | `sampling_rate` | int or dict | sampling rate (Hz) of `signal` |
 | `metadata`| dict | all other information about this record |
+<!-- | `label`  | str or int| label of this record | -->
 
 and the same structrue is followed by all items of the dataset. When `sampling_rate` is a dictionary, it has the same keys as `signal` and the values is the corresponding sampling rate of each channel in `signal`, otherwise it is a number representing the common sampling rate of all channels.
 
@@ -89,8 +89,7 @@ For example the structure of  the dataset [CWRU](datasets/cwru.md) looks like:
 ```python
 >>> ds['train'].element_spec
 
-{'label': TensorSpec(shape=(), dtype=tf.int64, name=None),
- 'metadata': {'FaultComponent': TensorSpec(shape=(), dtype=tf.string, name=None),
+{'metadata': {'FaultComponent': TensorSpec(shape=(), dtype=tf.string, name=None),
   'FaultLocation': TensorSpec(shape=(), dtype=tf.string, name=None),
   'FaultSize': TensorSpec(shape=(), dtype=tf.float32, name=None),
   'FileName': TensorSpec(shape=(), dtype=tf.string, name=None),
