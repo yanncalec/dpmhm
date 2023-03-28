@@ -1,0 +1,1254 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation of dpmhm">
+      
+      
+      
+        <link rel="canonical" href="https://google.com/topics/vibration/">
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Feature Extraction - Documentation of DPMHM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="None" data-md-color-accent="None">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#signal-processing-techniques-for-vibration-analysis" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Documentation of DPMHM" class="md-header__button md-logo" aria-label="Documentation of DPMHM" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Documentation of DPMHM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Feature Extraction
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/yanncalec/dpmhm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Documentation of DPMHM" class="md-nav__button md-logo" aria-label="Documentation of DPMHM" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    Documentation of DPMHM
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/yanncalec/dpmhm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Usage
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Usage" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Usage
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/" class="md-nav__link">
+        Datasets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../models/" class="md-nav__link">
+        Models
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mhm/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Feature Extraction
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Feature Extraction
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#time-frequency-analysis" class="md-nav__link">
+    Time-frequency analysis
+  </a>
+  
+    <nav class="md-nav" aria-label="Time-frequency analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cepstrum-and-mel-frequency-scale-refs" class="md-nav__link">
+    Cepstrum and Mel-frequency scale (refs)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#time-scale-analysis-with-wavelets-todo" class="md-nav__link">
+    Time-scale analysis with wavelets (TODO)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cyclostationary-signal-processing" class="md-nav__link">
+    Cyclostationary signal processing
+  </a>
+  
+    <nav class="md-nav" aria-label="Cyclostationary signal processing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cyclic-autocorrelation-function-spectrum" class="md-nav__link">
+    Cyclic autocorrelation function &amp; spectrum
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spectral-kurtosis-analysis-todo" class="md-nav__link">
+    Spectral Kurtosis analysis (TODO)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#empirical-mode-decomposition-todo" class="md-nav__link">
+    Empirical Mode Decomposition (TODO)
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_3">
+          Architectures
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Architectures" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_3">
+          <span class="md-nav__icon md-icon"></span>
+          Architectures
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architectures/ae/" class="md-nav__link">
+        Auto-Encoder
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visualize/" class="md-nav__link">
+        Visualization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_5" type="checkbox" id="__nav_3_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_5">
+          Advanced Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_5">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sensors/" class="md-nav__link">
+        Sensor Fusions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../explainability/" class="md-nav__link">
+        Explainability
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Tutorials" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/datasets/installation/" class="md-nav__link">
+        Installation of Datasets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/datasets/preprocessing/" class="md-nav__link">
+        Preprocessing of Datasets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/models/supervised_vggish/" class="md-nav__link">
+        Supervised Representation Learning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/models/auto-encoder/" class="md-nav__link">
+        Unsupervised Learning by Auto-Encoder
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_1" type="checkbox" id="__nav_5_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_1">
+          Datasets
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Datasets" data-md-level="2">
+        <label class="md-nav__title" for="__nav_5_1">
+          <span class="md-nav__icon md-icon"></span>
+          Datasets
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/cwru/" class="md-nav__link">
+        CWRU
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/dcase2020/" class="md-nav__link">
+        Dcase2020
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/dcase2021/" class="md-nav__link">
+        Dcase2021
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/dcase2022/" class="md-nav__link">
+        Dcase2022
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/dirg/" class="md-nav__link">
+        DIRG
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/fraunhofer151/" class="md-nav__link">
+        Fraunhofer151
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/fraunhofer205/" class="md-nav__link">
+        Fraunhofer205
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/femto/" class="md-nav__link">
+        FEMTO
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/ims/" class="md-nav__link">
+        IMS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/mafaulda/" class="md-nav__link">
+        Mafaulda
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/ottawa/" class="md-nav__link">
+        Ottawa
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/paderborn/" class="md-nav__link">
+        Paderborn
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/phmap2021/" class="md-nav__link">
+        Phmap2021
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/seuc/" class="md-nav__link">
+        SEUC
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../datasets/xjtu/" class="md-nav__link">
+        XJTU
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2" type="checkbox" id="__nav_5_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_2">
+          Models
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Models" data-md-level="2">
+        <label class="md-nav__title" for="__nav_5_2">
+          <span class="md-nav__icon md-icon"></span>
+          Models
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../models/vggish/" class="md-nav__link">
+        VGGish
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../models/simclr/" class="md-nav__link">
+        SimCLR
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#time-frequency-analysis" class="md-nav__link">
+    Time-frequency analysis
+  </a>
+  
+    <nav class="md-nav" aria-label="Time-frequency analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cepstrum-and-mel-frequency-scale-refs" class="md-nav__link">
+    Cepstrum and Mel-frequency scale (refs)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#time-scale-analysis-with-wavelets-todo" class="md-nav__link">
+    Time-scale analysis with wavelets (TODO)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cyclostationary-signal-processing" class="md-nav__link">
+    Cyclostationary signal processing
+  </a>
+  
+    <nav class="md-nav" aria-label="Cyclostationary signal processing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cyclic-autocorrelation-function-spectrum" class="md-nav__link">
+    Cyclic autocorrelation function &amp; spectrum
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spectral-kurtosis-analysis-todo" class="md-nav__link">
+    Spectral Kurtosis analysis (TODO)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#empirical-mode-decomposition-todo" class="md-nav__link">
+    Empirical Mode Decomposition (TODO)
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <a href="https://github.com/yanncalec/dpmhm/edit/master/docs/topics/vibration.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<!-- # Feature Extraction &  -->
+<h1 id="signal-processing-techniques-for-vibration-analysis">Signal Processing Techniques for Vibration Analysis<a class="headerlink" href="#signal-processing-techniques-for-vibration-analysis" title="Permanent link">&para;</a></h1>
+<p>Over the past few decades, many signal processing techniques have been developed and successfully applied to vibration analysis. Typically, these techniques transform the signal from a raw waveform into a feature space revealing characteristic information of the underlying mechanical system. The output of these transformations can be used as input features to an end-to-end neural network for more advanced representation learning. Some popular techniques widely adopted in vibration analysis include:</p>
+<ul>
+<li>Short Time Fourier Transform (STFT) based: spectrogram / cepstrogram analysis (time-varying spectrum and cepstrum), <a href="https://en.wikipedia.org/wiki/Mel-frequency_cepstrum">MFCC</a>, Gabor transform etc.</li>
+<li>Wavelet Transform (WT) based: Wavelet Packet Transform (WPT), Continuous WT etc.</li>
+<li><a href="https://en.wikipedia.org/wiki/Cyclostationary_process">Cyclostationarity</a>: cyclic autocorrelation function and cyclic spectrum</li>
+<li>Spectral Kurtosis analysis: spectral Kurtogram</li>
+<li><a href="https://en.wikipedia.org/wiki/Hilbert-Huang_transform">Empirical Mode Decomposition</a></li>
+</ul>
+<!-- - Time-frequency analysis: Short Time Fourier Transform (STFT) based, spectrogram / cepstrogram analysis (time-varying spectrum and cepstrum), [MFCC](https://en.wikipedia.org/wiki/Mel-frequency_cepstrum), etc.
+- Time-scale analysis: Wavelet Transform (WT) and Wavelet Packet Transform (WPT) based, for analyzing non-stationary / transient signals.
+- [Cyclostationarity](https://en.wikipedia.org/wiki/Cyclostationary_process),
+- Spectral Kurtosis analysis
+- Empirical Mode Decomposition (EMD)
+- Envelope analysis
+- Linear Predictive Coding (LPC)
+- Wiener-Ville Distribution -->
+
+<h2 id="time-frequency-analysis">Time-frequency analysis<a class="headerlink" href="#time-frequency-analysis" title="Permanent link">&para;</a></h2>
+<p>Time-frequency analysis allows to reveal a signal's frequency content as it changes over time. Many common time-frequency analysis techniques are based on the Short-Time Fourier Transform (STFT), which involves dividing a signal into short segments and performing a Fourier Transform on each segment. The resulting spectrogram displays the frequency content of the signal at each point in time, allowing for the identification of time-varying frequencies and trends.</p>
+<h3 id="cepstrum-and-mel-frequency-scale-refs">Cepstrum and Mel-frequency scale (refs)<a class="headerlink" href="#cepstrum-and-mel-frequency-scale-refs" title="Permanent link">&para;</a></h3>
+<p>Cepstrum and Mel-frequency cepstral coefficients (MFCC) are two widely used signal processing techniques for analyzing audio and speech signals. In the context of vibration analysis, cepstrum and MFCC are used for various applications such as bearing fault detection, gear fault diagnosis, and condition monitoring of rotating machinery (refs?).</p>
+<p>Cepstrum analysis is primarily used in the field of audio signal processing, for tasks such as speech recognition and speaker identification. It is also used in vibration analysis to identify the natural frequencies and modes of mechanical systems. It involves taking the inverse Fourier transform of the logarithm of the magnitude spectrum of a signal, resulting in a signal that contains both the spectral and temporal information of the original signal. The resulting signal is known as the cepstrum, and it can be used to analyze the pitch, harmonics, and other spectral features of the original signal.</p>
+<p>MFCC, on the other hand, is a technique used to represent the spectral envelope of an audio signal in a compact form. It involves dividing the frequency spectrum of a signal into a set of frequency bands spaced according to the Mel-scale, which is a non-linear scale that more closely approximates the human perception of pitch. The MFCCs are then computed by taking the discrete cosine transform (DCT) of the log-magnitude spectrum of each frequency band. The resulting coefficients represent the power spectrum of the signal in each frequency band and are used as features for various audio signal processing applications such as speech recognition, music genre classification, and emotion detection.</p>
+<h2 id="time-scale-analysis-with-wavelets-todo">Time-scale analysis with wavelets (TODO)<a class="headerlink" href="#time-scale-analysis-with-wavelets-todo" title="Permanent link">&para;</a></h2>
+<p>Wavelet Packet Transform (WPT) is a signal processing technique that decomposes a signal into sub-bands using wavelets. Unlike the Discrete Wavelet Transform (DWT), which only provides a dyadic decomposition, WPT allows for more flexible and refined decomposition of the signal.</p>
+<p>WPT works by recursively dividing a signal into two sub-bands, one for low frequencies and the other for high frequencies. This is done by applying a wavelet filter to the signal and then downsampling it. The process is then repeated on each of the resulting sub-bands, creating a binary tree structure that is referred to as a wavelet packet tree.</p>
+<p>The advantage of WPT over other signal processing techniques is that it provides a high time-frequency resolution, allowing for the analysis of both stationary and non-stationary signals. This makes it particularly useful in the analysis of vibration signals, which often exhibit non-stationary behavior.</p>
+<p>Applications of WPT in vibration analysis include fault detection and diagnosis in machinery, as well as the identification of signal features related to specific fault types. WPT has been used in a wide range of applications, from gear fault detection in wind turbines to bearing fault detection in rotating machinery.</p>
+<p>In addition to its application in vibration analysis, WPT has also been used in other fields such as image and speech processing, and has shown promising results in the analysis of biomedical signals.</p>
+<h2 id="cyclostationary-signal-processing">Cyclostationary signal processing<a class="headerlink" href="#cyclostationary-signal-processing" title="Permanent link">&para;</a></h2>
+<p>Vibrational signals produced by rotating machines are remarkably well modelled as <a href="https://en.wikipedia.org/wiki/Cyclostationary_process">cyclostationary process</a>. A stochastic process <span class="arithmatex">\(x(t)\)</span> is said to be cyclostationary if both the mean <span class="arithmatex">\(\Exp\bracket{x(t)}\)</span> and the autocorrelation function</p>
+<div class="arithmatex">\[\begin{align}
+\label{eq:af}
+R_x(t,\tau) := \Exp\bracket{x(t)^* x(t+\tau)}
+\end{align}\]</div>
+<p>are periodic in <span class="arithmatex">\(t\)</span> for some period <span class="arithmatex">\(T_0\)</span>, where <span class="arithmatex">\(x(t)^*\)</span> denotes the complex conjugate.</p>
+<h3 id="cyclic-autocorrelation-function-spectrum">Cyclic autocorrelation function &amp; spectrum<a class="headerlink" href="#cyclic-autocorrelation-function-spectrum" title="Permanent link">&para;</a></h3>
+<p>Cyclic autocorrelation function (CAF) is the coefficients <span class="arithmatex">\(\hat R_x^n(\tau)\)</span> of the Fourier series</p>
+<div class="arithmatex">\[
+R_x(t,\tau)=\sum_{n\in\Z} \hat R_x^n(\tau) e^{2\pi i n t/T_0}
+\]</div>
+<!-- defined as
+$$
+\hat R_x^{n}(\tau) := \integral{-T_0/2}{T_0/2}{R_{x}(t,\tau) e^{-2\pi i n t/T_0}}{t}
+$$ -->
+
+<p>and <span class="arithmatex">\(n\)</span> is called cyclic frequency. For a cycloergodic process it can be computed by</p>
+<div class="arithmatex">\[
+\hat R_x^{n}(\tau) := \lim_{T\to\infty} \integral{-T/2}{T/2}{x(t)^* x(t+\tau) e^{-2\pi i n t/T_0}}{t}
+\]</div>
+<p>Taking Fourier transform of CAF gives the cyclic spectrum (or the spectral correlation function):</p>
+<div class="arithmatex">\[\begin{align}
+\label{eq:SCF}
+S^n_x(\omega) := \integralR{\hat R^n_x(\tau) e^{-2\pi i \omega\tau}}{\tau}
+\end{align}\]</div>
+<p>which can be used as input feature to a ML model.</p>
+<h2 id="spectral-kurtosis-analysis-todo">Spectral Kurtosis analysis (TODO)<a class="headerlink" href="#spectral-kurtosis-analysis-todo" title="Permanent link">&para;</a></h2>
+<p>Spectral kurtosis is a technique used in vibration analysis to highlight frequency bands that contain impulsive noise or transient events. It is based on the kurtosis statistic, which measures the "peakedness" of a distribution.</p>
+<p>In spectral kurtosis analysis, the kurtosis value is computed for each frequency bin in the frequency spectrum of a vibration signal. Regions of the spectrum with high kurtosis values are indicative of impulsive noise or transient events. Spectral kurtosis can be used to detect and diagnose faults in rotating machinery, such as bearing defects and gear faults.</p>
+<p>A spectral kurtogram is a time-frequency representation of the spectral kurtosis values of a signal. It shows how the spectral kurtosis of a signal changes over time and frequency, providing a way to identify and locate transient events or anomalies in the signal.</p>
+<p>To compute the spectral kurtogram, we first divide the signal into a series of overlapping frames and compute the spectral kurtosis of each frame. Then, we plot the spectral kurtosis values as a function of time and frequency, with darker regions indicating higher spectral kurtosis values.</p>
+<h2 id="empirical-mode-decomposition-todo">Empirical Mode Decomposition (TODO)<a class="headerlink" href="#empirical-mode-decomposition-todo" title="Permanent link">&para;</a></h2>
+<p>Empirical Mode Decomposition (EMD) is a signal processing technique used for analyzing non-stationary and nonlinear signals. It is a data-driven approach that decomposes a signal into a set of intrinsic mode functions (IMFs) that capture the signal's different frequency components.</p>
+<p>The EMD algorithm works by iteratively decomposing a signal into a series of IMFs and a residual. Each IMF is a signal that has a characteristic oscillatory behavior and represents a frequency component of the original signal. The IMFs are obtained by extracting the local extrema of the signal and interpolating between them using cubic spline functions. The residual is the remaining signal after all the IMFs have been extracted, and it represents the high-frequency noise or other features that cannot be represented by the IMFs.</p>
+<p>In vibration analysis, EMD can be used to decompose a vibration signal into its different frequency components and extract useful information about the signal's underlying dynamics. For example, EMD can be used to extract the high-frequency components of a vibration signal that are associated with bearing faults or other types of damage. The resulting IMFs can then be analyzed separately to identify the specific fault characteristic frequencies and diagnose the type and severity of the fault.</p>
+<p>EMD has been used in a variety of applications in vibration analysis, including gearbox fault diagnosis, turbine blade crack detection, and rolling element bearing fault diagnosis, among others. It is a useful tool for analyzing complex vibration signals that exhibit non-stationary and nonlinear behavior, and it can provide valuable insights into the underlying physics of the vibration source.</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../mhm/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Overview" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Overview
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../architectures/ae/" class="md-footer__link md-footer__link--next" aria-label="Next: Auto-Encoder" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Auto-Encoder
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+    
+  </body>
+</html>

@@ -1,0 +1,1263 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation of dpmhm">
+      
+      
+      
+        <link rel="canonical" href="https://google.com/topics/architectures/ae/">
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Auto-Encoder - Documentation of DPMHM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.2505c338.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="None" data-md-color-accent="None">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#unsupervised-learning-using-auto-encoder" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Documentation of DPMHM" class="md-header__button md-logo" aria-label="Documentation of DPMHM" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Documentation of DPMHM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Auto-Encoder
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/yanncalec/dpmhm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Documentation of DPMHM" class="md-nav__button md-logo" aria-label="Documentation of DPMHM" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    Documentation of DPMHM
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/yanncalec/dpmhm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Usage
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Usage" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Usage
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/" class="md-nav__link">
+        Datasets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../models/" class="md-nav__link">
+        Models
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mhm/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../vibration/" class="md-nav__link">
+        Feature Extraction
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_3">
+          Architectures
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Architectures" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_3">
+          <span class="md-nav__icon md-icon"></span>
+          Architectures
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Auto-Encoder
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Auto-Encoder
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#auto-encoder-and-its-variants" class="md-nav__link">
+    Auto-Encoder and its variants
+  </a>
+  
+    <nav class="md-nav" aria-label="Auto-Encoder and its variants">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aes-for-anomaly-detection" class="md-nav__link">
+    AEs for anomaly detection
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sparse-ae" class="md-nav__link">
+    Sparse AE
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#denoising-ae" class="md-nav__link">
+    Denoising AE
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#variation-auto-encoder" class="md-nav__link">
+    Variation Auto-Encoder
+  </a>
+  
+    <nav class="md-nav" aria-label="Variation Auto-Encoder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#application-in-anomaly-detection" class="md-nav__link">
+    Application in anomaly detection
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monte-carlo-em" class="md-nav__link">
+    Monte-Carlo EM
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../visualize/" class="md-nav__link">
+        Visualization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_5" type="checkbox" id="__nav_3_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_5">
+          Advanced Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_5">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sensors/" class="md-nav__link">
+        Sensor Fusions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explainability/" class="md-nav__link">
+        Explainability
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Tutorials" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../notebooks/datasets/installation/" class="md-nav__link">
+        Installation of Datasets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../notebooks/datasets/preprocessing/" class="md-nav__link">
+        Preprocessing of Datasets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../notebooks/models/supervised_vggish/" class="md-nav__link">
+        Supervised Representation Learning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../notebooks/models/auto-encoder/" class="md-nav__link">
+        Unsupervised Learning by Auto-Encoder
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_1" type="checkbox" id="__nav_5_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_1">
+          Datasets
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Datasets" data-md-level="2">
+        <label class="md-nav__title" for="__nav_5_1">
+          <span class="md-nav__icon md-icon"></span>
+          Datasets
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/cwru/" class="md-nav__link">
+        CWRU
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/dcase2020/" class="md-nav__link">
+        Dcase2020
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/dcase2021/" class="md-nav__link">
+        Dcase2021
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/dcase2022/" class="md-nav__link">
+        Dcase2022
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/dirg/" class="md-nav__link">
+        DIRG
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/fraunhofer151/" class="md-nav__link">
+        Fraunhofer151
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/fraunhofer205/" class="md-nav__link">
+        Fraunhofer205
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/femto/" class="md-nav__link">
+        FEMTO
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/ims/" class="md-nav__link">
+        IMS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/mafaulda/" class="md-nav__link">
+        Mafaulda
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/ottawa/" class="md-nav__link">
+        Ottawa
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/paderborn/" class="md-nav__link">
+        Paderborn
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/phmap2021/" class="md-nav__link">
+        Phmap2021
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/seuc/" class="md-nav__link">
+        SEUC
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../datasets/xjtu/" class="md-nav__link">
+        XJTU
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2" type="checkbox" id="__nav_5_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_2">
+          Models
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Models" data-md-level="2">
+        <label class="md-nav__title" for="__nav_5_2">
+          <span class="md-nav__icon md-icon"></span>
+          Models
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../models/vggish/" class="md-nav__link">
+        VGGish
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../models/simclr/" class="md-nav__link">
+        SimCLR
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#auto-encoder-and-its-variants" class="md-nav__link">
+    Auto-Encoder and its variants
+  </a>
+  
+    <nav class="md-nav" aria-label="Auto-Encoder and its variants">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aes-for-anomaly-detection" class="md-nav__link">
+    AEs for anomaly detection
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sparse-ae" class="md-nav__link">
+    Sparse AE
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#denoising-ae" class="md-nav__link">
+    Denoising AE
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#variation-auto-encoder" class="md-nav__link">
+    Variation Auto-Encoder
+  </a>
+  
+    <nav class="md-nav" aria-label="Variation Auto-Encoder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#application-in-anomaly-detection" class="md-nav__link">
+    Application in anomaly detection
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monte-carlo-em" class="md-nav__link">
+    Monte-Carlo EM
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <a href="https://github.com/yanncalec/dpmhm/edit/master/docs/topics/architectures/ae.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="unsupervised-learning-using-auto-encoder">Unsupervised learning using Auto-Encoder<a class="headerlink" href="#unsupervised-learning-using-auto-encoder" title="Permanent link">&para;</a></h1>
+<p>Unsupervised learning refers to techniques without explicit supervision or labels, and the goal is to identify patterns, structure, and relationships in the data without prior knowledge of what the patterns or relationships are. Popular approaches of unsupervised learning include:</p>
+<ul>
+<li>Clustering: group data points together based on some similarity metric. Examples: k-means, hierarchical clustering, and DBSCAN etc.</li>
+<li>Dimensionality Reduction: reduce the dimensionality of datasets while retaining the important information. Examples: Principal Component Analysis (PCA), t-SNE, and autoencoders.</li>
+<li>Generative Models: learn the underlying distribution of the data for tasks such as data generation and anomaly detection. Examples: Variational Autoencoders (VAEs), Generative Adversarial Networks (GANs), and Normalizing Flows.</li>
+</ul>
+<p>Hereafter we briefly review the Auto-Encoder and its probabilistic version.</p>
+<h2 id="auto-encoder-and-its-variants">Auto-Encoder and its variants<a class="headerlink" href="#auto-encoder-and-its-variants" title="Permanent link">&para;</a></h2>
+<p>The autoencoder architecture consists of an encoder <span class="arithmatex">\(f_\theta\)</span> such that <span class="arithmatex">\(z=f_\theta(x)\)</span> is a low-dimensional representation of the input <span class="arithmatex">\(x\)</span>,
+and a decoder <span class="arithmatex">\(g_\phi\)</span> such that <span class="arithmatex">\(\hat x = g_\phi(z)\)</span> is an approximation of <span class="arithmatex">\(x\)</span> from the latent representation <span class="arithmatex">\(z\)</span>. Here <span class="arithmatex">\(\theta, \phi\)</span> are the parameters of the two neural networks that can be learned by minimizing the approximation error:</p>
+<div class="arithmatex">\[\begin{align}
+\label{eq:ae}
+\min_{\theta, \phi} \norm{x- g_\phi \circ f_\theta(x)}^2
+\end{align}\]</div>
+<p>By minimizing this error, the network <span class="arithmatex">\(f_\theta\)</span> learns to encode the input data into a lower-dimensional space while preserving the most important information needed for reconstruction, and the network <span class="arithmatex">\(g_\phi\)</span> learns to decode the representation back to the observation so that it is close to the original one. This can be useful for a variety of tasks, such as dimensionality reduction, feature extraction, and data generation. It can be also seen as a type of self-supervised learning, where the network learns to generate a target output based on an input without explicit supervision.</p>
+<!-- #### Architecture -->
+<p>Choosing multiple convolutional layers as architectures for the encoder and decoder we obtain the so called convolutional AE stacks (CAES).</p>
+<h3 id="aes-for-anomaly-detection">AEs for anomaly detection<a class="headerlink" href="#aes-for-anomaly-detection" title="Permanent link">&para;</a></h3>
+<p>Anomalies or outliers can be identified by computing the reconstruction error of the AE: If the reconstruction error is higher than a certain threshold, then the input is classified as an anomaly. For this, we train the AE on a dataset that only contains normal data. The AE will learn the distribution of the normal data in a compressed space. Anomalies are then detected by computing the reconstruction error of new data points and comparing them to a threshold learned from the training data.</p>
+<h3 id="sparse-ae">Sparse AE<a class="headerlink" href="#sparse-ae" title="Permanent link">&para;</a></h3>
+<p>Regularization terms can be introduced in the loss function <span class="arithmatex">\(\eqref{eq:ae}\)</span> above. Adding a L1 regularization (or KL divergence term) gives the sparse autoencoder which enforces a sparsity constraint on the number of parameters (neurons) that activate during training. This encourages the autoencoder to learn a compressed representation of the input data, which can be useful for tasks such as feature extraction and dimensionality reduction.</p>
+<!-- \begin{align}
+\label{eq:sparse_ae}
+\min_{\theta, \phi} \norm{x- g_\phi \circ f_\theta(x)}^2 + \lambda_\theta \norm{\theta}_1 + \lambda_\phi \norm{\phi}_1
+\end{align} -->
+
+<h3 id="denoising-ae">Denoising AE<a class="headerlink" href="#denoising-ae" title="Permanent link">&para;</a></h3>
+<p>A denoising autoencoder is a variant that allows to learn robust representations. During training, the network is presented with a clean target and a corrupted version, such as adding Gaussian noise or randomly masking parts of data, and the loss is computed based on the difference between the reconstruction and the clean target.</p>
+<!-- ## Probabilistic graphical models with latent variables -->
+
+<h2 id="variation-auto-encoder">Variation Auto-Encoder<a class="headerlink" href="#variation-auto-encoder" title="Permanent link">&para;</a></h2>
+<p>Variation Auto-Encoder (VAE) is a kind of the probabilistic graphical models with latent variables. As above, let <span class="arithmatex">\(x\)</span> be a data point and <span class="arithmatex">\(z\)</span> be some latent variable. In the context of MHM, we can choose these variables to be</p>
+<ul>
+<li><span class="arithmatex">\(x\)</span>: patch of spectrogram, eventually with the information of frequency range</li>
+<li><span class="arithmatex">\(z\)</span>: mixture of class label and generatve model</li>
+</ul>
+<p>Denote by <span class="arithmatex">\(p_\theta, q_\phi\)</span> the p.d.f. of the distribution of observation and latent state, respectively. The true posterior <span class="arithmatex">\(p_\theta(z|x)\)</span> is most often intractable and the idea is to use the variational posterior <span class="arithmatex">\(q_\phi(z|x)\)</span> as approximation. The principle of VAE is to maximize a lower bound of the log-evidence <span class="arithmatex">\(\log p_\theta(x)\)</span> termed ELBO, which is defined as:</p>
+<div class="arithmatex">\[\begin{align}
+\label{eq:ELBO}
+\ELBO &amp;:= \Exp_{z\sim q_\phi(\cdot|x)}[\log p_\theta(x|z)] - \KL{q_\phi(z|x) }{p_\theta(z)}\\
+&amp;= \Exp_{z\sim q_\phi(\cdot|x)} [\log p_\theta(x,z) - \log q_\phi(z|x)]
+\end{align}\]</div>
+<p>here, <span class="arithmatex">\(p_\theta(x|z)\)</span> is interpreted as a probabilistic decoder and <span class="arithmatex">\(q_\phi(z|x)\)</span> as an encoder (or a recognition model). This is indeed a lower bound of the log-evidence because it holds</p>
+<div class="arithmatex">\[
+\log p_\theta(x) = \ELBO + \KL{q_\phi(\cdot|x)}{p_\theta(\cdot|x)} \geq \ELBO.
+\]</div>
+<!-- The most useful form of ELBO is however $\eqref{eq:ELBO}$.  -->
+<p>As in the case of classical AE, <span class="arithmatex">\(\theta, \phi\)</span> are the parameters of NNs and are learned by maximizing ELBO using SGD. Either forms of ELBO can be used, and the derivative of <span class="arithmatex">\(\phi\)</span> can be evaluated by Monte Carlo using a reparameterization trick, e.g.:</p>
+<div class="arithmatex">\[\begin{align}
+z = g_\phi(\epsilon; x) = \mu_\phi(x) + \sigma_\phi(x)\epsilon
+\end{align}\]</div>
+<p>with <span class="arithmatex">\(\epsilon \sim \Normal{0}{1}\)</span> and <span class="arithmatex">\(\mu_\phi, \sigma_\phi\)</span> NNs mapping <span class="arithmatex">\(x\)</span> to the parameters of the variational posterior.</p>
+<!-- While the KL term in ELBO can be made analytic -->
+
+<!-- $$
+\max_{\theta, \phi} \Exp_{\epsilon \sim p_\epsilon}[\log p_\theta(x|g_\phi(\epsilon))] - \KL{q_\phi(g_\phi(\epsilon)|x) }{p_\theta(g_\phi(\epsilon))}
+$$ -->
+
+<h4 id="application-in-anomaly-detection">Application in anomaly detection<a class="headerlink" href="#application-in-anomaly-detection" title="Permanent link">&para;</a></h4>
+<p>VAEs have been successfully used for anomaly detection in several applications. In the same spirit as the classical AE, we train first the VAEs <span class="arithmatex">\(q_\phi(z|x), p_\theta(x|z)\)</span> on normal data, then given a new data point we evaluate the log-evidence</p>
+<div class="arithmatex">\[\begin{align}
+\label{eq:log_evidence}
+\log p_\theta(x) = \log \Exp_{z\sim q_\phi(\cdot|x)} \bracket{\frac{p_\theta(x,z)}{q_\phi(z|x)}}
+\end{align}\]</div>
+<p>using Monte Carlo. The decision can be made by comparing the log-evidence to a threshold learned on the training data. In place of <span class="arithmatex">\(\eqref{eq:log_evidence}\)</span>, the ELBO or the reconstruction probability (first term in ELBO) can be used:</p>
+<div class="arithmatex">\[
+\Exp_{z\sim q_\phi(\cdot|x)} \bracket{\log p_\theta(x|z)}
+\]</div>
+<!-- There are also several variations and extensions of VAEs that have been proposed for anomaly detection, such as using adversarial training or incorporating auxiliary information into the VAE architecture. -->
+
+<h3 id="monte-carlo-em">Monte-Carlo EM<a class="headerlink" href="#monte-carlo-em" title="Permanent link">&para;</a></h3>
+<div class="arithmatex">\[
+p_\theta(x) = \Exp_{z\sim p_\theta(\cdot|x)}[p_\theta(x|z)^{-1}]^{-1}
+\]</div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../../vibration/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Feature Extraction" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Feature Extraction
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../../visualize/" class="md-footer__link md-footer__link--next" aria-label="Next: Visualization" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Visualization
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+    
+  </body>
+</html>
