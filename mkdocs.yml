@@ -102,17 +102,17 @@ nav:
   - Topics:
     - Overview: topics/mhm.md
     - Feature Extraction: topics/vibration.md
-    - Baseline Methods: topics/baseline.md
+    # - Baseline Methods: topics/baseline.md
     - Architectures:
-      - CNN: topics/architectures/cnn.md
+      # - CNN: topics/architectures/cnn.md
       - Auto-Encoder: topics/architectures/ae.md
-      - DBN: topics/architectures/dbn.md
-      - GAN: topics/architectures/gan.md
-      - RNN: topics/architectures/rnn.md
-    - Transfer Learning: topics/transfer.md
+      # - DBN: topics/architectures/dbn.md
+      # - GAN: topics/architectures/gan.md
+      # - RNN: topics/architectures/rnn.md
+    # - Transfer Learning: topics/transfer.md
     # - Few-shot Learning: topics/few-shot.md
-    - Representation Learning: topics/representation.md
-    - RUL: topics/rul.md
+    # - Representation Learning: topics/representation.md
+    # - RUL: topics/rul.md
     - Visualization: topics/visualize.md
     - Advanced Topics:
       - Sensor Fusions: topics/sensors.md
