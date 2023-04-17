@@ -37,24 +37,15 @@ Meaning of different types of experiment:
 As mentionned in [Workflow](index.md#workflow) a dataset needs to be installed and preprocessed before being fed to ML models.
 
 ### Installation
-Let's take example of the dataset CWRU. First download & unzip manually the original files into e.g. `~/tmp/cwru`, then run from terminal:
-```sh
-$ tfds build CWRU --imports dpmhm.datasets.cwru --manual_dir ~/tmp/cwru
-```
-Note that this terminal command is equivalent to the python code
+Let's take example of the dataset CWRU. For installation simply use
 ```python
 
-_ = tfds.load(
-    'CWRU',
-    download_and_prepare_kwargs = {
-        'download_config': tfds.download.DownloadConfig(
-            manual_dir='~/tmp/cwru/'
-        )
-    }
-)
+import dpmhm
+dpmhm.datasets.install('CWRU')
 ```
 
-For some datasets, the automatic installation is also supported, whereby the user can run simply `tfds.load()`. See the tutorial [Installation of Datasets](notebooks/datasets/installation.ipynb) and [Preprocessing of Datasets](notebooks/datasets/preprocessing.ipynb) for a in-depth walkthrough. Installation instructions can also be found in the description page of each dataset.
+See the tutorial [Installation of Datasets](notebooks/datasets/installation.ipynb) and [Preprocessing of Datasets](notebooks/datasets/preprocessing.ipynb) for a in-depth walkthrough.
+
 
 ### Preprocessing
 A preprocessing pipeline consists of 3 levels of transformations:

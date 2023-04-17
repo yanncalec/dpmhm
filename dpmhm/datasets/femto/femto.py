@@ -81,14 +81,6 @@ Notes
 - When both being recorded, 'vibration' and 'temperature' correspond to the same experiment and should be understood as two channels. However, being sampled at  different sampling rate they cannot be extracted simultaneously in form of a 3-channels signal.
 - The original timestamp of sampling is not regular. We made the choice to not include the timestamp data.
 - RUL cannot be extracted due to a strange error, see the comments in the source code.
-
-Installation
-============
-Download and unzip all files into a folder `LOCAL_DIR`, from terminal run
-
-```sh
-$ tfds build FEMTO --imports dpmhm.datasets.femto --manual_dir LOCAL_DIR
-```
 """
 
 """
@@ -119,8 +111,13 @@ _CITATION = """
 P. Nectoux, R. Gouriveau, K. Medjaher, E. Ramasso, B. Morello, N. Zerhouni, C. Varnier. PRONOSTIA: An Experimental Platform for Bearings Accelerated Life Test. IEEE International Conference on Prognostics and Health Management, Denver, CO, USA, 2012
 """
 
-_DATA_URLS = 'https://github.com/Lucky-Loek/ieee-phm-2012-data-challenge-dataset/archive/refs/heads/master.zip'
+_DATA_URLS = [
+    'https://github.com/Lucky-Loek/ieee-phm-2012-data-challenge-dataset/archive/refs/heads/master.zip'
+]
 
+# _DATA_URLS = [
+#     'https://sandbox.zenodo.org/record/1183585/files/femto.zip'
+# ]
 
 # Date of experiment
 _DATE = {
@@ -209,7 +206,7 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
                     'RotatingSpeed': tf.uint32,
                     'LoadForce': tf.uint32,
                     # 'RemainingUsefulLife': tf.float32,  # Time of the run-to-failure experiment
-                    'OriginalSplit': tf.string,  # Original split
+                    # 'OriginalSplit': tf.string,  # Original split
                     'FileName': tf.string,  # Original filename with path
                     'Dataset': tf.string,
                 }
@@ -220,22 +217,27 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        def _get_split_dict(datadir):
+            return {
+                'train': next(datadir.rglob('Learning_set')).rglob('*.csv'),
+                'test': next(datadir.rglob('Test_set')).rglob('*.csv'),
+                'full_test': next(datadir.rglob('Full_Test_Set')).rglob('*.csv'),
+                # # The following won't work
+                # 'train': (datadir/'Learning_set').rglob('*.csv'),
+                # 'test': (datadir/'Test_set').rglob('*.csv'),
+                # 'full_test': (datadir/'Full_Test_set').rglob('*.csv'),
+            }
+
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
-            datadir = Path(dl_manager._manual_dir)  # force conversion
-            # zipfile = dl_manager._manual_dir / 'femto.zip'
+            datadir = Path(dl_manager._manual_dir)
+        elif dl_manager._extract_dir.exists(): # automatically download & extracted data
+            datadir = Path(dl_manager._extract_dir)
+        else:
+            raise FileNotFoundError()
+        return {sp: self._generate_examples(files) for sp, files in _get_split_dict(datadir).items()}
 
-        else:  # automatically download data
-            raise NotImplementedError()
-            datadir = list(dl_manager.download_and_extract(_DATA_URLS).iterdir())[0]
-
-        return {
-            'train': self._generate_examples(datadir, 'Learning_set'),
-            'test': self._generate_examples(datadir, 'Test_set'),
-            'full_test': self._generate_examples(datadir, 'Full_Test_Set')
-        }
-
-    def _generate_examples(self, datadir, split):
-        for fp in (datadir/split).rglob('*.csv'):
+    def _generate_examples(self, files):
+        for fp in files:
             fname = fp.parts[-1]
 
             # Delimiter used by csv files is not uniform: both ',' and ';' are encountered => let pandas detect automatically
@@ -247,16 +249,16 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
 
             if fname[:3] == 'acc':
                 _signal = {
-                    'vibration': dm.iloc[:,-2:].values.T.astype(_DTYPE.as_numpy_dtype), # channel-first
-                    'temperature': np.array([], dtype=_DTYPE.as_numpy_dtype) #.reshape((1,-1))
+                    'vibration': dm.iloc[:,-2:].values.T.astype(_DTYPE), # channel-first
+                    'temperature': np.array([], dtype=_DTYPE) #.reshape((1,-1))
                 }
                 # _timestamp = {
                 # }
                 _sr = 25600
             elif fname[:4] == 'temp':
                 _signal = {
-                    'vibration': np.array([], dtype=_DTYPE.as_numpy_dtype).reshape((2,-1)), #.astype(_DTYPE.as_numpy_dtype),
-                    'temperature': dm.iloc[:,-1].values.astype(_DTYPE.as_numpy_dtype) #.reshape((1,-1)),
+                    'vibration': np.array([], dtype=_DTYPE).reshape((2,-1)), #.astype(_DTYPE),
+                    'temperature': dm.iloc[:,-1].values.astype(_DTYPE) #.reshape((1,-1)),
                 }
                 _sr = 10
             else:
@@ -278,7 +280,7 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
                 'RotatingSpeed': _RPM[gid],
                 'LoadForce': _LOAD[gid],
                 # 'RemainingUsefulLife': rul,
-                'OriginalSplit': split,
+                # 'OriginalSplit': split,
                 'FileName': os.path.join(*fp.parts[-2:]),  # full path file name
                 'Dataset': 'FEMTO',
             }
@@ -292,12 +294,3 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
                 # 'label': 'Unknown',
                 'metadata': metadata
             }
-
-    @staticmethod
-    def get_references():
-        try:
-            with open(Path(__file__).parent / 'Exported Items.bib') as fp:
-                return fp.read()
-        except:
-            pass
-

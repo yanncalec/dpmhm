@@ -1,5 +1,88 @@
 # Obsolete functions
 
+def download_and_extract_zip(s:str, download_dir:str=None, extract_dir:str=None, overwrite=False):
+    """
+    Downloads and extracts zip files from a list of URLs to specified directories.
+
+    Args:
+        download_dir (str): The directory to download the zip files to.
+        extract_dir (str): The directory to extract the zip files to.
+        overwrite (bool): Whether to overwrite existing downloads and extractions. Defaults to False.
+    """
+    dataset_name = _DATASET_DICT[s.lower()]  # raise error if name not found
+
+    # A list of URLs containing zip files to be downloaded and extracted.
+    url_list = import_module('.'+s.lower(), f'dpmhm.datasets.{s.lower()}')._DATA_URLS
+
+    if download_dir is None:
+        download_dir = Path(TFDS_DATA_DIR) / 'downloads' / 'dpmhm' / 'downloads'/ s.lower()
+    if extract_dir is None:
+        extract_dir = Path(TFDS_DATA_DIR) / 'downloads' / 'dpmhm' / 'extracted' / s.lower()
+
+    # create the download and extraction directories if they don't exist
+    os.makedirs(download_dir, exist_ok=True)
+    os.makedirs(extract_dir, exist_ok=True)
+
+    Logger.debug(f'Download location: {download_dir}')
+    Logger.debug(f'Extraction location: {extract_dir}')
+
+    # iterate over the URL list
+    for url in url_list:
+        # check if the download and extraction already exist
+        download_file = download_dir / os.path.basename(url)
+        extract_folder = extract_dir
+
+        if download_file.exists() and extract_folder.exists():
+            if overwrite:
+                Logger.debug(f'Overwriting existing download and extraction for {url}')
+            else:
+                Logger.debug(f'Skipping download and extraction for {url} (already exists)')
+                continue
+
+        # create a new curl object
+        curl = pycurl.Curl()
+
+        # set the URL and other curl options
+        curl.setopt(pycurl.URL, url)
+        curl.setopt(pycurl.FOLLOWLOCATION, True)
+
+        # create a BytesIO object to hold the downloaded data
+        buffer = BytesIO()
+
+        # set curl to write the downloaded data to the buffer
+        curl.setopt(pycurl.WRITEDATA, buffer)
+
+        # perform the curl request
+        curl.perform()
+
+        # get the HTTP status code
+        status_code = curl.getinfo(pycurl.HTTP_CODE)
+
+        # close the curl object
+        curl.close()
+
+        # if the status code is 200 OK, extract the downloaded zip file
+        if status_code == 200:
+            # create a ZipFile object from the downloaded data in the buffer
+            zipfile = ZipFile(BytesIO(buffer.getvalue()))
+
+            # save the downloaded zip file to the download directory
+            with open(download_file, 'wb') as f:
+                f.write(buffer.getvalue())
+
+            # extract all the files from the zip file to the extract directory with the same name as the zip file
+            zipfile.extractall(extract_folder)
+
+            # close the ZipFile object
+            zipfile.close()
+
+            Logger.info(f'Successfully downloaded and extracted {url}')
+        else:
+            Logger.error(f'Failed to download {url}, status code: {status_code}')
+
+    return download_dir, extract_dir
+
+
 def to_windows(dataset, window_shape:tuple, downsample:tuple=None):
 	"""Sliding windows of view of a time-frequency feature dataset.
 

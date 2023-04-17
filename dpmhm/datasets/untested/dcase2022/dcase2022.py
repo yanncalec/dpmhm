@@ -73,6 +73,62 @@ _CITATION = """
 }
 """
 
+_Zenodo_URLS = [
+    # Development Dataset:
+    'https://zenodo.org/record/6355122',
+    # Additional Training Dataset:
+    'https://zenodo.org/record/6462969',
+    # Evaluation Dataset:
+    'https://zenodo.org/record/6586456'
+]
+
+# # Flatten nested list
+# _DATA_URLS = list(itertools.chain.from_iterable([extract_zenodo_urls(url) for url in _Zenodo_URLS]))
+
+_DATA_URLS = ['https://zenodo.org//record/6355122/files/dev_bearing.zip',
+ 'https://zenodo.org//record/6355122/files/dev_bearing.zip',
+ 'https://zenodo.org//record/6355122/files/dev_fan.zip',
+ 'https://zenodo.org//record/6355122/files/dev_fan.zip',
+ 'https://zenodo.org//record/6355122/files/dev_gearbox.zip',
+ 'https://zenodo.org//record/6355122/files/dev_gearbox.zip',
+ 'https://zenodo.org//record/6355122/files/dev_slider.zip',
+ 'https://zenodo.org//record/6355122/files/dev_slider.zip',
+ 'https://zenodo.org//record/6355122/files/dev_ToyCar.zip',
+ 'https://zenodo.org//record/6355122/files/dev_ToyCar.zip',
+ 'https://zenodo.org//record/6355122/files/dev_ToyTrain.zip',
+ 'https://zenodo.org//record/6355122/files/dev_ToyTrain.zip',
+ 'https://zenodo.org//record/6355122/files/dev_valve.zip',
+ 'https://zenodo.org//record/6355122/files/dev_valve.zip',
+ 'https://zenodo.org//record/6462969/files/eval_data_bearing_train.zip',
+ 'https://zenodo.org//record/6462969/files/eval_data_bearing_train.zip',
+ 'https://zenodo.org//record/6462969/files/eval_data_fan_train.zip',
+ 'https://zenodo.org//record/6462969/files/eval_data_fan_train.zip',
+ 'https://zenodo.org//record/6462969/files/eval_data_gearbox_train.zip',
+ 'https://zenodo.org//record/6462969/files/eval_data_gearbox_train.zip',
+ 'https://zenodo.org//record/6462969/files/eval_data_slider_train.zip',
+ 'https://zenodo.org//record/6462969/files/eval_data_slider_train.zip',
+ 'https://zenodo.org//record/6462969/files/eval_data_ToyCar_train.zip',
+ 'https://zenodo.org//record/6462969/files/eval_data_ToyCar_train.zip',
+ 'https://zenodo.org//record/6462969/files/eval_data_ToyTrain_train.zip',
+ 'https://zenodo.org//record/6462969/files/eval_data_ToyTrain_train.zip',
+ 'https://zenodo.org//record/6462969/files/eval_data_valve_train.zip',
+ 'https://zenodo.org//record/6462969/files/eval_data_valve_train.zip',
+ 'https://zenodo.org//record/6586456/files/eval_data_bearing_test.zip',
+ 'https://zenodo.org//record/6586456/files/eval_data_bearing_test.zip',
+ 'https://zenodo.org//record/6586456/files/eval_data_fan_test.zip',
+ 'https://zenodo.org//record/6586456/files/eval_data_fan_test.zip',
+ 'https://zenodo.org//record/6586456/files/eval_data_gearbox_test.zip',
+ 'https://zenodo.org//record/6586456/files/eval_data_gearbox_test.zip',
+ 'https://zenodo.org//record/6586456/files/eval_data_slider_test.zip',
+ 'https://zenodo.org//record/6586456/files/eval_data_slider_test.zip',
+ 'https://zenodo.org//record/6586456/files/eval_data_ToyCar_test.zip',
+ 'https://zenodo.org//record/6586456/files/eval_data_ToyCar_test.zip',
+ 'https://zenodo.org//record/6586456/files/eval_data_ToyTrain_test.zip',
+ 'https://zenodo.org//record/6586456/files/eval_data_ToyTrain_test.zip',
+ 'https://zenodo.org//record/6586456/files/eval_data_valve_test.zip',
+ 'https://zenodo.org//record/6586456/files/eval_data_valve_test.zip']
+
+
 class Dcase2022(tfds.core.GeneratorBasedBuilder):
     """DatasetBuilder for DCASE 2022 task2 dataset."""
 
@@ -88,7 +144,7 @@ class Dcase2022(tfds.core.GeneratorBasedBuilder):
             description=__doc__,
             features=tfds.features.FeaturesDict({
                 'signal': {
-                    'channel': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.BYTES),
+                    'channel': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=np.int16, encoding=tfds.features.Encoding.BYTES),
                 },
                 # 'signal': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.ZLIB),  # for more compression
 
@@ -115,23 +171,26 @@ class Dcase2022(tfds.core.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        def _get_split_dict(datadir):
+            train_list = list(datadir.rglob('*train*.wav'))
+            # separate query data (not labelled) from test data
+            test_list = list(datadir.rglob('*test*anomaly*.wav')) + list(datadir.rglob('*test*normal*.wav'))
+            query_list = [x for x in datadir.rglob('*/test/*.wav') if x not in test_list]
+
+            return {
+                'train': train_list,
+                'test': test_list,
+                'query': query_list
+            }
+
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
+        elif dl_manager._extract_dir.exists(): # automatically download & extracted data
+            datadir = Path(dl_manager._extract_dir)
         else:
-            raise NotImplementedError()
+            raise FileNotFoundError()
 
-        train_list = [str(x) for x in datadir.rglob('*train*.wav')]
-        test_list = [str(x) for x in datadir.rglob('*test*anomaly*.wav')] + [str(x) for x in datadir.rglob('*test*norm*.wav')]
-        aa = [str(x) for x in datadir.rglob('*/test/*.wav')]
-        query_list = [x for x in aa if x not in test_list]
-        # print(len(train_list), len(test_list), len(query_list))
-
-        return {
-            'train': self._generate_examples(train_list),
-            'test': self._generate_examples(test_list),
-            'query': self._generate_examples(query_list),
-            # 'query': self._generate_examples(query_list[:100]),
-        }
+        return {sp: self._generate_examples(files) for sp, files in _get_split_dict(datadir).items()}
 
     @classmethod
     def _fname_parser(cls, fname):
@@ -154,9 +213,8 @@ class Dcase2022(tfds.core.GeneratorBasedBuilder):
 
         return _machine, _section, _domain, _mode, _label, _attribute
 
-    def _generate_examples(self, fnames):
-        for fn in fnames:
-            fp = Path(fn)
+    def _generate_examples(self, files):
+        for fp in files:
             _machine, _section, _domain, _mode, _label, _attribute = self._fname_parser(Path(*fp.parts[-3:]))
 
             # sr, x = tfds.core.lazy_imports.scipy.io.wavfile.read(fp)

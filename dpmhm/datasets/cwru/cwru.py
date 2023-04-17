@@ -64,14 +64,6 @@ References
 Review of developments based on CWRU:
 
 - Wei, X. and Söffker, D. (2021) ‘Comparison of CWRU Dataset-Based Diagnosis Approaches: Review of Best Approaches and Results’, in P. Rizzo and A. Milazzo (eds) European Workshop on Structural Health Monitoring. Cham: Springer International Publishing (Lecture Notes in Civil Engineering), pp. 525–532. Available at: https://doi.org/10.1007/978-3-030-64594-6_51.
-
-Installation
-============
-Download and unzip all files into a folder `LOCAL_DIR`, from terminal run
-
-```sh
-$ tfds build CWRU --imports dpmhm.datasets.cwru --manual_dir LOCAL_DIR
-```
 """
 
 # import os
@@ -84,7 +76,7 @@ import pandas as pd
 # import mat4py
 # import librosa
 
-from dpmhm.datasets import _DTYPE, _ENCODING
+from dpmhm.datasets import _DTYPE, _ENCODING, extract_zenodo_urls
 
 
 _CITATION = """
@@ -104,8 +96,12 @@ _CITATION = """
 _METAINFO = pd.read_csv(Path(__file__).parent / 'metainfo.csv')
 
 # URL to the zip file
-_DATA_URLS = 'SOME_ONLINE_SERVER/cwru.zip'
 # _DATA_URLS = ('https://engineering.case.edu/sites/default/files/'+_METAINFO['FileName']).tolist()
+# _DATA_URLS = extract_zenodo_urls('https://sandbox.zenodo.org/record/1183527/)
+_DATA_URLS = [
+    'https://sandbox.zenodo.org/record/1183527/files/cwru.zip'
+    ]
+
 
 
 class CWRU(tfds.core.GeneratorBasedBuilder):
@@ -158,22 +154,25 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
-        # If class labels are used for `meta`, add `.astype(str)` in the following before `to_dict()`
+        def _get_split_dict(datadir):
+            return {
+                'train': datadir.rglob('*.mat'),
+            }
+
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
-        else:  # automatically download data
-            raise NotImplementedError()
-			# _resource = tfds.download.Resource(url=_DATA_URLS, extract_method=tfds.download.ExtractMethod.ZIP)  # in case that the extraction method cannot be deduced automatically from files
-			# datadir = dl_manager.download_and_extract(_resource)
+        elif dl_manager._extract_dir.exists(): # automatically download & extracted data
+            datadir = Path(dl_manager._extract_dir)
+        else:
+            raise FileNotFoundError()
 
-            datadir = list(dl_manager.download_and_extract(_DATA_URLS).iterdir())[0]  # only one subfolder
-        return {
-            'train': self._generate_examples(datadir),
-        }
+        return {sp: self._generate_examples(files) for sp, files in _get_split_dict(datadir).items()}
+        # return {
+        #     'train': self._generate_examples(datadir.rglob('*.mat')),
+        # }
 
-    def _generate_examples(self, datadir):
-        # for fn, fobj in tfds.download.iter_archive(zipfile, tfds.download.ExtractMethod.ZIP):
-        for fp in datadir.glob('*.mat'):
+    def _generate_examples(self, files):
+        for fp in files:
             fname = fp.parts[-1]
             # print(fname)
             metadata = _METAINFO.loc[_METAINFO['FileName'] == fname].iloc[0].to_dict()
@@ -217,19 +216,15 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 
             yield hash(frozenset(metadata.items())), {
                 'signal': {
-                    'DE': xde.astype(_DTYPE.as_numpy_dtype),
-                    'FE': xfe.astype(_DTYPE.as_numpy_dtype),
-                    'BA': xba.astype(_DTYPE.as_numpy_dtype),
+                    # 'DE': xde.astype(_DTYPE.as_numpy_dtype),
+                    # 'FE': xfe.astype(_DTYPE.as_numpy_dtype),
+                    # 'BA': xba.astype(_DTYPE.as_numpy_dtype),
+                    # tfds (>=4.9.2) now accepts Numpy's DType
+                    'DE': xde.astype(_DTYPE),
+                    'FE': xfe.astype(_DTYPE),
+                    'BA': xba.astype(_DTYPE),
                 },  # if not empty all three have the same length
                 'sampling_rate': sr,
                 # 'label': metadata['FaultLocation'],
                 'metadata': metadata,
             }
-
-    @staticmethod
-    def get_references():
-        try:
-            with open(Path(__file__).parent / 'Exported Items.bib') as fp:
-                return fp.read()
-        except:
-            pass

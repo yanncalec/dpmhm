@@ -231,12 +231,3 @@ class Fraunhofer205(tfds.core.GeneratorBasedBuilder):
                 # 	'label': metadata['FaultComponent'],
                 # 	'metadata': metadata
                 # }
-
-    @staticmethod
-    def get_references():
-        try:
-            with open(Path(__file__).parent / 'Exported Items.bib') as fp:
-                return fp.read()
-        except:
-            pass
-

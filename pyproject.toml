@@ -1,21 +1,25 @@
 [tool.poetry]
 name = "dpmhm"
-version = "0.1.0"
-description = "Diagnostic and Pronostic for Machine Health Monitoring"
+version = "0.1.1"
+description = "A python package for machine health monitoring"
 authors = ["Han Wang <han.wang.fr@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
-tensorflow = "^2.10.0"
-tensorflow_datasets = "^4.7.0"
-tensorflow_addons = "^0.18.0"
+python = "~3.10"
+tensorflow = "^2.12.0"
+tensorflow-datasets = "^4.9.2"
+tensorflow-addons = "^0.20.0"
 # tensorflow_probability = "^0.18.0"
 # tensorflow_model_optimization = "^0.7.3"
 numpy = "^1.23"
+scipy = "^1.10.1"
 librosa = "^0.9.2"
 pandas = "^1.5.2"
+matplotlib = "^3.7.1"
 scikit_image = "^0.19.3"
+pycurl = "^7.45.2"
+beautifulsoup4 = "^4.12.2"
 pydub = "^0.25.1"
 # mkdocs_jupyter = ""
 # mkdocstrings_python

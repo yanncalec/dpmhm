@@ -16,12 +16,13 @@ plugins:
   # - pdf-export
   - with-pdf:  # https://github.com/orzih/mkdocs-with-pdf
       author: Han WANG
-      copyright: 2023 CEA/LIST
+      # copyright: 2023 CEA/LIST
       #
       cover: True
       #back_cover: true
-      cover_title: Report for HIASCI GT3
-      cover_subtitle: DPMHM
+      cover_title: 'DPMHM: A python package for machine health monitoring'
+      # cover_title: Report for HIASCI GT3
+      # cover_subtitle: DPMHM
       #custom_template_path: TEMPLATES PATH
       #
       #toc_title: TOC TITLE TEXT
@@ -65,9 +66,10 @@ plugins:
             show_source: false
       # custom_templates: templates
   # # https://github.com/danielfrg/mkdocs-jupyter
-  - mkdocs-jupyter:
-      # ignore_h1_titles: True
-      include_source: True
+  # # uncomment to enable online conversion of jupyter notebooks:
+  # - mkdocs-jupyter:
+  #     # ignore_h1_titles: True
+  #     include_source: True
 
 markdown_extensions:
   - toc:

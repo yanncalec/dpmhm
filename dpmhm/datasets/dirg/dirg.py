@@ -26,7 +26,7 @@ Original Dataset
 
 Download
 --------
-ftp://ftp.polito.it/people/DIRG_BearingData/
+ftp://ftp.polito.it/people/DIRG_BearingData
 
 Built Dataset
 =============
@@ -50,14 +50,6 @@ Notes
 =====
 - Conversion: load is converted from mV to N using the sensitivity factor 0.499 mV/N
 - The endurance test was originally with the fault type 4A but in the processed data we marked its label as "unknown".
-
-Installation
-============
-Download and unzip all files into a folder `LOCAL_DIR`, from terminal run
-
-```sh
-$ tfds build DIRG --imports dpmhm.datasets.dirg --manual_dir LOCAL_DIR
-```
 """
 
 
@@ -105,7 +97,7 @@ _FAULT_TYPE_MATCH = {
     '6A': ('Roller', 150),
 }
 
-# _DATA_URLS = 'ftp://ftp.polito.it/people/DIRG_BearingData'
+_DATA_URLS = ['https://sandbox.zenodo.org/record/1183545/files/dirg.zip']
 
 
 class DIRG(tfds.core.GeneratorBasedBuilder):
@@ -113,9 +105,6 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
     RELEASE_NOTES = {
         '1.0.0': 'Initial release.',
     }
-
-    MANUAL_DOWNLOAD_INSTRUCTIONS = """
-    """
 
     def _info(self) -> tfds.core.DatasetInfo:
         # TODO(dirg): Specifies the tfds.core.DatasetInfo object
@@ -153,28 +142,24 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        def _get_split_dict(datadir):
+            return {
+                'variation': next(datadir.rglob('VariableSpeedAndLoad')).glob('*.mat'),
+                'endurance': next(datadir.rglob('EnduranceTest')).glob('*.mat'),
+            }
+
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
+        elif dl_manager._extract_dir.exists(): # automatically download & extracted data
+            datadir = Path(dl_manager._extract_dir)
         else:
-            # Parallel download (may result in corrupted files):
-            # _data_files = dl_manager.download(_DATA_URLS)   # urls must be a list
+            raise FileNotFoundError()
 
-            # Sequential download:
-            # _data_files = [dl_manager.download(url) for url in _DATA_URLS]
+        return {sp: self._generate_examples(files) for sp, files in _get_split_dict(datadir).items()}
 
-            # fp_dict = {}
-            # for fp in _data_files:
-            #   with open(str(fp)+'.INFO') as fu:
-            #     fp_dict[str(fp)] = _METAINFO.loc[_METAINFO['FileName'] == json.load(fu)['original_fname']].iloc[0].to_dict()
-            raise NotImplementedError()
 
-        return {
-            'variation': self._generate_examples(datadir/'VariableSpeedAndLoad'),
-            'endurance': self._generate_examples(datadir/'EnduranceTest'),
-        }
-
-    def _generate_examples(self, datadir):
-        for fp in datadir.glob('*.mat'):
+    def _generate_examples(self, files):
+        for fp in files:
             fname = fp.parts[-1]
 
             try:
@@ -216,14 +201,14 @@ class DIRG(tfds.core.GeneratorBasedBuilder):
                 'Dataset': 'DIRG',
             }
 
-            Xs = dm[fname[:-4]].T #.astype(_DTYPE.as_numpy_dtype),
+            Xs = dm[fname[:-4]].T #.astype(_DTYPE),
 
             yield hash(frozenset(metadata.items())), {
                 # 'signal': Xs,  # transpose to the shape (channel, time)
                 'signal': {
-                    'A1': Xs[:3,:].astype(_DTYPE.as_numpy_dtype),
-                    'A2': Xs[3:6,:].astype(_DTYPE.as_numpy_dtype),
-                    # '6': Xs[5,:] #.astype(_DTYPE.as_numpy_dtype),
+                    'A1': Xs[:3,:].astype(_DTYPE),
+                    'A2': Xs[3:6,:].astype(_DTYPE),
+                    # '6': Xs[5,:] #.astype(_DTYPE),
                 },
                 'sampling_rate': _samplingrate,
                 # 'label': _label,

@@ -62,14 +62,6 @@ Features
 Notes
 =====
 The original record consists of two periods where the rotation speed increases linearly. Their durations are almost the same but depend on the split set. In the processed data these two periods are separated. Moreover, we truncate the few seconds (~10s) near the beginning and the end of each period which seem to correspond to initialization. The field `TrunkIndex` was added in `metadata` for record.
-
-Installation
-============
-Download and unzip all files into a folder `LOCAL_DIR`, from terminal run
-
-```sh
-$ tfds build Fraunhofer151 --imports dpmhm.datasets.fraunhofer151 --manual_dir LOCAL_DIR
-```
 """
 
 from pathlib import Path
@@ -96,7 +88,7 @@ _CITATION = """
 }
 """
 
-_DATA_URLS = 'https://fordatis.fraunhofer.de/bitstream/fordatis/151.2/1/fraunhofer_eas_dataset_for_unbalance_detection_v1.zip'
+_DATA_URLS = ['https://fordatis.fraunhofer.de/bitstream/fordatis/151.2/1/fraunhofer_eas_dataset_for_unbalance_detection_v1.zip']
 
 
 _RADIUS = {'0': 0., '1': 14., '2': 18.5, '3':23., '4':23.}
@@ -146,23 +138,29 @@ class Fraunhofer151(tfds.core.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        def _get_split_dict(datadir):
+            return {
+                'train': next(datadir.rglob('train')).glob('*D.csv'),
+                'test': next(datadir.rglob('test')).rglob('*E.csv'),
+            }
+
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
-        else:  # automatically download data
-            raise NotImplementedError()
-            datadir = list(dl_manager.download_and_extract(_DATA_URLS).iterdir())[0]
+        elif dl_manager._extract_dir.exists(): # automatically download & extracted data
+            datadir = Path(dl_manager._extract_dir)
+        else:
+            raise FileNotFoundError()
+        return {sp: self._generate_examples(files, sp) for sp, files in _get_split_dict(datadir).items()}
 
-        return {
-            'train': self._generate_examples(datadir, 'train'),
-            'test': self._generate_examples(datadir, 'test'),
-        }
+        # return {
+        #     'train': self._generate_examples(datadir, 'train'),
+        #     'test': self._generate_examples(datadir, 'test'),
+        # }
 
-    def _generate_examples(self, path, split):
+    def _generate_examples(self, files, split):
         # assert path.exists()
 
-        fpaths = path.glob('*D.csv') if split=='train' else path.glob('*E.csv')
-
-        for fp in fpaths:
+        for fp in files:
             metadata = {
                 # 'SamplingRate': 4096,
                 'Label': 'Normal' if fp.name[0]=='0' else 'Unbalanced',
@@ -183,26 +181,17 @@ class Fraunhofer151(tfds.core.GeneratorBasedBuilder):
                 metadata['TrunkIndex'] = 4096*t0
 
                 yield hash(frozenset(metadata.items())), {
-                    # 'signal': df[['V_in', 'Measured_RPM', 'Vibration_1', 'Vibration_2', 'Vibration_3']].values.astype(_DTYPE.as_numpy_dtype),
+                    # 'signal': df[['V_in', 'Measured_RPM', 'Vibration_1', 'Vibration_2', 'Vibration_3']].values.astype(_DTYPE),
 
                     'signal': {
-                        'V_in': df['V_in'].values.astype(_DTYPE.as_numpy_dtype),
-                        'Measured_RPM': df['Measured_RPM'].values.astype(_DTYPE.as_numpy_dtype),
-                        # 'Vibration_1': df['Vibration_1'].values.astype(_DTYPE.as_numpy_dtype),
-                        # 'Vibration_2': df['Vibration_2'].values.astype(_DTYPE.as_numpy_dtype),
-                        # 'Vibration_3': df['Vibration_3'].values.astype(_DTYPE.as_numpy_dtype),
-                        'Vibration': df[['Vibration_1', 'Vibration_2', 'Vibration_3']].values.T.astype(_DTYPE.as_numpy_dtype),
+                        'V_in': df['V_in'].values.astype(_DTYPE),
+                        'Measured_RPM': df['Measured_RPM'].values.astype(_DTYPE),
+                        # 'Vibration_1': df['Vibration_1'].values.astype(_DTYPE),
+                        # 'Vibration_2': df['Vibration_2'].values.astype(_DTYPE),
+                        # 'Vibration_3': df['Vibration_3'].values.astype(_DTYPE),
+                        'Vibration': df[['Vibration_1', 'Vibration_2', 'Vibration_3']].values.T.astype(_DTYPE),
                     },
                     'sampling_rate': 4096,
                     # 'label': label,
                     'metadata': metadata
                 }
-
-    @staticmethod
-    def get_references():
-        try:
-            with open(Path(__file__).parent / 'Exported Items.bib') as fp:
-                return fp.read()
-        except:
-            pass
-

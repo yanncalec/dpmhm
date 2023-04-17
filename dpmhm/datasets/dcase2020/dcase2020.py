@@ -11,6 +11,7 @@ Homepage
 --------
 https://dcase.community/challenge2020/task-unsupervised-detection-of-anomalous-sounds
 
+
 Original Dataset
 ================
 - Type of experiments: labelled data
@@ -50,12 +51,14 @@ $ tfds build Dcase2020 --imports dpmhm.datasets.dcase2020 --manual_dir LOCAL_DIR
 """
 
 import os
+import numpy as np
 # import json
 import tensorflow as tf
 import tensorflow_datasets as tfds
 from pathlib import Path
+import itertools
 
-from dpmhm.datasets import _DTYPE, _ENCODING
+from dpmhm.datasets import _DTYPE, _ENCODING, extract_zenodo_urls
 
 
 _CITATION = """
@@ -69,11 +72,51 @@ _CITATION = """
 }
 """
 
-_DATA_URLS = [
-    'https://zenodo.org/record/3678171',
-    'https://zenodo.org/record/3727685',
-    'https://zenodo.org/record/3841772'
+_Zenodo_URLS = [
+    'https://zenodo.org/record/3678171',  # Development Dataset
+    'https://zenodo.org/record/3727685',  # Additional Training Dataset
+    'https://zenodo.org/record/3841772'  # Evaluation Dataset
     ]
+
+# # Flatten nested list
+# _DATA_URLS = list(itertools.chain.from_iterable([extract_zenodo_urls(url) for url in _Zenodo_URLS]))
+
+_DATA_URLS = ['https://zenodo.org//record/3678171/files/dev_data_fan.zip',
+ 'https://zenodo.org//record/3678171/files/dev_data_fan.zip',
+ 'https://zenodo.org//record/3678171/files/dev_data_pump.zip',
+ 'https://zenodo.org//record/3678171/files/dev_data_pump.zip',
+ 'https://zenodo.org//record/3678171/files/dev_data_slider.zip',
+ 'https://zenodo.org//record/3678171/files/dev_data_slider.zip',
+ 'https://zenodo.org//record/3678171/files/dev_data_ToyCar.zip',
+ 'https://zenodo.org//record/3678171/files/dev_data_ToyCar.zip',
+ 'https://zenodo.org//record/3678171/files/dev_data_ToyConveyor.zip',
+ 'https://zenodo.org//record/3678171/files/dev_data_ToyConveyor.zip',
+ 'https://zenodo.org//record/3678171/files/dev_data_valve.zip',
+ 'https://zenodo.org//record/3678171/files/dev_data_valve.zip',
+ 'https://zenodo.org//record/3727685/files/eval_data_train_fan.zip',
+ 'https://zenodo.org//record/3727685/files/eval_data_train_fan.zip',
+ 'https://zenodo.org//record/3727685/files/eval_data_train_pump.zip',
+ 'https://zenodo.org//record/3727685/files/eval_data_train_pump.zip',
+ 'https://zenodo.org//record/3727685/files/eval_data_train_slider.zip',
+ 'https://zenodo.org//record/3727685/files/eval_data_train_slider.zip',
+ 'https://zenodo.org//record/3727685/files/eval_data_train_ToyCar.zip',
+ 'https://zenodo.org//record/3727685/files/eval_data_train_ToyCar.zip',
+ 'https://zenodo.org//record/3727685/files/eval_data_train_ToyConveyor.zip',
+ 'https://zenodo.org//record/3727685/files/eval_data_train_ToyConveyor.zip',
+ 'https://zenodo.org//record/3727685/files/eval_data_train_valve.zip',
+ 'https://zenodo.org//record/3727685/files/eval_data_train_valve.zip',
+ 'https://zenodo.org//record/3841772/files/eval_data_test_fan.zip',
+ 'https://zenodo.org//record/3841772/files/eval_data_test_fan.zip',
+ 'https://zenodo.org//record/3841772/files/eval_data_test_pump.zip',
+ 'https://zenodo.org//record/3841772/files/eval_data_test_pump.zip',
+ 'https://zenodo.org//record/3841772/files/eval_data_test_slider.zip',
+ 'https://zenodo.org//record/3841772/files/eval_data_test_slider.zip',
+ 'https://zenodo.org//record/3841772/files/eval_data_test_ToyCar.zip',
+ 'https://zenodo.org//record/3841772/files/eval_data_test_ToyCar.zip',
+ 'https://zenodo.org//record/3841772/files/eval_data_test_ToyConveyor.zip',
+ 'https://zenodo.org//record/3841772/files/eval_data_test_ToyConveyor.zip',
+ 'https://zenodo.org//record/3841772/files/eval_data_test_valve.zip',
+ 'https://zenodo.org//record/3841772/files/eval_data_test_valve.zip']
 
 
 class Dcase2020(tfds.core.GeneratorBasedBuilder):
@@ -89,7 +132,7 @@ class Dcase2020(tfds.core.GeneratorBasedBuilder):
             description=__doc__,
             features=tfds.features.FeaturesDict({
                 'signal': {
-                    'channel': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.BYTES)
+                    'channel': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=np.int16, encoding=tfds.features.Encoding.BYTES)
                 },
 
                 # 'signal': tfds.features.Audio(file_format='wav', shape=(None,), sample_rate=None, dtype=tf.int16, encoding=tfds.features.Encoding.BYTES),  # shape=(1, None) doesn't work
@@ -115,24 +158,40 @@ class Dcase2020(tfds.core.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        def _get_split_dict(datadir):
+            train_list = list(datadir.rglob('*/train/*.wav'))
+            # separate query data (not labelled) from test data
+            test_list = list(datadir.rglob('*/test/anomaly*.wav')) + list(datadir.rglob('*/test/normal*.wav'))
+            query_list = [x for x in datadir.rglob('*/test/*.wav') if x not in test_list]
+
+            # train_list = [str(x) for x in datadir.rglob('*/train/*.wav')]
+            # # separate query data (not labelled) from test data
+            # test_list = [str(x) for x in datadir.rglob('*/test/anomaly*.wav')] +  [str(x) for x in datadir.rglob('*/test/normal*.wav')]
+
+            # aa = [str(x) for x in datadir.rglob('*/test/*.wav')]
+            # query_list = [x for x in aa if x not in test_list]
+
+            # print(len(train_list), len(test_list), len(query_list))
+            return {
+                'train': train_list,
+                'test': test_list,
+                'query': query_list
+            }
+
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
+        elif dl_manager._extract_dir.exists(): # automatically download & extracted data
+            datadir = Path(dl_manager._extract_dir)
         else:
-            raise NotImplementedError()
+            raise FileNotFoundError()
 
-        train_list = [str(x) for x in datadir.rglob('*/train/*.wav')]
-        # separate query data (not labelled) from test data
-        test_list = [str(x) for x in datadir.rglob('*/test/anomaly*.wav')] +  [str(x) for x in datadir.rglob('*/test/normal*.wav')]
+        return {sp: self._generate_examples(files) for sp, files in _get_split_dict(datadir).items()}
 
-        aa = [str(x) for x in datadir.rglob('*/test/*.wav')]
-        query_list = [x for x in aa if x not in test_list]
-        # print(len(train_list), len(test_list), len(query_list))
-
-        return {
-            'train': self._generate_examples(train_list),
-            'test': self._generate_examples(test_list),
-            'query': self._generate_examples(query_list),
-        }
+        # return {
+        #     'train': self._generate_examples(train_list),
+        #     'test': self._generate_examples(test_list),
+        #     'query': self._generate_examples(query_list),
+        # }
 
     @classmethod
     def _fname_parser(cls, fname):
@@ -156,13 +215,12 @@ class Dcase2020(tfds.core.GeneratorBasedBuilder):
 
         return _machine, _mode, _id, _label
 
-    def _generate_examples(self, fnames):
+    def _generate_examples(self, files):
         # for zf in path.glob('*.zip'):
         #   # flat iteration being transparent to sub folders of zip_path
         #   for fname, fobj in tfds.download.iter_archive(zf, tfds.download.ExtractMethod.ZIP):
-        for fn in fnames:
-            fp = Path(fn)
 
+        for fp in files:
             _machine, _mode, _id, _label = self._fname_parser(Path(*fp.parts[-3:]))
             # _, x = tfds.core.lazy_imports.scipy.io.wavfile.read(fp)
 

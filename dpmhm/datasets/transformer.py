@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod, abstractproperty, abstractclassmethod
 import itertools
 
 import numpy as np
-import random
+# import random
 import itertools
 import tensorflow as tf
 from tensorflow.data import Dataset
@@ -24,12 +24,10 @@ import skimage
 import librosa
 # import scipy
 
-import logging
-Logger = logging.getLogger(__name__)
-
 from dpmhm.datasets import utils, _DTYPE, _ENCLEN
 from dpmhm.datasets.augment import randomly, random_crop, fade
 
+from . import Logger
 
 class AbstractDatasetTransformer(ABC):
     @abstractmethod

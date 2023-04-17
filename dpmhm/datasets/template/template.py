@@ -52,8 +52,7 @@ import pandas as pd
 # import mat4py
 # import librosa
 
-# from dpmhm.datasets.preprocessing import DatasetCompactor, FeatureTransformer, Preprocessor
-from dpmhm.datasets import _DTYPE, _ENCODING
+from dpmhm.datasets import _DTYPE, _ENCODING, extract_zenodo_urls
 
 
 _CITATION = """
@@ -123,30 +122,33 @@ class TEMPLATE(tfds.core.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        def _get_split_dict(datadir):
+            return {
+                'train': next(datadir.rglob('train_folder')).rglob('*.mat'),
+                'test': next(datadir.rglob('test_folder')).rglob('*.mat'),
+            }
+
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
-        else:  # automatically download data
-            # For too large dataset or unsupported format
-            raise NotImplementedError("Automatic download not supported.")
+        elif dl_manager._extract_dir.exists(): # automatically download & extracted data
+            datadir = Path(dl_manager._extract_dir)
+        else:
+            raise FileNotFoundError()
 
-            # Parallel download (may result in corrupted files):
-            #   _resource = tfds.download.Resource(url=_DATA_URLS, extract_method=tfds.download.ExtractMethod.ZIP)  # in case that the extraction method cannot be deduced automatically from files
-            # datadir = dl_manager.download_and_extract(_resource)
+        return {sp: self._generate_examples(files, sp) for sp, files in _get_split_dict(datadir).items()}
 
-            datadir = dl_manager.download_and_extract(_DATA_URLS) / 'name_of_the_ds'
 
-            # Sequential download:
-            # datadir = [Path(dl_manager.download_and_extract(url) for url in _DATA_URLS]
-
-        return {
-            sp.lower(): self._generate_examples(datadir, fn, sp.lower()) for sp, fn in _SPLIT_PATH_MATCH.items()
-        # 'train': self._generate_examples(datadir),
-    }
-
-    def _generate_examples(self, path, fn):
-        pass
+    def _generate_examples(self, files, split):
         yield hash(frozenset(metadata.items())), {
             'signal': x,
-            'label': 'Normal' if metadata['Split']=='Healthy' else 'Faulty',
+            'sampling_rate': sr,
             'metadata': metadata
         }
+
+    # @staticmethod
+    # def get_references():
+    #     try:
+    #         with open(Path(__file__).parent / 'references.bib') as fp:
+    #             return fp.read()
+    #     except:
+    #         pass
