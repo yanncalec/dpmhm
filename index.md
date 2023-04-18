@@ -1,6 +1,6 @@
 # DPMHM
 
-**DPMHM** (prononced "Deep HM") stands for **Diagnosis and Prognosis in Machine Health Monitoring**. It is a library written in Python and Tensorflow for benchmark test of deep-learning based algorithms in the context of machine health monitoring (MHM), featuring
+**DPMHM** (prononced "Deep HM") stands for **Diagnosis and Prognosis for Machine Health Monitoring**. It is a library written in Python and Tensorflow for benchmark test of deep-learning based algorithms in the context of machine health monitoring (MHM), featuring
 
 - A collection of open-access database of vibration signals, standardized and formatted using [`tensorflow-datasets`](https://www.tensorflow.org/datasets/overview)
 - Pipelines for automatic preprocessing & transformation of data
@@ -38,7 +38,7 @@ Here is a basic workflow with `dpmhm`:
 3. Use with machine learning models
 
 ### Installing a dataset
-This package does not provide the actual datasets (the total of original files is ~ 158 Gb, see [Datasets](datasets.md)), only the facilities for their preprocessing. A dataset must be installed before being loaded into memory. The general procedure consists of first downloading the original data then building the dataset of [tfrecord](https://www.tensorflow.org/tutorials/load_data/tfrecord) format using `tensorflow_datasets`.
+This package does not provide the actual datasets, only the facilities for their preprocessing. A dataset must be installed before being loaded into memory. The general procedure consists of first downloading the original data then building the dataset of [tfrecord](https://www.tensorflow.org/tutorials/load_data/tfrecord) format using `tensorflow_datasets`.
 
 
 ### Preprocessing a dataset

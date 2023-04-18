@@ -2,212 +2,172 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://google.com/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/datasets/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/models/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/datasets/cwru/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/datasets/dcase2020/</loc>
-         <lastmod>2023-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://google.com/datasets/dcase2021/</loc>
-         <lastmod>2023-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://google.com/datasets/dcase2022/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/datasets/dirg/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/datasets/femto/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/datasets/fraunhofer151/</loc>
-         <lastmod>2023-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://google.com/datasets/fraunhofer205/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/datasets/ims/</loc>
-         <lastmod>2023-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://google.com/datasets/mafaulda/</loc>
-         <lastmod>2023-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://google.com/datasets/ottawa/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/datasets/paderborn/</loc>
-         <lastmod>2023-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://google.com/datasets/phmap2021/</loc>
-         <lastmod>2023-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://google.com/datasets/seuc/</loc>
-         <lastmod>2023-03-28</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://google.com/datasets/xjtu/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/models/dim/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/models/simclr/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/models/vggish/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/notebooks/datasets/installation/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/notebooks/datasets/preprocessing/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/notebooks/models/SimCLR/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/notebooks/models/auto-encoder/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/notebooks/models/supervised_vggish/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/baseline/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/explainability/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/few-shot/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/mhm/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/representation/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/rul/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/sensors/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/transfer/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/vibration/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/visualize/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/architectures/ae/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/architectures/cnn/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/architectures/dbn/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/architectures/gan/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/topics/architectures/rnn/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://google.com/tutorials/tuto/</loc>
-         <lastmod>2023-03-28</lastmod>
+         <lastmod>2023-04-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
