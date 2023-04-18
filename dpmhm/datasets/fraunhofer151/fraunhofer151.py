@@ -140,8 +140,8 @@ class Fraunhofer151(tfds.core.GeneratorBasedBuilder):
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
         def _get_split_dict(datadir):
             return {
-                'train': next(datadir.rglob('train')).glob('*D.csv'),
-                'test': next(datadir.rglob('test')).rglob('*E.csv'),
+                'train': datadir.glob('*D.csv'),
+                'test': datadir.glob('*E.csv'),
             }
 
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data

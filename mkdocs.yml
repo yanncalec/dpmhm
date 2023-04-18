@@ -12,6 +12,15 @@ theme:
   language: en
 
 plugins:
+  - search
+  # # https://github.com/chrieke/mkdocs-exclude-search
+  # - exclude-search:
+  #     exclude:
+  #       - datasets/untested/*
+  # https://github.com/apenwarr/mkdocs-exclude
+  - exclude:
+      glob:
+        - datasets/untested/*
   # # Export to pdf
   # - pdf-export
   - with-pdf:  # https://github.com/orzih/mkdocs-with-pdf
@@ -52,7 +61,6 @@ plugins:
       #debug_html: true
       #show_anchors: true
       #verbose: true
-  - search
   - bibtex:
       bib_file: docs/HIASCI.bib
       # csl_file: https://github.com/citation-style-language/styles/blob/master/elsevier-harvard.csl
@@ -65,11 +73,11 @@ plugins:
           rendering:
             show_source: false
       # custom_templates: templates
-  # # https://github.com/danielfrg/mkdocs-jupyter
-  # # uncomment to enable online conversion of jupyter notebooks:
-  # - mkdocs-jupyter:
-  #     # ignore_h1_titles: True
-  #     include_source: True
+  # https://github.com/danielfrg/mkdocs-jupyter
+  # uncomment to enable online conversion of jupyter notebooks:
+  - mkdocs-jupyter:
+      # ignore_h1_titles: True
+      include_source: True
 
 markdown_extensions:
   - toc:
@@ -86,7 +94,6 @@ markdown_extensions:
   - pymdownx.keys
   - pymdownx.mark
   - pymdownx.tilde
-
 
 extra_javascript:
   - javascripts/mathjax.js
@@ -131,19 +138,19 @@ nav:
     - Datasets:
       - CWRU: datasets/cwru.md
       - datasets/dcase2020.md
-      - datasets/dcase2021.md
-      - datasets/dcase2022.md
+      # - datasets/dcase2021.md
+      # - datasets/dcase2022.md
       - DIRG: datasets/dirg.md
       - Fraunhofer151: datasets/fraunhofer151.md
-      - Fraunhofer205: datasets/fraunhofer205.md
-      - FEMTO: datasets/femto.md
-      - IMS: datasets/ims.md
-      - Mafaulda: datasets/mafaulda.md
-      - Ottawa: datasets/ottawa.md
-      - Paderborn: datasets/paderborn.md
-      - Phmap2021: datasets/phmap2021.md
-      - SEUC: datasets/seuc.md
-      - XJTU: datasets/xjtu.md
+      # - Fraunhofer205: datasets/fraunhofer205.md
+      # - FEMTO: datasets/femto.md
+      # - IMS: datasets/ims.md
+      # - Mafaulda: datasets/mafaulda.md
+      # - Ottawa: datasets/ottawa.md
+      # - Paderborn: datasets/paderborn.md
+      # - Phmap2021: datasets/phmap2021.md
+      # - SEUC: datasets/seuc.md
+      # - XJTU: datasets/xjtu.md
     - Models:
       - VGGish: models/vggish.md
       - SimCLR: models/simclr.md

@@ -42,14 +42,6 @@ Notes
 - Two test sets (for the task of classification and regression) were also provided along with the original datset, but cannot be downloaded. See:
     https://www.kaggle.com/c/phmap21-regression-task/data
 - Extract all files and check that all filenames follows the pattern `train_xxx_Yyy.csv`. In fact, some files may be automatically renamed during the download.
-
-Installation
-============
-Download and unzip all files into a folder `LOCAL_DIR`, from terminal run
-
-```sh
-$ tfds build Phmap2021 --imports dpmhm.datasets.phmap2021 --manual_dir LOCAL_DIR
-```
 """
 
 # import os
@@ -80,6 +72,8 @@ _SPLIT_PATH_MATCH = {
     'High': ['train_1st_high.csv'],
     'Bearing': ['train_1st_Bearing.csv', 'train_2nd_Bearing.csv']
 }
+
+_DATA_URLS = ['https://sandbox.zenodo.org/record/1184362/files/phmap.zip']
 
 
 class Phmap2021(tfds.core.GeneratorBasedBuilder):

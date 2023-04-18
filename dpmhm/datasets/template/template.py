@@ -130,8 +130,11 @@ class TEMPLATE(tfds.core.GeneratorBasedBuilder):
 
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
-        elif dl_manager._extract_dir.exists(): # automatically download & extracted data
+        elif dl_manager._extract_dir.exists(): # automatically downloaded & extracted data
             datadir = Path(dl_manager._extract_dir)
+        # elif dl_manager._download_dir.exists(): # automatically downloaded data
+        #     datadir = Path(dl_manager._download_dir)
+        #     tfds.download.iter_archive(fp, tfds.download.ExtractMethod.ZIP)
         else:
             raise FileNotFoundError()
 

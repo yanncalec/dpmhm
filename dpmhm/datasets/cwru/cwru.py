@@ -78,6 +78,7 @@ import pandas as pd
 
 from dpmhm.datasets import _DTYPE, _ENCODING, extract_zenodo_urls
 
+_ZIP_ENABLED = True  # The builder can iterate directly over zip files
 
 _CITATION = """
 @misc{case_school_of_engineering_cwru_2000,
@@ -161,15 +162,15 @@ class CWRU(tfds.core.GeneratorBasedBuilder):
 
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
-        elif dl_manager._extract_dir.exists(): # automatically download & extracted data
+        elif dl_manager._extract_dir.exists(): # automatically downloaded & extracted data
             datadir = Path(dl_manager._extract_dir)
+        # elif dl_manager._download_dir.exists(): # automatically downloaded data
+        #     datadir = Path(dl_manager._download_dir)
+        #     tfds.download.iter_archive(fp, tfds.download.ExtractMethod.ZIP)
         else:
             raise FileNotFoundError()
 
         return {sp: self._generate_examples(files) for sp, files in _get_split_dict(datadir).items()}
-        # return {
-        #     'train': self._generate_examples(datadir.rglob('*.mat')),
-        # }
 
     def _generate_examples(self, files):
         for fp in files:

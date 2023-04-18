@@ -38,7 +38,7 @@ Here is a basic workflow with `dpmhm`:
 3. Use with machine learning models
 
 ### Installing a dataset
-This package does not provide the actual datasets (the total of original files is ~ 158 Gb, see [Datasets](datasets.md)), only the facilities for their preprocessing. A dataset must be installed before being loaded into memory. The general procedure consists of first downloading the original data then building the dataset of [tfrecord](https://www.tensorflow.org/tutorials/load_data/tfrecord) format using `tensorflow_datasets`.
+This package does not provide the actual datasets, only the facilities for their preprocessing. A dataset must be installed before being loaded into memory. The general procedure consists of first downloading the original data then building the dataset of [tfrecord](https://www.tensorflow.org/tutorials/load_data/tfrecord) format using `tensorflow_datasets`.
 
 
 ### Preprocessing a dataset

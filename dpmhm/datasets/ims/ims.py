@@ -16,8 +16,6 @@ https://www.nasa.gov/content/prognostics-center-of-excellence-data-set-repositor
 
 https://data.phmsociety.org/nasa/
 
-Download
---------
 https://phm-datasets.s3.amazonaws.com/NASA/4.+Bearings.zip
 
 https://www.kaggle.com/datasets/vinayak123tyagi/bearing-dataset
@@ -34,16 +32,7 @@ Original Dataset
 
 Notes
 =====
-- The extracted subfolder named `4th_test` corresponds actually to the 3rd test.
-
-
-Installation
-============
-Download and unzip all files into a folder `LOCAL_DIR`, from terminal run
-
-```sh
-$ tfds build IMS --imports dpmhm.datasets.ims --manual_dir LOCAL_DIR
-```
+- The original dataset contains a folder named `4th_test`, which corresponds actually to the 3rd test. This has been corrected in the zip file uploaded to Zenodo.
 """
 
 
@@ -76,7 +65,8 @@ _CHARACTERISTICS_TESTRIG = {
     'Fundamental Train Frequency (FTF)': 	15  # Hz
 }
 
-_DATA_URLS = 'https://phm-datasets.s3.amazonaws.com/NASA/4.+Bearings.zip'
+# _DATA_URLS = 'https://phm-datasets.s3.amazonaws.com/NASA/4.+Bearings.zip'
+_DATA_URLS = ['https://sandbox.zenodo.org/record/1184320/files/ims.zip']
 
 _CITATION = """
 - Hai Qiu, Jay Lee, Jing Lin. “Wavelet Filter-based Weak Signature Detection Method and its Application on Roller Bearing Prognostics.” Journal of Sound and Vibration 289 (2006) 1066-1090
@@ -123,26 +113,29 @@ class IMS(tfds.core.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        def _get_split_dict(datadir):
+            return {
+                'dataset1': (datadir/'1st_test').glob('*'),
+                'dataset2': (datadir/'2nd_test').glob('*'),
+                'dataset3': (datadir/'3rd_test').glob('*'),
+            }
+
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
-        else:  # automatically download data
-            # datadir = dl_manager.download_and_extract(_URL)
+        elif dl_manager._extract_dir.exists(): # automatically download & extracted data
+            datadir = Path(dl_manager._extract_dir)
+        else:
             raise FileNotFoundError()
 
-        return {
-            'dataset1': self._generate_examples(datadir / '1st_test', 'dataset1'),
-            'dataset2': self._generate_examples(datadir / '2nd_test', 'dataset2'),
-            'dataset3': self._generate_examples(datadir / '3rd_test' /'4th_test' / 'txt', 'dataset3'),
-        }
+        return {sp: self._generate_examples(files, sp) for sp, files in _get_split_dict(datadir).items()}
 
-    def _generate_examples(self, path, mode):
-        """Yields examples."""
-        for fp in path.glob('*'):
-            x = pd.read_csv(fp, sep='\t',header=None).values.astype(_DTYPE.as_numpy_dtype) #[:,:,np.newaxis]
+    def _generate_examples(self, files, split):
+        for fp in files:
+            x = pd.read_csv(fp, sep='\t',header=None).values.astype(_DTYPE) #[:,:,np.newaxis]
             if x.shape[1] == 4:
                 xd = {
                     'B1C1': x[:,0],
-                    # 'B1C2': np.empty(0).astype(_DTYPE.as_numpy_dtype),
+                    # 'B1C2': np.empty(0).astype(_DTYPE),
                     'B1C2': [],
                     'B2C1': x[:,1],
                     'B2C2': [],
@@ -165,7 +158,7 @@ class IMS(tfds.core.GeneratorBasedBuilder):
 
             metadata = {
                 # 'RotatingSpeed': 33.3,
-                'OriginalSplit': mode,
+                'OriginalSplit': split,
                 'FileName': fp.name,
                 'Dataset': 'IMS',
             }

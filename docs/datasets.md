@@ -5,19 +5,21 @@ Available datasets:
 | :--- | :----------------- | :------- | :------------ | :------------ |
 | [CWRU](datasets/cwru.md) | Initiated faults | up to 3 vibrations | 12 kHz / 48 kHz | 656 Mb |
 | [Dcase2020](datasets/dcase2020.md) | Labelled data | 1 acoustic | 16 kHz | 16.5 Gb |
-| [Dcase2021](datasets/dcase2021.md) | Labelled data | 1 acoustic  | 16 kHz | 17.7 Gb |
-| [Dcase2022](datasets/dcase2022.md) | Labelled data | 1 acoustic  | 16 kHz | 15 Gb |
 | [DIRG](datasets/dirg.md) | Initiated faults & Run-to-failure | 6 vibrations | 51.2 kHz / 102.4 kHz | 3 Gb |
 | [FEMTO](datasets/femto.md) | Run-to-failure | up to 3, 2 vibrations + 1 temperature | 25.6 kHz / 10 Hz | 3 Gb |
 | [Fraunhofer151](datasets/fraunhofer151.md) | Labelled data | 5, 1 voltage + 1 rpm + 3 vibrations | 4096 Hz | 11 Gb |
-| [Fraunhofer205](datasets/fraunhofer205.md) | Initiated faults | 2, 1 vibration + 1 acoustic | 8192 Hz / 390625 Hz | 9.4 Gb |
 | [IMS](datasets/ims.md) | Run-to-failure | up to 8 vibrations | 20480 Hz | 6.1 Gb |
-| [Mafaulda](datasets/mafaulda.md) | Initiated faults | 8, 1 rpm + 3 vibrations + 3 vibrations + 1 acoustic | 50 kHz | 31 Gb |
-| [Ottawa](datasets/ottawa.md) | Initiated faults | 2, 1 vibration + 1 rpm | 200 kHz | 763 Mb |
 | [Paderborn](datasets/paderborn.md) | Initiated faults & Run-to-failure | 8, 2 currents + 1 vibration + 3 mechanic + 1 temperature | 64 kHz / 4 kHz / 1 Hz | 20.8 Gb |
-| [Phmap2021](datasets/phmap2021.md) | Initiated faults | 2 vibrations | 10544 Hz | 10.8 Gb |
-| [SEUC](datasets/seuc.md) | Initiated faults | 8, 1 motor vibration + 3 planetary gearbox vibrations + 1 torque + 3 parallel gearbox vibrations | ? | 1.6 Gb |
-| [XJTU](datasets/xjtu.md) | Run-to-failure | 2 vibrations | 25.6 kHz | 11.4 Gb |
+
+<!-- | [Fraunhofer205](datasets/fraunhofer205.md) | Initiated faults | 2, 1 vibration + 1 acoustic | 8192 Hz / 390625 Hz | 9.4 Gb | -->
+<!-- | [Mafaulda](datasets/mafaulda.md) | Initiated faults | 8, 1 rpm + 3 vibrations + 3 vibrations + 1 acoustic | 50 kHz | 31 Gb | -->
+<!-- | [Ottawa](datasets/ottawa.md) | Initiated faults | 2, 1 vibration + 1 rpm | 200 kHz | 763 Mb | -->
+<!-- | [Phmap2021](datasets/phmap2021.md) | Initiated faults | 2 vibrations | 10544 Hz | 10.8 Gb | -->
+<!-- | [XJTU](datasets/xjtu.md) | Run-to-failure | 2 vibrations | 25.6 kHz | 11.4 Gb | -->
+
+<!-- | [SEUC](datasets/seuc.md) | Initiated faults | 8, 1 motor vibration + 3 planetary gearbox vibrations + 1 torque + 3 parallel gearbox vibrations | ? | 1.6 Gb | -->
+<!-- | [Dcase2021](datasets/dcase2021.md) | Labelled data | 1 acoustic  | 16 kHz | 17.7 Gb | -->
+<!-- | [Dcase2022](datasets/dcase2022.md) | Labelled data | 1 acoustic  | 16 kHz | 15 Gb | -->
 
 Meaning of different types of experiment:
 
@@ -41,6 +43,7 @@ Let's take example of the dataset CWRU. For installation simply use
 ```python
 
 import dpmhm
+
 dpmhm.datasets.install('CWRU')
 ```
 

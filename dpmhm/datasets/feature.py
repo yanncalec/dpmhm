@@ -21,8 +21,12 @@ def spectral_features(x:np.ndarray, sampling_rate:int, feature_method:str, *, ti
         time step of the sliding STFT window, in second
     n_fft:
         size of FFT, by default automatically determined
+    normalize:
+        whether to normalize the input array
+    feature_kwargs:
+        keyword arguments for the method defined by `feature_method`, see: https://librosa.org/doc/main/feature.html.
     kwargs:
-        keyword arguments for the method defined by `feature_method`, see: https://librosa.org/doc/main/feature.html. Additional keyword arguments: {'to_db': boolean, compute power spectrogram in decibel}
+        additional keyword arguments: {'to_db': boolean, compute power spectrogram in decibel}
 
     Returns
     -------
@@ -46,14 +50,14 @@ def spectral_features(x:np.ndarray, sampling_rate:int, feature_method:str, *, ti
     else:
         y = x
 
-    try:
-        to_db = kwargs.pop('to_db')
-    except:
-        to_db = False
-
     # Compute the spectral feature
     if feature_method == 'spectrogram':
-        S = librosa.stft(y, n_fft=n_fft, win_length=win_length, hop_length=hop_length, **kwargs)
+        S = librosa.stft(y, n_fft=n_fft, win_length=win_length, hop_length=hop_length, **feature_kwargs)
+
+        try:
+            to_db = kwargs.pop('to_db')
+        except:
+            to_db = False
         Sxx = librosa.power_to_db(np.abs(S)**2) if to_db else np.abs(S)**2
 
         # time and frequency steps
@@ -66,12 +70,11 @@ def spectral_features(x:np.ndarray, sampling_rate:int, feature_method:str, *, ti
         # return Sxx, (win_length, hop_length, n_fft), (Ts, Fs)
     elif feature_method == 'melspectrogram':
         # Tensorflow will complain if `sampling_rate` (int) in place of `sr` is used.
-        Sxx = librosa.feature.melspectrogram(y=y, sr=sr, n_fft=n_fft, win_length=win_length, hop_length=hop_length, **kwargs)
-        # n_mels=n_mels,
-    # elif feature_method == 'mfcc':
+        Sxx = librosa.feature.melspectrogram(y=y, sr=sr, n_fft=n_fft, win_length=win_length, hop_length=hop_length, **feature_kwargs)
+    elif feature_method == 'mfcc':
+        Sxx = librosa.feature.mfcc(y=y, sr=sr, n_fft=n_fft, win_length=win_length, hop_length=hop_length, **feature_kwargs)
     else:
-        Sxx = librosa.feature.mfcc(y=y, sr=sr, n_fft=n_fft, win_length=win_length, hop_length=hop_length, **kwargs)
-        # n_mels=n_mels,
+        raise NameError(f'Unknown feature transform method: {feature_method}')
 
     return Sxx, (win_length, hop_length, n_fft)
 

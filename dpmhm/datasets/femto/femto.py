@@ -74,6 +74,8 @@ Features
 - 'metadata':
     - 'ID': ['Bearing1','Bearing2','Bearing3']
     - 'OriginalSplit': ['Learning_set', 'Test_set', 'Full_Test_Set']
+    - 'RotatingSpeed'
+    - 'LoadForce'
 
 Notes
 =====
@@ -206,7 +208,7 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
                     'RotatingSpeed': tf.uint32,
                     'LoadForce': tf.uint32,
                     # 'RemainingUsefulLife': tf.float32,  # Time of the run-to-failure experiment
-                    # 'OriginalSplit': tf.string,  # Original split
+                    'OriginalSplit': tf.string,  # Original split
                     'FileName': tf.string,  # Original filename with path
                     'Dataset': tf.string,
                 }
@@ -234,9 +236,9 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
             datadir = Path(dl_manager._extract_dir)
         else:
             raise FileNotFoundError()
-        return {sp: self._generate_examples(files) for sp, files in _get_split_dict(datadir).items()}
+        return {sp: self._generate_examples(files, sp) for sp, files in _get_split_dict(datadir).items()}
 
-    def _generate_examples(self, files):
+    def _generate_examples(self, files, split):
         for fp in files:
             fname = fp.parts[-1]
 
@@ -280,7 +282,7 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
                 'RotatingSpeed': _RPM[gid],
                 'LoadForce': _LOAD[gid],
                 # 'RemainingUsefulLife': rul,
-                # 'OriginalSplit': split,
+                'OriginalSplit': split,
                 'FileName': os.path.join(*fp.parts[-2:]),  # full path file name
                 'Dataset': 'FEMTO',
             }

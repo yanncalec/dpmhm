@@ -40,10 +40,10 @@ _DATASET_DICT = {
     'femto': 'FEMTO',
     'fraunhofer151': 'Fraunhofer151',
     # 'fraunhofer205': 'Fraunhofer205',
-    # 'ims': 'IMS',
+    'ims': 'IMS',
     # 'mafaulda': 'Mafaulda',
     # 'ottawa': 'Ottawa',
-    # 'paderborn': 'Paderborn',
+    'paderborn': 'Paderborn',
     # 'phmap2021': 'Phmap2021',
     # 'seuc': 'SEUC',
     # 'xjtu': 'XJTU'
@@ -53,6 +53,12 @@ def get_dataset_list():
 	return list(_DATASET_DICT.values())
 
 # Data type
+_FLOAT16 = np.float16
+_FLOAT32 = np.float32
+_FLOAT64 = np.float64
+_UINT32 = np.uint32
+_STRING = tf.string
+
 try:
     _DTYPE = tf.as_dtype(os.environ['DPMHM_DTYPE']).as_numpy_dtype
 except:
@@ -71,23 +77,26 @@ except:
     _ENCODING = 'none'
     # _ENCODING = tfds.features.Encoding.NONE
 
+# Location of tfds datasets
 try:
     TFDS_DATA_DIR = Path(os.environ['TFDS_DATA_DIR'])
 except:
     TFDS_DATA_DIR = Path(os.path.expanduser('~/tensorflow_datasets'))
 
+
+def import_dataset_module(ds:str):
+    dsl = ds.lower()
+    return import_module('.'+dsl, f'dpmhm.datasets.{dsl}')
+
 def get_info(ds:str):
     """Retrieve information of a dataset.
     """
-    dsl = ds.lower()
-    return import_module('.'+dsl, f'dpmhm.datasets.{dsl}').__doc__
-
+    return import_dataset_module(ds).__doc__
 
 def get_urls(ds:str):
     """Retrieve data urls of a dataset.
     """
-    dsl = ds.lower()
-    return import_module('.'+dsl, f'dpmhm.datasets.{dsl}')._DATA_URLS
+    return import_dataset_module(ds)._DATA_URLS
 
 
 def install(ds:str, *, data_dir:str=None, download_dir:str=None, extract_dir:str=None, manual_dir:str=None, dl_kwargs:dict={}, **kwargs):
@@ -110,12 +119,12 @@ def install(ds:str, *, data_dir:str=None, download_dir:str=None, extract_dir:str
     kwargs:
         other keyword arguments to `tfds.load()`
     """
+    # register the dataset in the namespace
+    import_dataset_module(ds)
+
     dsl = ds.lower()
     dataset_name = _DATASET_DICT[dsl]
     data_dir = TFDS_DATA_DIR if data_dir is None else Path(data_dir)
-
-    # register the dataset in the namespace
-    import_module('.'+dsl, f'dpmhm.datasets.{dsl}')
 
     # download & extract only if manual files not provided
     if manual_dir is None:
@@ -144,6 +153,7 @@ def install(ds:str, *, data_dir:str=None, download_dir:str=None, extract_dir:str
         dataset_name,
         data_dir=data_dir,
         download_and_prepare_kwargs = {
+            'download_dir': download_dir,  # currently not used by `_split_generators()`
             'download_config': tfds.download.DownloadConfig(
                 extract_dir=extract_dir,
                 manual_dir=manual_dir,

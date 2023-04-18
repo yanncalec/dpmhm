@@ -40,14 +40,6 @@ Features
 Notes
 =====
 The training data contains only normal samples while the test data contains both normal and anomal samples.
-
-Installation
-============
-Download and unzip all files into a folder `LOCAL_DIR`, from terminal run
-
-```sh
-$ tfds build Dcase2020 --imports dpmhm.datasets.dcase2020 --manual_dir LOCAL_DIR
-```
 """
 
 import os
