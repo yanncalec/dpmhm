@@ -907,62 +907,62 @@
 <table>
 <thead>
 <tr>
-<th align="left">Name</th>
-<th align="left">Type of experiment</th>
-<th align="left">Channels</th>
-<th align="left">Sampling rate</th>
-<th align="left">Original size</th>
+<th style="text-align: left;">Name</th>
+<th style="text-align: left;">Type of experiment</th>
+<th style="text-align: left;">Channels</th>
+<th style="text-align: left;">Sampling rate</th>
+<th style="text-align: left;">Original size</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="left"><a href="cwru/">CWRU</a></td>
-<td align="left">Initiated faults</td>
-<td align="left">up to 3 vibrations</td>
-<td align="left">12 kHz / 48 kHz</td>
-<td align="left">656 Mb</td>
+<td style="text-align: left;"><a href="cwru/">CWRU</a></td>
+<td style="text-align: left;">Initiated faults</td>
+<td style="text-align: left;">up to 3 vibrations</td>
+<td style="text-align: left;">12 kHz / 48 kHz</td>
+<td style="text-align: left;">656 Mb</td>
 </tr>
 <tr>
-<td align="left"><a href="dcase2020/">Dcase2020</a></td>
-<td align="left">Labelled data</td>
-<td align="left">1 acoustic</td>
-<td align="left">16 kHz</td>
-<td align="left">16.5 Gb</td>
+<td style="text-align: left;"><a href="dcase2020/">Dcase2020</a></td>
+<td style="text-align: left;">Labelled data</td>
+<td style="text-align: left;">1 acoustic</td>
+<td style="text-align: left;">16 kHz</td>
+<td style="text-align: left;">16.5 Gb</td>
 </tr>
 <tr>
-<td align="left"><a href="dirg/">DIRG</a></td>
-<td align="left">Initiated faults &amp; Run-to-failure</td>
-<td align="left">6 vibrations</td>
-<td align="left">51.2 kHz / 102.4 kHz</td>
-<td align="left">3 Gb</td>
+<td style="text-align: left;"><a href="dirg/">DIRG</a></td>
+<td style="text-align: left;">Initiated faults &amp; Run-to-failure</td>
+<td style="text-align: left;">6 vibrations</td>
+<td style="text-align: left;">51.2 kHz / 102.4 kHz</td>
+<td style="text-align: left;">3 Gb</td>
 </tr>
 <tr>
-<td align="left"><a href="femto/">FEMTO</a></td>
-<td align="left">Run-to-failure</td>
-<td align="left">up to 3, 2 vibrations + 1 temperature</td>
-<td align="left">25.6 kHz / 10 Hz</td>
-<td align="left">3 Gb</td>
+<td style="text-align: left;"><a href="femto/">FEMTO</a></td>
+<td style="text-align: left;">Run-to-failure</td>
+<td style="text-align: left;">up to 3, 2 vibrations + 1 temperature</td>
+<td style="text-align: left;">25.6 kHz / 10 Hz</td>
+<td style="text-align: left;">3 Gb</td>
 </tr>
 <tr>
-<td align="left"><a href="fraunhofer151/">Fraunhofer151</a></td>
-<td align="left">Labelled data</td>
-<td align="left">5, 1 voltage + 1 rpm + 3 vibrations</td>
-<td align="left">4096 Hz</td>
-<td align="left">11 Gb</td>
+<td style="text-align: left;"><a href="fraunhofer151/">Fraunhofer151</a></td>
+<td style="text-align: left;">Labelled data</td>
+<td style="text-align: left;">5, 1 voltage + 1 rpm + 3 vibrations</td>
+<td style="text-align: left;">4096 Hz</td>
+<td style="text-align: left;">11 Gb</td>
 </tr>
 <tr>
-<td align="left"><a href="ims/">IMS</a></td>
-<td align="left">Run-to-failure</td>
-<td align="left">up to 8 vibrations</td>
-<td align="left">20480 Hz</td>
-<td align="left">6.1 Gb</td>
+<td style="text-align: left;"><a href="ims/">IMS</a></td>
+<td style="text-align: left;">Run-to-failure</td>
+<td style="text-align: left;">up to 8 vibrations</td>
+<td style="text-align: left;">20480 Hz</td>
+<td style="text-align: left;">6.1 Gb</td>
 </tr>
 <tr>
-<td align="left"><a href="paderborn/">Paderborn</a></td>
-<td align="left">Initiated faults &amp; Run-to-failure</td>
-<td align="left">8, 2 currents + 1 vibration + 3 mechanic + 1 temperature</td>
-<td align="left">64 kHz / 4 kHz / 1 Hz</td>
-<td align="left">20.8 Gb</td>
+<td style="text-align: left;"><a href="paderborn/">Paderborn</a></td>
+<td style="text-align: left;">Initiated faults &amp; Run-to-failure</td>
+<td style="text-align: left;">8, 2 currents + 1 vibration + 3 mechanic + 1 temperature</td>
+<td style="text-align: left;">64 kHz / 4 kHz / 1 Hz</td>
+<td style="text-align: left;">20.8 Gb</td>
 </tr>
 </tbody>
 </table>
@@ -995,9 +995,9 @@
 <p>As mentionned in <a href="../#workflow">Workflow</a> a dataset needs to be installed and preprocessed before being fed to ML models.</p>
 <h3 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h3>
 <p>Let's take example of the dataset CWRU. For installation simply use
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">dpmhm</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">dpmhm</span> <span class="kn">import</span> <span class="n">datasets</span>
 
-<span class="n">dpmhm</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="s1">&#39;CWRU&#39;</span><span class="p">)</span>
+<span class="n">datasets</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="s1">&#39;CWRU&#39;</span><span class="p">)</span>
 </code></pre></div></p>
 <p>See the tutorial <a href="../notebooks/datasets/installation/">Installation of Datasets</a> and <a href="../notebooks/datasets/preprocessing/">Preprocessing of Datasets</a> for a in-depth walkthrough.</p>
 <h3 id="preprocessing">Preprocessing<a class="headerlink" href="#preprocessing" title="Permanent link">&para;</a></h3>
@@ -1022,26 +1022,26 @@
 <table>
 <thead>
 <tr>
-<th align="left">Name</th>
-<th align="left">Type</th>
-<th align="left">Description</th>
+<th style="text-align: left;">Name</th>
+<th style="text-align: left;">Type</th>
+<th style="text-align: left;">Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="left"><code>signal</code></td>
-<td align="left">dict</td>
-<td align="left">data of this record</td>
+<td style="text-align: left;"><code>signal</code></td>
+<td style="text-align: left;">dict</td>
+<td style="text-align: left;">data of this record</td>
 </tr>
 <tr>
-<td align="left"><code>sampling_rate</code></td>
-<td align="left">int or dict</td>
-<td align="left">sampling rate (Hz) of <code>signal</code></td>
+<td style="text-align: left;"><code>sampling_rate</code></td>
+<td style="text-align: left;">int or dict</td>
+<td style="text-align: left;">sampling rate (Hz) of <code>signal</code></td>
 </tr>
 <tr>
-<td align="left"><code>metadata</code></td>
-<td align="left">dict</td>
-<td align="left">all other information about this record</td>
+<td style="text-align: left;"><code>metadata</code></td>
+<td style="text-align: left;">dict</td>
+<td style="text-align: left;">all other information about this record</td>
 </tr>
 </tbody>
 </table>

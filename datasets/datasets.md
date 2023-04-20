@@ -42,9 +42,9 @@ As mentionned in [Workflow](index.md#workflow) a dataset needs to be installed a
 Let's take example of the dataset CWRU. For installation simply use
 ```python
 
-import dpmhm
+from dpmhm import datasets
 
-dpmhm.datasets.install('CWRU')
+datasets.install('CWRU')
 ```
 
 See the tutorial [Installation of Datasets](notebooks/datasets/installation.ipynb) and [Preprocessing of Datasets](notebooks/datasets/preprocessing.ipynb) for a in-depth walkthrough.
