@@ -42,7 +42,8 @@ def NT_Xent(X, Y, tau:float):
 
     Args
     ----
-    X, Y: 2d tensors with the first dimension being the batch.
+    X, Y:
+        2d tensors with the first dimension being the batch.
 
     This is eq. (1) of the original paper of SimCLR [1].
     """

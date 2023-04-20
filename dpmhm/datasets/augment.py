@@ -54,13 +54,6 @@ def random_crop(X:np.ndarray, output_shape:tuple, *, area_ratio:tuple=(0.01, 1.)
 
     See also:
     https://www.tensorflow.org/api_docs/python/tf/image/sample_distorted_bounding_box
-
-    Arguments
-    ---------
-    X: input array
-    area_ratio:
-    aspect_ratio: tuple
-    channel_axis:
     """
     # # sanity check
     # assert (3 >= X.ndim >= 2) and (X.ndim == len(output_shape))
@@ -104,8 +97,6 @@ def random_crop(X:np.ndarray, output_shape:tuple, *, area_ratio:tuple=(0.01, 1.)
 
 
 def fade(X:np.ndarray, ratio:float=0.5, axis:int=-1) -> np.ndarray:
-    """Fade.
-    """
     f = np.linspace(1., ratio, X.shape[axis])
     rs = [1]*X.ndim; rs[axis]=-1
     return X*f.reshape(rs)

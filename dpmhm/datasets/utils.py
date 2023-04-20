@@ -81,7 +81,7 @@ def split_signal_generator(ds:Dataset, key:str, n_chunk:int, *, axis:int=-1) -> 
     return _get_generator
 
 
-def sliding_window_generator(ds:Dataset, key:str, window_size:Union[int,tuple], hop_size:Union[int,tuple]=None) -> callable:
+def sliding_window_generator(ds:Dataset, key:str, window_size:int|tuple, hop_size:int|tuple=None) -> callable:
     """Get the generator for sliding windows of view.
 
     Args
@@ -134,16 +134,16 @@ def sliding_window_generator(ds:Dataset, key:str, window_size:Union[int,tuple], 
     return _generator
 
 
-def random_split_dataset(ds, splits:dict, *, shuffle_size:int=None, **kwargs):
+def random_split_dataset(ds:Dataset, splits:dict, *, shuffle_size:int=None, **kwargs):
 	"""Randomly split a dataset according to the specified ratio.
 
 	Args
 	----
-	ds: tf.data.Dataset
+	ds:
 		input dataset.
-	splits: dict
+	splits:
 		dictionary specifying the name and ratio of the splits.
-	shuffle_size: int
+	shuffle_size:
 		size of shuffle, 1 for no shuffle (deterministic), None for full shuffle.
 	kwargs:
 		other keywords arguments to the method `shuffle()`, e.g. `reshuffle_each_iteration=False`, `seed=1234`.
@@ -181,18 +181,19 @@ def random_split_dataset(ds, splits:dict, *, shuffle_size:int=None, **kwargs):
 	return dp
 
 
-def split_dataset(ds, splits:dict={'train':0.7, 'val':0.2, 'test':0.1}, *, labels:list=None, **kwargs):
+def split_dataset(ds:Dataset, splits:dict={'train':0.7, 'val':0.2, 'test':0.1}, *, labels:list=None, **kwargs):
 	"""Randomly split a dataset globally or per category.
 
 	Args
 	----
-	ds: tf.data.Dataset
+	ds:
 		input dataset.
-	splits: dict
+	splits:
 		dictionary specifying the name and ratio of the splits.
-	labels: list
+	labels:
 		list of categories. If given apply the few-shot style split (i.e. split per category) otherwise apply the normal split.
-	*args, **kwargs: arguments for `split_dataset_random()`
+	**kwargs:
+		arguments for `split_dataset_random()`
 
 	Return
 	------

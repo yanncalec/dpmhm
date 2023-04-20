@@ -363,15 +363,16 @@ class WindowSlider(AbstractDatasetTransformer):
     This class performs the sliding window view with downsampling on a feature-transformed dataset. Window views are time-frequency patches of a complete spectral feature. It is obtained by sliding a small window along the time-frequency axes.
     """
 
-    def __init__(self, dataset:Dataset, *, window_size:Union[tuple,int], hop_size:Union[tuple,int]=None):
+    def __init__(self, dataset:Dataset, *, window_size:tuple|int, hop_size:tuple|int=None):
         """
         Args
         ----
         dataset:
             feature dataset, must have a dictionary structure with the field 'feature', which contains the spectral feature and has dimension (channel, freqeuncy, time).
         window_size:
-
+            size of sliding window
         hop_size:
+            size of hop between two positions
 
         Returns
         -------

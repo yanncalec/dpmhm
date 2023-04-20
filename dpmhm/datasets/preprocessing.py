@@ -15,7 +15,7 @@ import logging
 Logger = logging.getLogger(__name__)
 
 
-def nested_type_spec(sp):
+def nested_type_spec(sp:dict) -> dict:
     tp = {}
     for k,v in sp.items():
         if isinstance(v, dict):

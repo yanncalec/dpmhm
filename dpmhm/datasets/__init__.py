@@ -9,6 +9,7 @@ from importlib import import_module
 from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
+from tensorflow.data import Dataset
 
 # import pycurl
 # from io import BytesIO
@@ -98,26 +99,33 @@ def get_urls(ds:str):
     """
     return import_dataset_module(ds)._DATA_URLS
 
-
-def install(ds:str, *, data_dir:str=None, download_dir:str=None, extract_dir:str=None, manual_dir:str=None, dl_kwargs:dict={}, **kwargs):
+def install(ds:str, *, data_dir:str=None, download_dir:str=None, extract_dir:str=None, manual_dir:str=None, dl_kwargs:dict={}, **kwargs) -> Dataset:
     """Install a dataset.
 
     Args
     ----
-    ds: str
-        name of the dataset to be installed
-    data_dir: str
-        location of tensorflow datasets, default to the environment variable `TFDS_DATA_DIR`
-    download_dir: str
-        location of download folder, default to `data_dir/dpmhm/downloads/ds`
-    extract_dir: str
-        location of extraction folder, default to `data_dir/dpmhm/extracted/ds`
-    manual_dir: str
-        location of manually downloaded & extracted files
-    dl_kwargs: dict
+    ds:
+        name of the dataset to be installed.
+    data_dir:
+        location of tensorflow datasets, by default the environment variable `TFDS_DATA_DIR.
+    download_dir:
+        location of download folder, by default `data_dir/dpmhm/downloads/ds`.
+    extract_dir:
+        location of extraction folder, by default `data_dir/dpmhm/extracted/ds`.
+    manual_dir:
+        location of manually downloaded & extracted files.
+    dl_kwargs:
         keyword arguments for `tfds.download.DownloadManager()`
     kwargs:
         other keyword arguments to `tfds.load()`
+
+    Returns
+    -------
+    a `tf.data.Dataset` object.
+
+    Notes
+    -----
+    Once installed, the dataset can be reloaded using `tfds.load()`.
     """
     # register the dataset in the namespace
     import_dataset_module(ds)
@@ -164,7 +172,7 @@ def install(ds:str, *, data_dir:str=None, download_dir:str=None, extract_dir:str
     )
 
 
-def extract_zenodo_urls(url:str):
+def extract_zenodo_urls(url:str) -> list:
     """Extract from a Zenodo page the urls containing downloadable files.
 
     Args
@@ -172,6 +180,9 @@ def extract_zenodo_urls(url:str):
     url:
         url of a Zenodo page, e.g. https://zenodo.org/record/3727685/ or https://sandbox.zenodo.org/record/1183527/
 
+    Returns
+    -------
+    a list of extracted urls.
     """
     header = url.split('/record/')[0]
     # Logger.debug(header)

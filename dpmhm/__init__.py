@@ -1,8 +1,5 @@
-"""Top-level package for dpmhm."""
+import logging
+Logger = logging.getLogger(__name__)
 
-__author__ = """Han Wang"""
-__email__ = 'han.wang@cea.fr'
-__version__ = '0.1.0'
-
-from . import datasets
-from . import models
+# from . import datasets
+# from . import models
