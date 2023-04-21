@@ -95,7 +95,7 @@ class DatasetCompactor(AbstractDatasetTransformer):
 
     Convention
     ----------
-    The input dataset must contains the following fields {'signal', 'label', 'sampling_rate', 'metadata'}. The data of subfield 'signal' must be either 1D tensor or 2D tensor of shape `(channel, time)`.
+    The input dataset must contains the following fields {'signal', 'sampling_rate', 'metadata'}. The data of subfield 'signal' must be either 1D tensor or 2D tensor of shape `(channel, time)`.
     """
 
     def __init__(self, dataset:Dataset, *, channels:list=[], keys:list=[], filters:dict={},resampling_rate:int=None, window_size:int=None, hop_size:int=None):

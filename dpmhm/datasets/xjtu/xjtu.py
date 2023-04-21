@@ -52,14 +52,6 @@ Features
 Notes
 =====
 - The original dataset contains 6 rar files which needs to be extracted all together (extract the first one `XJTU-SY_Bearing_Datasets.part01.rar` will automatically extract all other files).
-
-Installation
-============
-Download and unzip all files into a folder `LOCAL_DIR`, from terminal run
-
-```sh
-$ tfds build XJTU --imports dpmhm.datasets.xjtu --manual_dir LOCAL_DIR
-```
 """
 
 import os
@@ -98,7 +90,8 @@ _SPLIT_PATH_MATCH = {
 #   # 'file name pattern':
 # }
 
-# _DATA_URLS = ''
+_DATA_URLS = ['https://sandbox.zenodo.org/record/1184368/files/xjtu.zip']
+
 
 class XJTU(tfds.core.GeneratorBasedBuilder):
     VERSION = tfds.core.Version('1.0.0')
@@ -107,7 +100,6 @@ class XJTU(tfds.core.GeneratorBasedBuilder):
     }
 
     def _info(self) -> tfds.core.DatasetInfo:
-        """Returns the dataset metadata."""
         return tfds.core.DatasetInfo(
             builder=self,
             description=__doc__,
@@ -136,18 +128,23 @@ class XJTU(tfds.core.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        def _get_split_dict(datadir):
+            return {sp: (datadir/fn).rglob('*.csv') for sp, fn in _SPLIT_PATH_MATCH.items()}
+
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
-        else:  # automatically download data
-            raise NotImplementedError()
+        elif dl_manager._extract_dir.exists(): # automatically downloaded & extracted data
+            datadir = Path(dl_manager._extract_dir)
+        # elif dl_manager._download_dir.exists(): # automatically downloaded data
+        #     datadir = Path(dl_manager._download_dir)
+        #     tfds.download.iter_archive(fp, tfds.download.ExtractMethod.ZIP)
+        else:
+            raise FileNotFoundError()
 
-        return {
-            sp: self._generate_examples(datadir/fn) for sp, fn in _SPLIT_PATH_MATCH.items()
-            # 'train': self._generate_examples_all(datadir),
-        }
+        return {sp: self._generate_examples(files) for sp, files in _get_split_dict(datadir).items()}
 
-    def _generate_examples(self, path):
-        for fp in path.rglob('*.csv'):
+    def _generate_examples(self, files):
+        for fp in files:
             # parse the filename
             _condition, _bearing = fp.parent.name[7:].split('_')
             # print(int(_condition), int(_bearing))
@@ -159,16 +156,8 @@ class XJTU(tfds.core.GeneratorBasedBuilder):
             x = pd.read_csv(fp).T.values
 
             yield hash(frozenset(metadata.items())), {
-                'signal': {'vibration': x.astype(_DTYPE.as_numpy_dtype)},
+                'signal': {'vibration': x.astype(_DTYPE)},
                 # 'label': 'Unknown',
                 'sampling_rate': 25600,
                 'metadata': metadata
             }
-
-    @staticmethod
-    def get_references():
-        try:
-            with open(Path(__file__).parent / 'Exported Items.bib') as fp:
-                return fp.read()
-        except:
-            pass

@@ -61,15 +61,6 @@ Features
 Notes
 =====
 - In the processed data the records are separated by their RPM.
-
-
-Installation
-============
-Download and unzip all files into a folder `LOCAL_DIR`, from terminal run
-
-```sh
-$ tfds build Fraunhofer205 --imports dpmhm.datasets.fraunhofer205 --manual_dir LOCAL_DIR
-```
 """
 
 # import os
@@ -113,7 +104,7 @@ _COMPONENT = ['Ball', 'InnerRace', 'OuterRace', 'None']
 
 _METAINFO = pd.read_csv(Path(__file__).parent/'metainfo.csv', index_col=0)
 
-_DATA_URLS = 'https://fordatis.fraunhofer.de/bitstream/fordatis/205/1/fraunhofer_iis_eas_dataset_vibrations_acoustic_emissions_of_drive_train_v1.zip'
+_DATA_URLS = ['https://fordatis.fraunhofer.de/bitstream/fordatis/205/1/fraunhofer_iis_eas_dataset_vibrations_acoustic_emissions_of_drive_train_v1.zip']
 
 
 class Fraunhofer205(tfds.core.GeneratorBasedBuilder):
@@ -156,19 +147,21 @@ class Fraunhofer205(tfds.core.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        def _get_split_dict(datadir):
+            return {
+                'train': (datadir/'data').iterdir(),
+            }
+
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
-        else:  # automatically download data
-            raise NotImplementedError()
-            datadir = list(dl_manager.download_and_extract(_DATA_URLS).iterdir())[0]  # only one subfolder
+        elif dl_manager._extract_dir.exists(): # automatically download & extracted data
+            datadir = Path(dl_manager._extract_dir)
+        else:
+            raise FileNotFoundError()
+        return {sp: self._generate_examples(files) for sp, files in _get_split_dict(datadir).items()}
 
-        return {
-            # cp.lower(): self._generate_examples(datadir) for cp in _COMPONENT
-            'train': self._generate_examples(datadir/'data'),
-        }
-
-    def _generate_examples(self, path):
-        for fp in path.iterdir():
+    def _generate_examples(self, files):
+        for fp in files:
             # print(fp)
             dv = pd.read_csv(fp/'vb.csv', header=None, sep=' ', index_col=0, parse_dates=True).astype(np.float64)
             da = pd.read_csv(fp/'ae.csv', header=None, sep=' ', index_col=0, parse_dates=True).astype(np.float64)
@@ -200,8 +193,8 @@ class Fraunhofer205(tfds.core.GeneratorBasedBuilder):
 
                     yield hash(frozenset(metadata.items())), {
                         'signal': {
-                            'Vibration': x.values.astype(_DTYPE.as_numpy_dtype),
-                            'AcousticEmission': np.array([], dtype=_DTYPE.as_numpy_dtype) ,
+                            'Vibration': x.values.astype(_DTYPE),
+                            'AcousticEmission': np.array([], dtype=_DTYPE) ,
                         },
                         'sampling_rate': sampling_rate,
                         # 'label': metadata['FaultComponent'],
@@ -215,8 +208,8 @@ class Fraunhofer205(tfds.core.GeneratorBasedBuilder):
 
                     yield hash(frozenset(metadata.items())), {
                         'signal': {
-                            'Vibration': np.array([], dtype=_DTYPE.as_numpy_dtype),
-                            'AcousticEmission': x.values.astype(_DTYPE.as_numpy_dtype),
+                            'Vibration': np.array([], dtype=_DTYPE),
+                            'AcousticEmission': x.values.astype(_DTYPE),
                         },
                         'sampling_rate': sampling_rate,
                         'metadata': metadata
@@ -224,8 +217,8 @@ class Fraunhofer205(tfds.core.GeneratorBasedBuilder):
 
                 # yield hash(frozenset(metadata.items())), {
                 # 	'signal': {
-                # 		'Vibration': dv.loc[t0:t1].values.astype(_DTYPE.as_numpy_dtype),
-                # 		'AcousticEmission': da.loc[t0:t1].values.astype(_DTYPE.as_numpy_dtype),
+                # 		'Vibration': dv.loc[t0:t1].values.astype(_DTYPE),
+                # 		'AcousticEmission': da.loc[t0:t1].values.astype(_DTYPE),
                 # 	},
                 # 	'sampling_rate': sampling_rate,
                 # 	'label': metadata['FaultComponent'],

@@ -31,14 +31,6 @@ Features
     - 'RotatingSpeed': ['Increasing', 'Decreasing', 'Increasing-Decreasing',
     'Decreasing-Increasing']
     - 'FaultComponent': ['None', 'InnerRace', 'OuterRace', 'Ball', 'Combination']
-
-Installation
-============
-Download and unzip all files into a folder `LOCAL_DIR`, from terminal run
-
-```sh
-$ tfds build Ottawa --imports dpmhm.datasets.ottawa --manual_dir LOCAL_DIR
-```
 """
 
 # import os
@@ -91,7 +83,7 @@ _PARSER_MATCH_SPEED = {
     'D': 'Decreasing-Increasing',
 }
 
-_DATA_URLS = 'https://data.mendeley.com/api/datasets-v2/datasets/v43hmbwxpm/zip/download?version=2'
+_DATA_URLS = ['https://prod-dcd-datasets-cache-zipfiles.s3.eu-west-1.amazonaws.com/v43hmbwxpm-2.zip']
 
 
 class Ottawa(tfds.core.GeneratorBasedBuilder):
@@ -128,30 +120,32 @@ class Ottawa(tfds.core.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        def _get_split_dict(datadir):
+            return {
+                'train': datadir.rglob('*.mat'),
+            }
+
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
-        else:  # automatically download data
-            raise NotImplementedError()
-            # datadir = dl_manager.download(_URL)
-            _resource = tfds.download.Resource(url=_DATA_URLS, extract_method=tfds.download.ExtractMethod.ZIP)
-            datadir = dl_manager.download_and_extract(_resource)
+        elif dl_manager._extract_dir.exists(): # automatically downloaded & extracted data
+            datadir = Path(dl_manager._extract_dir)
+        # elif dl_manager._download_dir.exists(): # automatically downloaded data
+        #     datadir = Path(dl_manager._download_dir)
+        #     tfds.download.iter_archive(fp, tfds.download.ExtractMethod.ZIP)
+        else:
+            raise FileNotFoundError()
 
-        return {
-            sp.lower(): self._generate_examples(datadir/fn) for sp, fn in _SPLIT_PATH_MATCH.items()
-            # 'train': self._generate_examples(datadir),
-        }
+        return {sp: self._generate_examples(files) for sp, files in _get_split_dict(datadir).items()}
 
-    def _generate_examples(self, path):
-        assert path.exists()
-
-        for fp in path.rglob('*.mat'):  #  will raise error if `path` not converted to pathlib.Path object
+    def _generate_examples(self, files):
+        for fp in files:  #  will raise error if `path` not converted to pathlib.Path object
             try:
                 dm = tfds.core.lazy_imports.scipy.io.loadmat(fp)
                 # dm = loadmat(fp)
             except Exception as msg:
                 raise Exception(f"Error in processing {fp}: {msg}")
 
-            x = np.stack([dm['Channel_1'].squeeze(), dm['Channel_2'].squeeze()]).astype(_DTYPE.as_numpy_dtype)
+            x = np.stack([dm['Channel_1'].squeeze(), dm['Channel_2'].squeeze()]).astype(_DTYPE)
 
             metadata = {
                 'RotatingSpeed': _PARSER_MATCH_SPEED[fp.name[2]],
@@ -166,11 +160,3 @@ class Ottawa(tfds.core.GeneratorBasedBuilder):
                 'sampling_rate': 200000,
                 'metadata': metadata,
             }
-
-    @staticmethod
-    def get_references():
-        try:
-            with open(Path(__file__).parent / 'Exported Items.bib') as fp:
-                return fp.read()
-        except:
-            pass

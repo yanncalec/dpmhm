@@ -68,15 +68,6 @@ Features
 Notes
 =====
 For bearing faults the original data used the lables [`ball_fault`, `cage_fault`, `outer_race`] respectively for the components ['rolling elements', 'inner track', 'outer track']. Some of the labels seem to be misspecified when comparing to the list from the original description showing the number of files of each class.
-
-
-Installation
-============
-Download and unzip all files into a folder `LOCAL_DIR`, from terminal run
-
-```sh
-$ tfds build Mafaulda --imports dpmhm.datasets.mafaulda --manual_dir LOCAL_DIR
-```
 """
 
 # import os
@@ -143,30 +134,26 @@ class Mafaulda(tfds.core.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
-        """Return SplitGenerators.
-        """
+        def _get_split_dict(datadir):
+            return {
+                ft: (next(datadir.rglob(ft))).rglob('*.csv') for ft in _FAULT_TYPE
+            }
+
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)
-            # print(datadir)
-            return {
-                # 'train': self._generate_examples(datadir)
-                ft: self._generate_examples(datadir/ft) for ft in _FAULT_TYPE
-            }
-        else:  # automatically download data
-            raise NotImplementedError()
-            # datadir = dl_manager.download(_DATA_URLS)
-            datadir = [dl_manager.download(url) for url in _DATA_URLS]
-            fdict = self._fname_parser(datadir)
+        elif dl_manager._extract_dir.exists(): # automatically downloaded & extracted data
+            datadir = Path(dl_manager._extract_dir)
+        # elif dl_manager._download_dir.exists(): # automatically downloaded data
+        #     datadir = Path(dl_manager._download_dir)
+        #     tfds.download.iter_archive(fp, tfds.download.ExtractMethod.ZIP)
+        else:
+            raise FileNotFoundError()
 
-            return {
-                ft: self._generate_examples(fdict[ft]) for ft in _FAULT_TYPE
-                # 'train': self._generate_examples(datadir),
-            }
+        return {sp: self._generate_examples(files) for sp, files in _get_split_dict(datadir).items()}
 
-    def _generate_examples(self, path):
-        assert path.exists()
-        for fp in path.rglob('*.csv'):
-            x = pd.read_csv(fp).T.values.astype(_DTYPE.as_numpy_dtype)
+    def _generate_examples(self, files):
+        for fp in files:
+            x = pd.read_csv(fp).T.values.astype(_DTYPE)
             _signal = {
                 'tachometer': x[0],
                 'underhang': x[[1,2,3]],
@@ -188,29 +175,3 @@ class Mafaulda(tfds.core.GeneratorBasedBuilder):
                 'sampling_rate': 50000,
                 'metadata': metadata,
             }
-
-    # def _fname_parser(self, path):
-    #     fd = {}
-    #     for zp in path:
-    #         # print('parser', zp)
-    #         with open(str(zp)+'.INFO') as fp:
-    #             dd=json.load(fp)
-    #             fd[dd['original_fname'].split('.zip')[0]] = zp
-
-    #     return fd
-
-    # def _generate_examples(self, path):
-    #     for fname, fobj in tfds.download.iter_archive(path, tfds.download.ExtractMethod.ZIP):
-    #         x = pd.read_csv(fobj).values
-
-    #         _dscrp = Path(fname).parent.parts
-    #         metadata = {
-    #             'DataLabel': ':'.join(_dscrp),
-    #             'FileName': fname,
-    #         }
-
-    #         yield hash(frozenset(metadata.items())), {
-    #             'signal': x,
-    #             'label': 'Normal' if _dscrp[0]=='normal' else 'Faulty',
-    #             'metadata': metadata,
-    #         }

@@ -5,7 +5,6 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import os
-from importlib import import_module
 from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
@@ -18,6 +17,7 @@ from tensorflow.data import Dataset
 import logging
 Logger = logging.getLogger(__name__)
 
+from .. import cli
 
 # from .cwru import CWRU
 # from .dcase import DCASE2021
@@ -31,27 +31,6 @@ Logger = logging.getLogger(__name__)
 # from .femto import FEMTO
 # from .fraunhofer import Fraunhofer205, Fraunhofer151
 # from .phmdc import Phmap2021
-
-_DATASET_DICT = {
-    'cwru': 'CWRU',
-    'dcase2020': 'Dcase2020',
-    # 'dcase2021': 'Dcase2021',
-    # 'dcase2022': 'Dcase2022',
-    'dirg': 'DIRG',
-    'femto': 'FEMTO',
-    'fraunhofer151': 'Fraunhofer151',
-    # 'fraunhofer205': 'Fraunhofer205',
-    'ims': 'IMS',
-    # 'mafaulda': 'Mafaulda',
-    # 'ottawa': 'Ottawa',
-    'paderborn': 'Paderborn',
-    # 'phmap2021': 'Phmap2021',
-    # 'seuc': 'SEUC',
-    # 'xjtu': 'XJTU'
-}
-
-def get_dataset_list():
-	return list(_DATASET_DICT.values())
 
 # Data type
 _FLOAT16 = np.float16
@@ -85,20 +64,6 @@ except:
     TFDS_DATA_DIR = Path(os.path.expanduser('~/tensorflow_datasets'))
 
 
-def import_dataset_module(ds:str):
-    dsl = ds.lower()
-    return import_module('.'+dsl, f'dpmhm.datasets.{dsl}')
-
-def get_info(ds:str):
-    """Retrieve information of a dataset.
-    """
-    return import_dataset_module(ds).__doc__
-
-def get_urls(ds:str):
-    """Retrieve data urls of a dataset.
-    """
-    return import_dataset_module(ds)._DATA_URLS
-
 def install(ds:str, *, data_dir:str=None, download_dir:str=None, extract_dir:str=None, manual_dir:str=None, dl_kwargs:dict={}, **kwargs) -> Dataset:
     """Install a dataset.
 
@@ -128,10 +93,10 @@ def install(ds:str, *, data_dir:str=None, download_dir:str=None, extract_dir:str
     Once installed, the dataset can be reloaded using `tfds.load()`.
     """
     # register the dataset in the namespace
-    import_dataset_module(ds)
+    cli.import_dataset_module(ds)
 
     dsl = ds.lower()
-    dataset_name = _DATASET_DICT[dsl]
+    dataset_name = cli._DATASET_DICT[dsl]
     data_dir = TFDS_DATA_DIR if data_dir is None else Path(data_dir)
 
     # download & extract only if manual files not provided
@@ -148,10 +113,8 @@ def install(ds:str, *, data_dir:str=None, download_dir:str=None, extract_dir:str
             **dl_kwargs
         )
 
-        url_list = import_module('.'+dsl, f'dpmhm.datasets.{dsl}')._DATA_URLS
-
         Logger.debug('Downloading data files...')
-        _ = dl_manager.download_and_extract(url_list)
+        _ = dl_manager.download_and_extract(cli.get_urls(dsl))
     else:
         assert os.path.exists(manual_dir)
 

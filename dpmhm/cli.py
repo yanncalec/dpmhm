@@ -1,35 +1,88 @@
+"""Methods for CLI usage.
+"""
+
 import click
+from importlib import import_module
+# TF logging level
+import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+
+_DATASET_DICT = {
+    'cwru': 'CWRU',
+    'dcase2020': 'Dcase2020',
+    # 'dcase2021': 'Dcase2021',
+    # 'dcase2022': 'Dcase2022',
+    'dirg': 'DIRG',
+    'femto': 'FEMTO',
+    'fraunhofer151': 'Fraunhofer151',
+    'fraunhofer205': 'Fraunhofer205',
+    'ims': 'IMS',
+    # 'mafaulda': 'Mafaulda',
+    'ottawa': 'Ottawa',
+    'paderborn': 'Paderborn',
+    # 'phmap2021': 'Phmap2021',
+    # 'seuc': 'SEUC',
+    'xjtu': 'XJTU'
+}
+
+
+def get_dataset_list():
+	return list(_DATASET_DICT.values())
+
+def import_dataset_module(ds:str):
+    dsl = ds.lower()
+    return import_module('.'+dsl, f'dpmhm.datasets.{dsl}')
+
+def get_info(ds:str):
+    """Retrieve information of a dataset.
+    """
+    return import_dataset_module(ds).__doc__
+
+def get_urls(ds:str):
+    """Retrieve data urls of a dataset.
+    """
+    return import_dataset_module(ds)._DATA_URLS
+
 
 @click.group()
-def dpmhm():
-    """CLI for DPMHM.
+def dpmhm_datasets():
+    """CLI for DPMHM datasets.
     """
     pass
 
-@click.command()
+@click.command("install")
 @click.argument('ds')
 @click.option('--data_dir', default=None, help='location of tensorflow datasets')
 @click.option('--download_dir', default=None, help='location of download folder')
 @click.option('--extract_dir', default=None, help='location of extraction folder')
 @click.option('--manual_dir', default=None, help='location of manual folder')
 @click.option('--max_sim_dl', default=1, help='maximum number of simultaneous downloads')
-def install(ds:str, *, data_dir:str, download_dir:str, extract_dir:str, manual_dir:str, max_sim_dl:int=1):
+def _install(ds:str, *, data_dir:str, download_dir:str, extract_dir:str, manual_dir:str, max_sim_dl:int=1):
     """Install a dataset."""
-    from . import datasets
+    from dpmhm import datasets
 
     dl_kwargs = {'max_simultaneous_downloads': max_sim_dl}
 
     return datasets.install(ds, data_dir=data_dir, download_dir=download_dir, extract_dir=extract_dir, manual_dir=manual_dir, dl_kwargs=dl_kwargs)
 
-@click.command()
+
+@click.command("info")
 @click.argument('ds', default='')
-def info(ds:str):
-    from . import datasets
-    if ds == '':
-        print(datasets.get_dataset_list())
+# @click.option('--url', is_flag=True, help='Print data source urls.')
+def _info(ds:str, *, url:bool):
+    """Print information of installable datasets.
+    """
+    if ds != '':
+        if url:
+            for _url in get_urls(ds):
+                print(_url)
+        else:
+            print(get_info(ds))
     else:
-        print(datasets.get_info(ds))
+        print("Installable datasets:\n")
+        for ds in get_dataset_list():
+            print(ds)
 
-# dpmhm.add_command(info)
-
-dpmhm.add_command(install)
+dpmhm_datasets.add_command(_info)
+dpmhm_datasets.add_command(_install)
