@@ -18,7 +18,7 @@ _DATASET_DICT = {
     'fraunhofer151': 'Fraunhofer151',
     'fraunhofer205': 'Fraunhofer205',
     'ims': 'IMS',
-    # 'mafaulda': 'Mafaulda',
+    'mafaulda': 'Mafaulda',
     'ottawa': 'Ottawa',
     'paderborn': 'Paderborn',
     # 'phmap2021': 'Phmap2021',
@@ -70,7 +70,7 @@ def _install(ds:str, *, data_dir:str, download_dir:str, extract_dir:str, manual_
 @click.command("info")
 @click.argument('ds', default='')
 # @click.option('--url', is_flag=True, help='Print data source urls.')
-def _info(ds:str, *, url:bool):
+def _info(ds:str, *, url:bool=False):
     """Print information of installable datasets.
     """
     if ds != '':
