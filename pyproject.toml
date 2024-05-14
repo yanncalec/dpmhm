@@ -2,17 +2,18 @@
 name = "dpmhm"
 version = "0.1.1"
 description = "A python package for machine health monitoring"
-authors = ["Han Wang <han.wang.fr@gmail.com>"]
+authors = ["Han Wang <han.wang@cea.fr>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "~3.11"
-keras = "2.15.0"  # Keras 3.0.0 cannot be resolved by poetry: conflict with tensorflow 2.15.0
-keras-core = "^0.1.7"
-jax = "0.4.20"
-jaxlib = "0.4.20"
-tensorflow = "2.15.0"
-tensorflow-datasets = "^4.9.4"
+# keras = "2.15.0"  # Keras 3.0.0 cannot be resolved by poetry: conflict with tensorflow 2.15.0
+keras = "^3.0.0"
+# keras-core = "^0.1.7"
+jax = "~0.4.20"
+jaxlib = "~0.4.20"
+tensorflow = "~2.16.0"
+tensorflow-datasets = "~4.9.4"
 # tensorflow-addons = "^0.20.0"
 # tensorflow_probability = "^0.18.0"
 # tensorflow_model_optimization = "^0.7.3"
@@ -28,12 +29,16 @@ matplotlib = "^3.8.2"
 librosa = "^0.10.1"
 # Keras compatibility matrix:
 # https://keras.io/getting_started/#compatibility-matrix
+pandas = "^2.2.2"
+beautifulsoup4 = "^4.12.3"
 
 [tool.poetry.group.docs]
 optional = true
 
 [tool.poetry.group.docs.dependencies]
-mkdocs = "^1.4.2"
+mkdocs = "^1.5.3"
+# mkdocs = "^1.4.2"
+mkdocs-material = "^9.5.12"
 mkdocs-exclude = "^1.0.2"
 mkdocs-with-pdf = "^0.9.3"
 mkdocs-bibtex = "^2.8.16"

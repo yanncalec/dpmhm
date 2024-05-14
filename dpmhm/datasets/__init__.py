@@ -7,7 +7,6 @@ import tensorflow_datasets as tfds
 import os
 from pathlib import Path
 import requests
-from bs4 import BeautifulSoup
 from tensorflow.data import Dataset
 
 # import pycurl
@@ -147,6 +146,8 @@ def extract_zenodo_urls(url:str) -> list:
     -------
     a list of extracted urls.
     """
+    from bs4 import BeautifulSoup
+
     header = url.split('/record/')[0]
     # Logger.debug(header)
     reqs = requests.get(url)

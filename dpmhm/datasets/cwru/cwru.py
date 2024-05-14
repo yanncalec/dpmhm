@@ -94,15 +94,17 @@ _CITATION = """
 """
 
 # Load meta-information of all datafiles
-_METAINFO = pd.read_csv(Path(__file__).parent / 'metainfo.csv')
+# Use the option `keep_default_na` to preserving `None` (for e.g. 99.mat) as a string and not converting it to nan.
+# https://stackoverflow.com/questions/10867028/get-pandas-read-csv-to-read-empty-values-as-empty-string-instead-of-nan
+_METAINFO = pd.read_csv(Path(__file__).parent / 'metainfo.csv', keep_default_na=False)
 
 # URL to the zip file
 # _DATA_URLS = ('https://engineering.case.edu/sites/default/files/'+_METAINFO['FileName']).tolist()
 # _DATA_URLS = extract_zenodo_urls('https://sandbox.zenodo.org/record/1183527/)
 _DATA_URLS = [
     'https://sandbox.zenodo.org/record/1183527/files/cwru.zip'
+    # 'https://zenodo.org/api/records/7457149/draft/files/cwru.zip/content'
     ]
-
 
 
 class CWRU(tfds.core.GeneratorBasedBuilder):
