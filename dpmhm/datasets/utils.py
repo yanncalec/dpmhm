@@ -12,13 +12,13 @@ from numbers import Number
 from tensorflow.data import Dataset
 
 
-def md5_encoder(*args):
+def md5_encoder(*args) -> str:
 	"""Encode a list of arguments to a string.
 	"""
 	return hashlib.md5(json.dumps(args, sort_keys=True).encode('utf-8')).hexdigest()
 
 
-def md5sum(fname:str):
+def md5sum(fname:str) -> str:
 	"""md5sum of a file.
 	"""
 	with open(fname, 'r') as fp:
@@ -134,7 +134,7 @@ def sliding_window_generator(ds:Dataset, key:str, window_size:int|tuple, hop_siz
     return _generator
 
 
-def random_split_dataset(ds:Dataset, splits:dict, *, shuffle_size:int=None, **kwargs):
+def random_split_dataset(ds:Dataset, splits:dict, *, shuffle_size:int=None, ds_size:int=None, **kwargs):
 	"""Randomly split a dataset according to the specified ratio.
 
 	Args
@@ -157,12 +157,14 @@ def random_split_dataset(ds:Dataset, splits:dict, *, shuffle_size:int=None, **kw
 
 	# Gotcha:
 	# It may happen for a filtered dataset that `len(ds)` returns 1 and `ds.cardinality()` returns a negative number.
-	ds_size = get_dataset_size(ds)
+	# if necessary, scan the dataset to find out its real size
+	if ds_size is None or ds_size < 0:
+		ds_size = get_dataset_size(ds)
 
 	if ds_size == 0: # empty dataset
 		return {k: ds for k in splits.keys()}
 
-	# Specify seed to always have the same split distribution between runs
+	# Specify the random seed to always have the same split distribution
 	# e.g. seed=1234
 	if shuffle_size is None:
 		shuffle_size = ds_size
@@ -193,7 +195,7 @@ def split_dataset(ds:Dataset, splits:dict={'train':0.7, 'val':0.2, 'test':0.1}, 
 	labels:
 		list of categories. If given apply the few-shot style split (i.e. split per category) otherwise apply the normal split.
 	**kwargs:
-		arguments for `split_dataset_random()`
+		arguments for `random_split_dataset()`
 
 	Return
 	------

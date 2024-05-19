@@ -29,6 +29,7 @@ from dpmhm.datasets.augment import randomly, random_crop, fade
 
 from . import Logger
 
+
 class AbstractDatasetTransformer(ABC):
     @abstractmethod
     def build(self) -> Dataset:
@@ -87,15 +88,15 @@ class DatasetCompactor(AbstractDatasetTransformer):
 
     This class performs the following preprocessing steps on the raw signal:
 
-    - split,
-    - resampling of channels,
-    - filtration,
-    - extraction of new labels,
-    - sliding window view.
+    - resampling
+    - filtration
+    - extraction of new labels
+    - sliding window view
 
-    Convention
-    ----------
-    The input dataset must contains the following fields {'signal', 'sampling_rate', 'metadata'}. The data of subfield 'signal' must be either 1D tensor or 2D tensor of shape `(channel, time)`.
+    Note
+    ----
+    - The input dataset must contain the fields {'signal', 'sampling_rate', 'metadata'}.
+    - Data of the subfield 'signal' must be either 1D tensor or 2D tensor of shape `(channel, time)`.
     """
 
     def __init__(self, dataset:Dataset, *, channels:list=[], keys:list=[], filters:dict={},resampling_rate:int=None, window_size:int=None, hop_size:int=None):
@@ -174,7 +175,7 @@ class DatasetCompactor(AbstractDatasetTransformer):
     #   # label index
     #   return {k: n for n, k in enumerate(self.label_dict.keys())}
 
-    def encode_labels(self, *args):
+    def encode_labels(self, *args) -> str:
         """MD5 encoding of a list of labels.
 
         From:
@@ -268,8 +269,13 @@ class DatasetCompactor(AbstractDatasetTransformer):
         This method compacts the original dataset by
         - stacking the selected channels (must have the same length)
         - renaming the label using selected keys
+        - dropping the redundant data field `metadata`
 
-        Note that the channel-stacking may filter out some samples.	The compacted dataset has a dictionary structure with the fields {'label', 'metadata', 'signal'}.
+        The compacted dataset has a dictionary structure with the fields {'label', 'sampling_rate', 'signal'}.
+
+        Note
+        ----
+        Stacking channels may filter out some samples.
         """
         @tf.function  # necessary for infering the size of tensor
         def _has_channels(X):
@@ -293,8 +299,10 @@ class DatasetCompactor(AbstractDatasetTransformer):
             x = tf.squeeze(x)
 
             return {
-                'label': tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string),
-                'metadata': X['metadata'],
+                # `self.encode_labels(d)` doesn't work
+                # `ensure_shape()` recover the lost shape due to `py_function()`
+                'label': tf.ensure_shape(tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string), ()),
+                # 'metadata': X['metadata'],
                 'sampling_rate': X['sampling_rate'],
                 # 'signal': tf.squeeze(x),
                 'signal': tf.reshape(x, (self._channels_dim, -1))
@@ -308,7 +316,7 @@ class DatasetCompactor(AbstractDatasetTransformer):
 class FeatureExtractor(AbstractDatasetTransformer):
     """Class for feature extractor.
 
-    This class performs the feature transform on a compacted dataset. A feature transform increases the dimension of data by 1, e.g. from 1D signal to 2D spectrogram. The feature transformed dataset has fields {'label', 'metadata', 'feature'}.
+    This class performs the feature transform on a compacted dataset. A feature transform increases the dimension of data by 1, e.g. from 1D signal to 2D spectrogram. The feature transformed dataset has fields {'label', 'feature'}.
     """
 
     def __init__(self, dataset, extractor:callable):
@@ -316,7 +324,7 @@ class FeatureExtractor(AbstractDatasetTransformer):
         Args
         ----
         dataset:
-            compacted dataset, with fields {'label', 'metadata', 'signal'}.
+            compacted dataset.
         extractor:
             a callable taking arguments (signal, sampling_rate) and returning extracted 2D features.
         """
@@ -349,7 +357,7 @@ class FeatureExtractor(AbstractDatasetTransformer):
             Xf.set_shape((n_channels, None, None))
             return {
                 'label': X['label'],  # string label
-                'metadata': X['metadata'],
+                # 'metadata': X['metadata'],
                 # 'feature': tf.reshape(Xf, tf.shape(Xf))  # has no effect
                 'feature': Xf
             }

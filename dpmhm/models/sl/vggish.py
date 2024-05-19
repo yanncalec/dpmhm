@@ -19,7 +19,7 @@ References
 """
 
 import tensorflow as tf
-from tensorflow.keras import layers, models #, regularizers
+from keras import layers, models #, regularizers
 from dataclasses import dataclass
 from .. import AbstractConfig
 
