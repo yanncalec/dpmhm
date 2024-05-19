@@ -17,7 +17,28 @@ Logger = logging.getLogger(__name__)
 
 
 def get_mapping_supervised(labels:list, *, feature_field:str='feature', label_field:str='label') -> callable:
-    """Get a preprocessing mapping to transform a dataset to the format `(data,label)` for supervised training.
+    """Get a preprocessing mapping for supervised training.
+
+    This processing model performs the following transformations on a dataset:
+    - conversion of label from string to integer
+    - conversion from the format of channel first to channel last
+
+    After transformation, the dataset is in the format `(data,label)`.
+
+    Usage
+    -----
+    ```python
+    func = get_mapping_supervised(labels)
+    ds = ds.map(func, num_parallel_calls=tf.data.AUTOTUNE)
+    ds = ds.map(lambda x,y: (tf.ensure_shape(x, dimx), y),
+    ```
+
+    Note
+    ----
+    The `ensure_shape()` step seems necessary in Keras 3 to recover the dimension information lost after `.map()`. Otherwise the training will be failed.
+
+    See also:
+    https://github.com/tensorflow/tensorflow/issues/64177
     """
     label_layer = layers.StringLookup(
         # num_oov_indices=0,   # force zero-based integer
@@ -38,6 +59,8 @@ def nested_type_spec(sp:dict) -> dict:
             tp[k] = layers.Input(shape=v.shape, dtype=v.dtype, name=k)
     return tp
 
+
+# The following method doesn't work in Keras 3. Use `get_mapping_supervised()` instead.
 
 def keras_model_supervised(ds:Dataset, labels:list=None, normalize:bool=False, *, shape:tuple=None, feature_field:str='feature', label_field:str='label') -> models.Model:
     """Initialize a Keras preprocessing model for supervised training.
@@ -125,13 +148,9 @@ def keras_model_supervised(ds:Dataset, labels:list=None, normalize:bool=False, *
     feature_output = ops.transpose(feature_output, [0,2,3,1])
 
     # Restore the shape information
-    # if shape is not None:
-    #     feature_output = tf.reshape(feature_output, shape)
-    # label_output = tf.reshape(label_output, ())
     if shape is not None:
         feature_output = ops.reshape(feature_output, shape)
-    # label_output = ops.reshape(label_output, ())
-    # print(label_output)
+    label_output = ops.reshape(label_output, ())
 
     outputs = (feature_output, label_output)
 
@@ -150,4 +169,4 @@ def keras_model_supervised(ds:Dataset, labels:list=None, normalize:bool=False, *
     return model
 
 
-__all__ = ['nested_type_spec', 'keras_model_supervised']
+__all__ = ['nested_type_spec', 'get_mapping_supervised']
