@@ -100,10 +100,8 @@ _METAINFO = pd.read_csv(Path(__file__).parent / 'metainfo.csv', keep_default_na=
 
 # URL to the zip file
 # _DATA_URLS = ('https://engineering.case.edu/sites/default/files/'+_METAINFO['FileName']).tolist()
-# _DATA_URLS = extract_zenodo_urls('https://sandbox.zenodo.org/record/1183527/)
 _DATA_URLS = [
-    'https://sandbox.zenodo.org/record/1183527/files/cwru.zip'
-    # 'https://zenodo.org/api/records/7457149/draft/files/cwru.zip/content'
+    'https://zenodo.org/records/7457149/files/cwru.zip?download=1'
     ]
 
 

@@ -102,9 +102,11 @@ _SPEED = [600, 1000, 1400, 1800, 2200]
 
 _COMPONENT = ['Ball', 'InnerRace', 'OuterRace', 'None']
 
-_METAINFO = pd.read_csv(Path(__file__).parent/'metainfo.csv', index_col=0)
+_METAINFO = pd.read_csv(Path(__file__).parent/'metainfo.csv', index_col=0, keep_default_na=False)
 
-_DATA_URLS = ['https://fordatis.fraunhofer.de/bitstream/fordatis/205/1/fraunhofer_iis_eas_dataset_vibrations_acoustic_emissions_of_drive_train_v1.zip']
+_DATA_URLS = [
+    'https://fordatis.fraunhofer.de/bitstream/fordatis/205/1/fraunhofer_iis_eas_dataset_vibrations_acoustic_emissions_of_drive_train_v1.zip'
+    ]
 
 
 class Fraunhofer205(tfds.core.GeneratorBasedBuilder):

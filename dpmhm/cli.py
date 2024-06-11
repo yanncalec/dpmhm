@@ -21,8 +21,8 @@ _DATASET_DICT = {
     'mafaulda': 'Mafaulda',
     'ottawa': 'Ottawa',
     'paderborn': 'Paderborn',
-    # 'phmap2021': 'Phmap2021',
-    # 'seuc': 'SEUC',
+    'phmap2021': 'Phmap2021',
+    'seuc': 'SEUC',
     'xjtu': 'XJTU'
 }
 

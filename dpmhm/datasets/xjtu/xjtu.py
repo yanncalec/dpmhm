@@ -90,7 +90,10 @@ _SPLIT_PATH_MATCH = {
 #   # 'file name pattern':
 # }
 
-_DATA_URLS = ['https://sandbox.zenodo.org/record/1184368/files/xjtu.zip']
+_DATA_URLS = [
+    # 'https://sandbox.zenodo.org/record/1184368/files/xjtu.zip'
+    'https://zenodo.org/records/11545558/files/xjtu.zip?download=1'
+    ]
 
 
 class XJTU(tfds.core.GeneratorBasedBuilder):
@@ -129,7 +132,13 @@ class XJTU(tfds.core.GeneratorBasedBuilder):
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
         def _get_split_dict(datadir):
-            return {sp: (datadir/fn).rglob('*.csv') for sp, fn in _SPLIT_PATH_MATCH.items()}
+            # This doesn't work:
+            # return {sp: (datadir/fn).rglob('*.csv') for sp, fn in _SPLIT_PATH_MATCH.items()}
+            return {
+                'condition1': next(datadir.rglob('35Hz12kN')).rglob('*.csv'),
+                'condition2': next(datadir.rglob('37.5Hz11kN')).rglob('*.csv'),
+                'condition3': next(datadir.rglob('40Hz10kN')).rglob('*.csv'),
+            }
 
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
             datadir = Path(dl_manager._manual_dir)

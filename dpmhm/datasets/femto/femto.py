@@ -117,10 +117,6 @@ _DATA_URLS = [
     'https://github.com/Lucky-Loek/ieee-phm-2012-data-challenge-dataset/archive/refs/heads/master.zip'
 ]
 
-# _DATA_URLS = [
-#     'https://sandbox.zenodo.org/record/1183585/files/femto.zip'
-# ]
-
 # Date of experiment
 _DATE = {
     'Bearing1_1': datetime(2010,12,1),

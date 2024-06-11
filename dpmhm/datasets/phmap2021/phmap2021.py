@@ -73,7 +73,10 @@ _SPLIT_PATH_MATCH = {
     'Bearing': ['train_1st_Bearing.csv', 'train_2nd_Bearing.csv']
 }
 
-_DATA_URLS = ['https://sandbox.zenodo.org/record/1184362/files/phmap.zip']
+_DATA_URLS = [
+    # 'https://sandbox.zenodo.org/record/1184362/files/phmap.zip'
+    'https://zenodo.org/records/11546285/files/phmap.zip?download=1'
+    ]
 
 
 class Phmap2021(tfds.core.GeneratorBasedBuilder):
@@ -119,31 +122,54 @@ class Phmap2021(tfds.core.GeneratorBasedBuilder):
             'train': self._generate_examples(datadir),
         }
 
-    def _generate_examples(self, path):
-        for sp, fnames in _SPLIT_PATH_MATCH.items():
-            for fn in fnames:
-                fp = path / fn
+    def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        def _get_split_dict(datadir):
+            # This doesn't work:
+            # return {sp: (datadir/fn).rglob('*.csv') for sp, fn in _SPLIT_PATH_MATCH.items()}
+            return {
+                'train': datadir.rglob('*.csv'),
+            }
 
-                _signal = pd.read_csv(fp, index_col=0).T.values.astype(_DTYPE.as_numpy_dtype)
+        if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
+            datadir = Path(dl_manager._manual_dir)
+        elif dl_manager._extract_dir.exists(): # automatically downloaded & extracted data
+            datadir = Path(dl_manager._extract_dir)
+        # elif dl_manager._download_dir.exists(): # automatically downloaded data
+        #     datadir = Path(dl_manager._download_dir)
+        #     tfds.download.iter_archive(fp, tfds.download.ExtractMethod.ZIP)
+        else:
+            raise FileNotFoundError()
 
-                metadata = {
-                    'Label': sp,
-                    # 'OriginalSplit': sp,
-                    'FileName': fp.name,
-                    'Dataset': 'PHMAP2021',
-                }
+        return {sp: self._generate_examples(files) for sp, files in _get_split_dict(datadir).items()}
 
-                yield hash(frozenset(metadata.items())), {
-                    'signal': {'vibration': _signal},
-                    # 'label': sp,
-                    'sampling_rate': 10544,
-                    'metadata': metadata
-                }
+    # def _generate_examples(self, path):
+    #     for sp, fnames in _SPLIT_PATH_MATCH.items():
+    def _generate_examples(self, files):
+        for fp in files:
+            # for fn in fnames:
+            #     fp = path / fn
 
-    @staticmethod
-    def get_references():
-        try:
-            with open(Path(__file__).parent / 'Exported Items.bib') as fp:
-                return fp.read()
-        except:
-            pass
+            _signal = pd.read_csv(fp, index_col=0).T.values.astype(_DTYPE)
+            sp = fp.stem.split('_')[-1].capitalize()
+
+            metadata = {
+                'Label': sp,
+                # 'OriginalSplit': sp,
+                'FileName': fp.name,
+                'Dataset': 'PHMAP2021',
+            }
+
+            yield hash(frozenset(metadata.items())), {
+                'signal': {'vibration': _signal},
+                # 'label': sp,
+                'sampling_rate': 10544,
+                'metadata': metadata
+            }
+
+    # @staticmethod
+    # def get_references():
+    #     try:
+    #         with open(Path(__file__).parent / 'Exported Items.bib') as fp:
+    #             return fp.read()
+    #     except:
+    #         pass

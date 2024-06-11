@@ -88,7 +88,9 @@ _CITATION = """
 }
 """
 
-_DATA_URLS = ['https://fordatis.fraunhofer.de/bitstream/fordatis/151.2/1/fraunhofer_eas_dataset_for_unbalance_detection_v1.zip']
+_DATA_URLS = [
+    'https://fordatis.fraunhofer.de/bitstream/fordatis/151.2/1/fraunhofer_eas_dataset_for_unbalance_detection_v1.zip'
+    ]
 
 
 _RADIUS = {'0': 0., '1': 14., '2': 18.5, '3':23., '4':23.}

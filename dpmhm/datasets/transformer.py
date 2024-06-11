@@ -8,7 +8,7 @@ We follow the convention of channel first: The original dataset as well as the t
 """
 
 from typing import Union # List, Dict
-from abc import ABC, abstractmethod, abstractproperty, abstractclassmethod
+from abc import ABC, abstractmethod
 import itertools
 
 import numpy as np
@@ -27,7 +27,8 @@ import librosa
 from dpmhm.datasets import utils, _DTYPE, _ENCLEN
 from dpmhm.datasets.augment import randomly, random_crop, fade
 
-from . import Logger
+import logging
+Logger = logging.getLogger(__name__)
 
 
 class AbstractDatasetTransformer(ABC):
@@ -99,27 +100,29 @@ class DatasetCompactor(AbstractDatasetTransformer):
     - Data of the subfield 'signal' must be either 1D tensor or 2D tensor of shape `(channel, time)`.
     """
 
-    def __init__(self, dataset:Dataset, *, channels:list=[], keys:list=[], filters:dict={},resampling_rate:int=None, window_size:int=None, hop_size:int=None):
+    def __init__(self, dataset:Dataset, *, channels:list=[], keys:list=[], filters:dict={}, resampling_rate:int=None, window_size:int=None, hop_size:int=None, separate_dims:bool=False):
         """
         Args
         ----
         dataset:
             original dataset
         channels:
-            channels for extraction of data, subset of 'signal'. If empty all channels are simultaneously extracted.
+            channels for extraction of data, subset of 'signal', if not given all channels are extracted.
         keys:
-            keys for extraction of new labels, subset of 'metadata'. If empty the original labels are used (no effect).
+            keys for extraction of new labels, subset of 'metadata', if not given no label is extracted.
         filters:
-            filters on the field 'metadata', a dictionary of keys and admissible values. By default no filter is applied.
+            filters on the field 'metadata', a dictionary of keys and admissible value(s). By default no filter is applied.
         resampling_rate:
             rate for resampling, if None use the original sampling rate.
         window_size:
             size of the sliding window on time axis, if None no window is applied.
         hop_size:
             hop size for the sliding window. No hop if None or `hop_size=1` (no downsampling). Effective only when `window_size` is given.
+        separate_dims:
+            if True dimensions of channels are separated and the final dataset consists of 1d signals.
         """
-        self._channels = channels
-        self._channels_dim = get_number_of_channels(dataset.element_spec['signal'], channels)
+        self._channels = channels if channels else list(dataset.element_spec['signal'].keys())
+        self._channels_dim = get_number_of_channels(dataset.element_spec['signal'], self._channels)
         self._keys = keys
         # self._n_chunk = n_chunk
         self._resampling_rate = resampling_rate
@@ -127,6 +130,7 @@ class DatasetCompactor(AbstractDatasetTransformer):
 
         self._window_size = window_size
         self._hop_size = hop_size
+        self._separate_dims = separate_dims
 
         # dictionary for extracted labels, will be populated only after scanning the compacted dataset
         self._label_dict = {}
@@ -153,6 +157,14 @@ class DatasetCompactor(AbstractDatasetTransformer):
                 utils.sliding_window_generator(ds, 'signal', self._window_size, self._hop_size),
                 output_signature=ds.element_spec,
             )
+        if self._separate_dims:
+            foo = ds.element_spec.copy()  # must use `.copy()`
+            foo['signal'] = tf.TensorSpec((1,None,))
+            ds = Dataset.from_generator(
+                utils.separate_dims_generator(ds, 'signal'),
+                output_signature=foo,
+            )
+
         return ds
 
     @property
@@ -302,7 +314,7 @@ class DatasetCompactor(AbstractDatasetTransformer):
                 # `self.encode_labels(d)` doesn't work
                 # `ensure_shape()` recover the lost shape due to `py_function()`
                 'label': tf.ensure_shape(tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string), ()),
-                # 'metadata': X['metadata'],
+                'metadata': X['metadata'],
                 'sampling_rate': X['sampling_rate'],
                 # 'signal': tf.squeeze(x),
                 'signal': tf.reshape(x, (self._channels_dim, -1))
@@ -343,7 +355,7 @@ class FeatureExtractor(AbstractDatasetTransformer):
     def to_feature(cls, ds:Dataset, extractor:callable) -> Dataset:
         """Feature transform of a compacted dataset of signal.
 
-        The transformed database has a dictionary structure which contains
+        The transformed database has a dictionary structure which contains the fields {'label', 'feature'}
         """
         n_channels = ds.element_spec['signal'].shape[0]
 
@@ -357,7 +369,7 @@ class FeatureExtractor(AbstractDatasetTransformer):
             Xf.set_shape((n_channels, None, None))
             return {
                 'label': X['label'],  # string label
-                # 'metadata': X['metadata'],
+                'metadata': X['metadata'],
                 # 'feature': tf.reshape(Xf, tf.shape(Xf))  # has no effect
                 'feature': Xf
             }

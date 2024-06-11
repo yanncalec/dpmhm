@@ -67,10 +67,7 @@ $ tfds build SEUC --imports dpmhm.datasets.seuc --manual_dir LOCAL_DIR
 ```
 """
 
-# import os
-# import pathlib
-# import itertools
-# import json
+from pathlib import Path
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
@@ -89,7 +86,9 @@ pages={2446-2455},
 doi={10.1109/TII.2018.2864759}}
 """
 
-_DATA_URLs = 'https://github.com/cathysiyu/Mechanical-datasets/archive/refs/heads/master.zip'
+_DATA_URLS = [
+    'https://github.com/cathysiyu/Mechanical-datasets/archive/refs/heads/master.zip'
+]
 
 # Components of fault
 _FAULT_GEARBOX = ['Chipped', 'Missing', 'Root', 'Surface']
@@ -162,22 +161,27 @@ class SEUC(tfds.core.GeneratorBasedBuilder):
         return _component, _load
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        def _get_split_dict(datadir):
+            return {
+                'gearbox': next(datadir.rglob('gearset')).rglob('*.csv'),
+                'bearing': next(datadir.rglob('bearingset')).rglob('*.csv'),
+            }
+
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
-            datadir = dl_manager._manual_dir / 'gearbox'
-        else:  # automatically download data
-            datadir = list(dl_manager.download_and_extract(_DATA_URLs).iterdir())[0] / 'gearbox'
-        # print(datadir)
+            datadir = Path(dl_manager._manual_dir)
+        elif dl_manager._extract_dir.exists(): # automatically downloaded & extracted data
+            datadir = Path(dl_manager._extract_dir)
+        # elif dl_manager._download_dir.exists(): # automatically downloaded data
+        #     datadir = Path(dl_manager._download_dir)
+        #     tfds.download.iter_archive(fp, tfds.download.ExtractMethod.ZIP)
+        else:
+            raise FileNotFoundError()
 
-        return {
-            # Use the original splits
-            'gearbox': self._generate_examples(datadir/'gearset'),
-            'bearing': self._generate_examples(datadir/'bearingset'),
-            # 'train': self._generate_examples(datadir)  # this will rewrite on precedent splits
-        }
+        return {sp: self._generate_examples(files) for sp, files in _get_split_dict(datadir).items()}
 
-    def _generate_examples(self, path):
-        # !! Recursive glob `path.rglob` may not behave as expected
-        for fp in path.glob('*.csv'):
+
+    def _generate_examples(self, files):
+        for fp in files:
             _component, _load = self._fname_parser(fp.name)
             # try:
             #     df = pd.read_csv(fp,skiprows=15, sep='\t').iloc[:,:-1]
@@ -187,11 +191,11 @@ class SEUC(tfds.core.GeneratorBasedBuilder):
             #     df = pd.read_csv(fp,skiprows=15, sep=',').iloc[:,:-1]
             #     if df.shape[1] != 8:
             #         raise Exception
-            df = pd.read_csv(fp,skiprows=15, sep=None, engine='python').iloc[:,:-1]
+            df = pd.read_csv(fp, skiprows=15, sep=None, engine='python').iloc[:,:-1]
             if df.shape[1] != 8:
                 raise Exception()
 
-            _signal = df.T.values.astype(_DTYPE.as_numpy_dtype) # strangely, df.values.T will give a tuple
+            _signal = df.T.values.astype(_DTYPE) # strangely, df.values.T will give a tuple
 
             metadata = {
                 'LoadForce': _load,

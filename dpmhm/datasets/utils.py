@@ -60,6 +60,30 @@ def extract_by_category(ds:Dataset, labels:list) -> dict:
 	return dp
 
 
+def separate_dims_generator(ds:Dataset, key:str, *, axis:int=0) -> callable:
+    """Generator function for separating dimensions.
+
+    This generator create 1d samples from a nd dataset. For example, samples of shape `(3, None)` will be separated to 3 samples of shape `(1, None)`.
+
+    Args
+    ----
+    ds:
+        input dataset with dictionary structure.
+    key: str
+        ds[key] is the signal to be divided.
+    """
+    assert ds.element_spec[key].shape.ndims > 1
+
+    def _get_generator():
+        for X in ds:
+            Y = X.copy()
+            for x in X[key]:
+                Y[key] = tf.reshape(x, [1,-1])
+                # Y[key] = x  # drop the channel dimension
+                yield Y
+    return _get_generator
+
+
 def split_signal_generator(ds:Dataset, key:str, n_chunk:int, *, axis:int=-1) -> callable:
     """Generator function for splitting a signal into chunks.
 

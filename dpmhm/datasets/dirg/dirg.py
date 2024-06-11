@@ -19,7 +19,7 @@ Original Dataset
 - Format: Matlab
 - Channels: 6, for two accelerometers in the x-y-z axis
 - Split: 'Variable speed and load' test, 'Endurance' test
-- Sampling rate: 51200 Hz for `Variable speed and load` test and 102400 Hz for `Endurance` test
+- Sampling rate: 51200 Hz (51.2 kHz) for `Variable speed and load` test and 102400 Hz (102.4 kHz) for `Endurance` test
 - Recording duration: 10 seconds for `Variable speed and load` test and 8 seconds for `Endurance` test
 - Label: normal and faulty
 - Size: ~ 3Gb unzipped
@@ -49,6 +49,7 @@ Features
 Notes
 =====
 - Conversion: load is converted from mV to N using the sensitivity factor 0.499 mV/N
+- Only the bearing `B1` contains faults so `B2` and `B3` are not used.
 - The endurance test was originally with the fault type 4A but in the processed data we marked its label as "unknown".
 """
 
@@ -97,7 +98,9 @@ _FAULT_TYPE_MATCH = {
     '6A': ('Roller', 150),
 }
 
-_DATA_URLS = ['https://sandbox.zenodo.org/record/1183545/files/dirg.zip']
+_DATA_URLS = [
+    'https://zenodo.org/records/11394418/files/dirg.zip?download=1'
+    ]
 
 
 class DIRG(tfds.core.GeneratorBasedBuilder):

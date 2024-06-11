@@ -66,7 +66,10 @@ _CHARACTERISTICS_TESTRIG = {
 }
 
 # _DATA_URLS = 'https://phm-datasets.s3.amazonaws.com/NASA/4.+Bearings.zip'
-_DATA_URLS = ['https://sandbox.zenodo.org/record/1184320/files/ims.zip']
+_DATA_URLS = [
+    # 'https://sandbox.zenodo.org/record/1184320/files/ims.zip'
+    'https://zenodo.org/records/11545355/files/ims.zip?download=1'
+    ]
 
 _CITATION = """
 - Hai Qiu, Jay Lee, Jing Lin. “Wavelet Filter-based Weak Signature Detection Method and its Application on Roller Bearing Prognostics.” Journal of Sound and Vibration 289 (2006) 1066-1090
@@ -115,9 +118,11 @@ class IMS(tfds.core.GeneratorBasedBuilder):
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
         def _get_split_dict(datadir):
             return {
-                'dataset1': (datadir/'1st_test').glob('*'),
-                'dataset2': (datadir/'2nd_test').glob('*'),
-                'dataset3': (datadir/'3rd_test').glob('*'),
+                'dataset1': next(datadir.rglob('1st_test')).glob('*'),
+                'dataset2': next(datadir.rglob('2nd_test')).glob('*'),
+                'dataset3': next(datadir.rglob('3rd_test')).glob('*'),
+                # 'dataset2': (datadir/'2nd_test').glob('*'),
+                # 'dataset3': (datadir/'3rd_test').glob('*'),
             }
 
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data

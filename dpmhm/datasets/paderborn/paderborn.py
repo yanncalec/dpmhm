@@ -102,7 +102,9 @@ _CITATION = """
 Christian Lessmeier et al., KAt-DataCenter: mb.uni-paderborn.de/kat/datacenter, Chair of Design and Drive Technology, Paderborn University.
 """
 
-_METAINFO = pd.read_csv(Path(__file__).parent / 'metainfo.csv', index_col=0)  # use 'Bearing Code' as index
+# use 'Bearing Code' as index
+# same as CWRU, use `keep_default_na` to preserve `None` as string
+_METAINFO = pd.read_csv(Path(__file__).parent / 'metainfo.csv', index_col=0, keep_default_na=False)
 
 # _DATA_URLS = ('http://groups.uni-paderborn.de/kat/BearingDataCenter/' + _METAINFO.index+'.rar').tolist()
 

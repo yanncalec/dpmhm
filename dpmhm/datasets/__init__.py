@@ -18,19 +18,6 @@ Logger = logging.getLogger(__name__)
 
 from .. import cli
 
-# from .cwru import CWRU
-# from .dcase import DCASE2021
-# from .seuc import SEUC
-# from .mfpt import MFPT
-# from .dirg import DIRG
-# from .mafaulda import MAFAULDA
-# from .ims import IMS
-# from .ottawa import Ottawa
-# from .paderborn import Paderborn
-# from .femto import FEMTO
-# from .fraunhofer import Fraunhofer205, Fraunhofer151
-# from .phmdc import Phmap2021
-
 # Data type
 _FLOAT16 = np.float16
 _FLOAT32 = np.float32
@@ -164,3 +151,15 @@ def extract_zenodo_urls(url:str) -> list:
         except:
             pass
     return urls
+
+
+def load_compact(ds_name:str, split:str|list, **kwargs):
+    from .transformer import DatasetCompactor
+
+    ds0 = tfds.load(ds_name, split=split)
+
+    compactor = DatasetCompactor(
+        ds0, **kwargs
+    )
+
+    return compactor

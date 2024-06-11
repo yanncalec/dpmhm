@@ -6,7 +6,7 @@ https://github.com/KWflyer/CLAE
 CNN on the raw wavform.
 Input: fixed-length trunks of wavform
 
-The original method can also be implemented in a self-supervised fashion by considering each wavform record a class.
+The original method can also be implemented in a self-supervised fashion by considering each waveform record a class.
 """
 
 

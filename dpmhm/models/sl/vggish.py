@@ -18,7 +18,7 @@ References
 - Hershey, S. et al. (2017) ‘CNN architectures for large-scale audio classification’, in 2017 ieee international conference on acoustics, speech and signal processing (icassp). IEEE, pp. 131–135.
 """
 
-import tensorflow as tf
+# import tensorflow as tf
 from keras import layers, models #, regularizers
 from dataclasses import dataclass
 from .. import AbstractConfig
