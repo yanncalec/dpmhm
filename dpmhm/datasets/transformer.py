@@ -437,7 +437,7 @@ class SpecAugment(AbstractDatasetTransformer):
     """
     def __init__(self, dataset:Dataset, *, output_shape:tuple=(64,64), crop_kwargs:dict={}, flip_kwargs:dict={'prob':0.5, 'axis':-1}, blur_kwargs:dict={'sigma':1., 'prob':0.5}, fade_kwargs:dict={'ratio':0.5, 'prob':0.5}, **kwargs):
         # print(dataset.__transformer__)
-        assert dataset.__transformer__ is FeatureExtractor
+        assert dataset.__transformer__ is FeatureExtractor or dataset.__transformer__ is WindowSlider
 
         self._dataset_origin = dataset
         self._output_shape = output_shape
