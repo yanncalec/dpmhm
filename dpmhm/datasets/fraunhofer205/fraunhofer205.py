@@ -46,17 +46,16 @@ Split: ['train']
 
 Features
 --------
-- 'signal': { 'Vibration', 'AcousticEmission' }
+- 'signal': {'Vibration', 'AcousticEmission'}
 - 'sampling_rate': {
     'Vibration': 8192 Hz,
     'AcousticEmission': 390625 Hz
     }
 - 'metadata':
-    - 'Label': ['Ball', 'InnerRace', 'OuterRace', 'None'],
     - 'TimeIndex': starting index of the record,
-    - 'RotatingSpeed': Rotation speed of the shaft
-    - 'FaultComponent': Component of the fault, e.g. {'Ball', 'Cage', 'InnerRace', 'OuterRace', 'None}
-    - 'FaultExtend':  Extend of the fault, [0,1,2]
+    - 'RotatingSpeed': Rotation speed of the shaft {600, 1000, 1400, 1800, 2200} RPM
+    - 'FaultComponent': Component of the fault, {'Ball', 'InnerRace', 'OuterRace', 'None'},
+    - 'FaultExtend':  Extend of the fault, {0,1,2}
 
 Notes
 =====
@@ -137,7 +136,7 @@ class Fraunhofer205(tfds.core.GeneratorBasedBuilder):
                     # 'Label': tf.string,
                     'TimeIndex': tf.string,  # starting index of the record in the original data file
                     'RotatingSpeed': tf.uint32,  # Rotation speed of the shaft
-                    'FaultComponent': tf.string, # Component of the fault, e.g. {'Ball', 'Cage' ,'InnerRace', 'OuterRace', 'None}
+                    'FaultComponent': tf.string, # Component of the fault, e.g. {'Ball' ,'InnerRace', 'OuterRace', 'None}
                     'FaultExtend': tf.uint32,  # Extend of the fault, [0,1,2]
                     'FileName': tf.string,  # Original filename with path in the dataset
                     'Dataset': tf.string,
@@ -151,7 +150,7 @@ class Fraunhofer205(tfds.core.GeneratorBasedBuilder):
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
         def _get_split_dict(datadir):
             return {
-                'train': (datadir/'data').iterdir(),
+                'train': next(datadir.rglob('data')).iterdir(),
             }
 
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data

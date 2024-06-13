@@ -46,14 +46,14 @@ https://mb.uni-paderborn.de/en/kat/main-research/datacenter/bearing-datacenter/d
 
 Built Dataset
 =============
-- Split: ['artificial', 'lifetime'] for initiated faults (merged with 'healthy') & run-to-failure experiments respectively.
+- Split: {'healthy', 'artificial', 'lifetime'} for normal, initiated faults, and run-to-failure experiments respectively.
 
 Features
 --------
 - 'signal':
     - 'vibration': 1 channel
-    - 'current': 2 channels ['phase_current_1', 'phase_current_2']
-    - 'mechanic': 3 channels ['force', 'speed', 'torque']
+    - 'current': 2 channels {'phase_current_1', 'phase_current_2'}
+    - 'mechanic': 3 channels {'force', 'speed', 'torque'}
     - 'temperature': 1 channel
 - 'sampling_rate':
     - 'vibration': 64 kHz
@@ -61,10 +61,10 @@ Features
     - 'mechanic': 4 kHz
     - 'temperature': 1 Hz
 - 'metadata':
-    - 'FaultComponent': 'None', 'Inner Ring', 'Outer Ring', 'Inner Ring+Outer Ring'
-    - 'FaultExtend': 0,1,2,3,
-    - 'DamageMethod': 'Healthy', 'Aritificial', 'Lifetime'
-    - 'FaultType': how fault is introduced
+    - 'FaultComponent': {'None', 'Inner Ring', 'Outer Ring', 'Inner Ring+Outer Ring'}
+    - 'FaultExtend': {0,1,2,3}
+    - 'DamageMethod': {'Healthy', 'Aritificial', 'Lifetime'}
+    - 'FaultType': how fault is introduced, {'None', 'Electrical Discharge Machining', 'Electric Engraver', 'Fatigue: Pitting', 'Drilling'}
     - 'FileName': original filename.
 
 References
@@ -109,7 +109,8 @@ _METAINFO = pd.read_csv(Path(__file__).parent / 'metainfo.csv', index_col=0, kee
 # _DATA_URLS = ('http://groups.uni-paderborn.de/kat/BearingDataCenter/' + _METAINFO.index+'.rar').tolist()
 
 _DATA_URLS = [
-    'https://sandbox.zenodo.org/record/1184342/files/paderborn.zip'
+    # 'https://sandbox.zenodo.org/record/1184342/files/paderborn.zip'
+    'https://zenodo.org/records/11610142/files/paderborn.zip?download=1'
 ]
 
 # _SPLIT_PATH_MATCH = {k: _METAINFO.loc[_METAINFO['DamageMethod']==k].index.tolist() for k in ['Healthy', 'Artificial', 'Lifetime']}

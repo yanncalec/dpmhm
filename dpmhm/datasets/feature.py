@@ -7,32 +7,32 @@ import pywt
 def spectral_features(x:np.ndarray, sampling_rate:int, feature_method:str, *, time_window:float, hop_step:float, n_fft:int=None, normalize:bool=False, feature_kwargs:dict={}, **kwargs):
     """Compute the spectral features of a multichannel waveform using the library `librosa`.
 
-    Args
-    ----
-    x:
+    Parameters
+    ----------
+    x
         input array with the last dimension being time
-    sampling_rate:
+    sampling_rate
         original sampling rate (in Hz) of the input
-    feature_method:
+    feature_method
         type of feature, one of {'spectrogram', 'melspectrogram', 'mfcc'}
-    time_window:
+    time_window
         size of short-time Fourier transform (STFT) window, in second
-    hop_step:
+    hop_step
         time step of the sliding STFT window, in second
-    n_fft:
+    n_fft
         size of FFT, by default automatically determined
-    normalize:
+    normalize
         whether to normalize the input array
-    feature_kwargs:
+    feature_kwargs
         keyword arguments for the method defined by `feature_method`, see: https://librosa.org/doc/main/feature.html.
-    kwargs:
+    kwargs
         additional keyword arguments: {'to_db': boolean, compute power spectrogram in decibel}
 
     Returns
     -------
-    Sxx:
+    Sxx
         power spectrogram
-    (win_length, hop_length, n_fft):
+    (win_length, hop_length, n_fft)
         real values used by librosa for feature extraction
     """
     sr = float(sampling_rate)
@@ -81,11 +81,6 @@ def spectral_features(x:np.ndarray, sampling_rate:int, feature_method:str, *, ti
 
 def wavelet_packet_transform(x:np.ndarray, sampling_rate:int, *, level:int=3, wavelet:str='db2'):
     """Compute the Wavelet Packet Transform (WPT).
-
-    Args
-    ----
-    level:
-        Number of decomposition levels
     """
     fs = float(sampling_rate)
 
@@ -112,7 +107,7 @@ def wavelet_packet_transform(x:np.ndarray, sampling_rate:int, *, level:int=3, wa
 def emd():
     """Empirical Mode Decomposition
     """
-    pass
+    raise NotImplementedError()
 
 
 

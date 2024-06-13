@@ -4,7 +4,7 @@ Yu, H., Wang, K., Li, Y., Zhao, W., 2019. Representation Learning With Class Lev
 https://github.com/KWflyer/CLAE
 
 CNN on the raw wavform.
-Input: fixed-length trunks of wavform
+Input: fixed-length trunks of waveform
 
 The original method can also be implemented in a self-supervised fashion by considering each waveform record a class.
 """
@@ -14,8 +14,8 @@ The original method can also be implemented in a self-supervised fashion by cons
 import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow import keras, linalg
-from tensorflow.keras import models, layers, regularizers, callbacks, losses
-from tensorflow.keras.applications import resnet
+from keras import models, layers, regularizers, callbacks, losses
+from keras.applications import resnet
 
 from dataclasses import dataclass, field
 

@@ -3,9 +3,9 @@
 
 # import sys
 import tensorflow as tf
-from tensorflow import keras, linalg
+from tensorflow import linalg
 # from tensorflow.keras import models, layers, regularizers, callbacks, losses
-from tensorflow.keras import losses
+from keras import losses
 # from tensorflow.keras.applications import resnet
 
 # import numpy as np

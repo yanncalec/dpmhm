@@ -16,6 +16,8 @@ import numpy as np
 import itertools
 import tensorflow as tf
 from tensorflow.data import Dataset
+from tensorflow.experimental.numpy import atleast_2d
+
 # from tensorflow.python.data.ops.dataset_ops import DatasetV2
 
 import skimage
@@ -100,26 +102,26 @@ class DatasetCompactor(AbstractDatasetTransformer):
     - Data of the subfield 'signal' must be either 1D tensor or 2D tensor of shape `(channel, time)`.
     """
 
-    def __init__(self, dataset:Dataset, *, channels:list=[], keys:list=[], filters:dict={}, resampling_rate:int=None, window_size:int=None, hop_size:int=None, separate_dims:bool=False):
+    def __init__(self, dataset:Dataset, *, channels:list=[], keys:list=[], filters:dict={}, resampling_rate:int=None, window_size:int=None, hop_size:int=None, split_channel:bool=False):
         """
-        Args
-        ----
-        dataset:
+        Parameters
+        ----------
+        dataset
             original dataset
-        channels:
+        channels
             channels for extraction of data, subset of 'signal', if not given all channels are extracted.
-        keys:
+        keys
             keys for extraction of new labels, subset of 'metadata', if not given no label is extracted.
-        filters:
+        filters
             filters on the field 'metadata', a dictionary of keys and admissible value(s). By default no filter is applied.
-        resampling_rate:
+        resampling_rate
             rate for resampling, if None use the original sampling rate.
-        window_size:
+        window_size
             size of the sliding window on time axis, if None no window is applied.
-        hop_size:
+        hop_size
             hop size for the sliding window. No hop if None or `hop_size=1` (no downsampling). Effective only when `window_size` is given.
-        separate_dims:
-            if True dimensions of channels are separated and the final dataset consists of 1d signals.
+        split_channel
+            if True any multidimensional channel is splitted into 1d channels.
         """
         self._channels = channels if channels else list(dataset.element_spec['signal'].keys())
         self._channels_dim = get_number_of_channels(dataset.element_spec['signal'], self._channels)
@@ -130,7 +132,7 @@ class DatasetCompactor(AbstractDatasetTransformer):
 
         self._window_size = window_size
         self._hop_size = hop_size
-        self._separate_dims = separate_dims
+        self._split_channel = split_channel
 
         # dictionary for extracted labels, will be populated only after scanning the compacted dataset
         self._label_dict = {}
@@ -157,11 +159,11 @@ class DatasetCompactor(AbstractDatasetTransformer):
                 utils.sliding_window_generator(ds, 'signal', self._window_size, self._hop_size),
                 output_signature=ds.element_spec,
             )
-        if self._separate_dims:
+        if self._split_channel:
             foo = ds.element_spec.copy()  # must use `.copy()`
             foo['signal'] = tf.TensorSpec((1,None,))
             ds = Dataset.from_generator(
-                utils.separate_dims_generator(ds, 'signal'),
+                utils.split_dims_generator(ds, 'signal'),
                 output_signature=foo,
             )
 
@@ -233,17 +235,17 @@ class DatasetCompactor(AbstractDatasetTransformer):
         def _resample(X):
             Y = X.copy()
             if rsr is None:
-                try:
-                    # if the original sampling rate is a dict
-                    vsr = tf.stack(list(X['sampling_rate'].values()))
-                    tf.Assert(
-                        tf.reduce_all(tf.equal(vsr[0], vsr)),  #
-                        ['All channels must have the sampling rate:', vsr]
-                    )  # must be all constant
-                    Y['sampling_rate'] = vsr[0]
-                except:
-                    # if the original sampling rate is a number
-                    Y['sampling_rate'] = X['sampling_rate']
+                # try:
+                #     # if the original sampling rate is a dict
+                #     vsr = tf.stack(list(X['sampling_rate'].values()))
+                #     tf.Assert(
+                #         tf.reduce_all(tf.equal(vsr[0], vsr)),  #
+                #         ['All channels must have the sampling rate:', vsr]
+                #     )  # must be all constant
+                #     Y['sampling_rate'] = vsr[0]
+                # except:
+                #     # if the original sampling rate is a number
+                Y['sampling_rate'] = X['sampling_rate']
             else:
                 xs = {}
                 for k in X['signal'].keys():
@@ -305,9 +307,23 @@ class DatasetCompactor(AbstractDatasetTransformer):
 
         @tf.function
         def _compact(X):
+            # Check all channels have the same sampling rate
+            try:
+                # if the original sampling rate is a dict
+                vsr = tf.stack([X['sampling_rate'][ch] for ch in self._channels])
+                tf.Assert(
+                    tf.reduce_all(tf.equal(vsr[0], vsr)),  #
+                    ['All channels must have the same sampling rate:', vsr]
+                )  # must be all constant
+                rsr = vsr[0]
+            except TypeError:
+                # if the original sampling rate is a number
+                rsr = X['sampling_rate']
+
             # d = [X['label']] + [X['metadata'][k] for k in self._keys]
             d = [X['metadata'][k] for k in self._keys]
-            x = [X['signal'][ch] for ch in self._channels]
+            x = tf.concat([atleast_2d(X['signal'][ch]) for ch in self._channels], 0)
+            # x = [atleast_2d(X['signal'][ch]) for ch in self._channels]  # <- This fails if the ranks of channel are different.
             x = tf.squeeze(x)
 
             return {
@@ -315,12 +331,12 @@ class DatasetCompactor(AbstractDatasetTransformer):
                 # `ensure_shape()` recover the lost shape due to `py_function()`
                 'label': tf.ensure_shape(tf.py_function(func=self.encode_labels, inp=d, Tout=tf.string), ()),
                 'metadata': X['metadata'],
-                'sampling_rate': X['sampling_rate'],
+                'sampling_rate': rsr,
                 # 'signal': tf.squeeze(x),
                 'signal': tf.reshape(x, (self._channels_dim, -1))
                 # 'signal': tf.reshape(x, (len(self._channels), -1))  # this works only for the case where each channel contains only one 1d signal
             }
-        # return dataset.filter(_has_channels)
+        # ds = dataset.filter(_has_channels)  # <- doesn't work?
         ds = dataset.filter(lambda X:_has_channels(X))
         return ds.map(_compact, num_parallel_calls=tf.data.AUTOTUNE)
 
@@ -333,12 +349,12 @@ class FeatureExtractor(AbstractDatasetTransformer):
 
     def __init__(self, dataset, extractor:callable):
         """
-        Args
-        ----
-        dataset:
+        Parameters
+        ----------
+        dataset
             compacted dataset.
-        extractor:
-            a callable taking arguments (signal, sampling_rate) and returning extracted 2D features.
+        extractor
+            a callable taking arguments `(signal, sampling_rate)` and returning extracted 2D features.
         """
         assert dataset.__transformer__ is DatasetCompactor
         self._dataset_origin = dataset
@@ -385,13 +401,13 @@ class WindowSlider(AbstractDatasetTransformer):
 
     def __init__(self, dataset:Dataset, *, window_size:tuple|int, hop_size:tuple|int=None):
         """
-        Args
-        ----
-        dataset:
+        Parameters
+        ----------
+        dataset
             feature dataset, must have a dictionary structure with the field 'feature', which contains the spectral feature and has dimension (channel, freqeuncy, time).
-        window_size:
+        window_size
             size of sliding window
-        hop_size:
+        hop_size
             size of hop between two positions
 
         Returns
@@ -543,11 +559,11 @@ class Product(AbstractDatasetTransformer):
     """
     def __init__(self, dataset:Dataset, dataset2:Dataset=None, *, keys:list=[], positive:bool=None):
         """
-        Args
-        ----
-        keys: list
+        Parameters
+        ----------
+        keys
             keys of the field `metadata` for pair comparison along with `label`.
-        positive: bool
+        positive
             if True/False the positive pair (same label and metadata) will be retained/rejected. By default all samples are kept.
         """
         # self._fold = fold

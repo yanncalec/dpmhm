@@ -72,10 +72,10 @@ Features
     'temperature': 10
     },
 - 'metadata':
-    - 'ID': ['Bearing1','Bearing2','Bearing3']
+    - 'ID': ['Bearing1','Bearing2','Bearing3'], paired with `RotatingSpeed` and `LoadForce`
     - 'OriginalSplit': ['Learning_set', 'Test_set', 'Full_Test_Set']
-    - 'RotatingSpeed'
-    - 'LoadForce'
+    - 'RotatingSpeed': [1800, 1650, 1500], paired with the field `LoadForce`
+    - 'LoadForce': [4000, 4200, 5000]
 
 Notes
 =====

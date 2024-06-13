@@ -163,3 +163,109 @@ def load_compact(ds_name:str, split:str|list, **kwargs):
     )
 
     return compactor
+
+
+def query_parameters(ds_name:str) -> dict:
+    """Query the parameters of a dataset for the preprocessing pipeline.
+    """
+
+    parms = {'signal':dict(), 'keys':dict(), 'filters':dict(), 'type':None,}
+
+    match ds_name.upper():
+        case 'CWRU':
+            parms['signal'] = {'DE':1, 'FE':1, 'BA':1}
+            parms['keys'] = {
+                    'FaultLocation': {'None', 'DriveEnd', 'FanEnd'},
+                    'FaultComponent': {'None', 'InnerRace', 'Ball', 'OuterRace6', 'OuterRace3', 'OuterRace12'},
+                    'FaultSize': {0, 0.007, 0.014, 0.021, 0.028}
+                }
+            parms['filters'] = {'LoadForce': {0, 1, 2, 3}}
+            parms['type'] = 'initiated'
+
+        case 'DIRG':
+            parms['signal'] = {'A1':3, 'A2':3}
+            parms['keys'] = {
+                    'FaultLocation': {'None', 'DriveEnd', 'FanEnd'},
+                    'FaultComponent': {'Roller', 'InnerRing'},
+                    'FaultSize': {0, 150, 250, 450}
+                }
+            parms['filters'] = {
+                'RotatingSpeed': {100, 200, 300, 400, 500},
+                'NominalLoadForce': {0, 1000, 1400, 1800}
+            }
+            parms['type'] = 'initiated+failure'
+
+        case 'FEMTO':
+            parms['signal'] = {'vibration':2, 'temperature':1}
+            parms['keys'] = {
+                'ID': {
+                    'Bearing1_3': 5730,
+                    'Bearing1_4': 339,
+                    'Bearing1_5': 1610,
+                    'Bearing1_6': 1460,
+                    'Bearing1_7': 7570,
+                    'Bearing2_3': 7530,
+                    'Bearing2_4': 1390,
+                    'Bearing2_5': 3090,
+                    'Bearing2_6': 1290,
+                    'Bearing2_7': 580,
+                    'Bearing3_3': 820,
+                }
+            }
+            parms['filters'] = {
+                'RotatingSpeed': {1800, 1650, 1500},
+            }
+            parms['type'] = 'failure'
+
+        case 'FRAUNHOFER151':
+            parms['signal'] = {
+                'Measured_RPM': 1,
+                'V_in': 1,
+                'Vibration': 3
+            }
+            parms['keys'] = {
+                # 'FileName': {'?D.csv', '?E.csv'},
+                'Label': {'Normal', 'Unbalanced'},
+                'LoadMass': {3.281, 6.614},
+                'LoadRadius': {14., 18.5, 23.},
+            }
+            parms['type'] = 'failure'
+
+        case 'FRAUNHOFER205':
+            parms['signal'] = {
+                'Vibration': 1,
+                'AcousticEmission': 1
+            }
+            parms['keys'] = {
+                'FaultComponent': {'Ball', 'InnerRace', 'OuterRace', 'None'},
+                'FaultExtend': {0, 1, 2}
+            }
+            parms['filters'] = {
+                'RotatingSpeed': {600, 1000, 1400, 1800, 2200},
+            }
+            parms['type'] = 'initiated'
+
+        case 'PADERBORN':
+            parms['signal'] = {
+                'vibration': 1,
+                'current': 2,
+                'mechanic': 3,
+                'temperature': 1
+            }
+            parms['keys'] = {
+                'FaultComponent': {'None', 'Inner Ring', 'Outer Ring', 'Inner Ring+Outer Ring'},
+                'FaultExtend': {0, 1, 2, 3},
+                'DamageMethod': {'Healthy', 'Aritificial', 'Lifetime'},
+                'FaultType':  {'None', 'Electrical Discharge Machining', 'Electric Engraver', 'Fatigue: Pitting', 'Drilling'}
+            }
+            parms['filters'] = {
+            }
+            parms['type'] = 'initiated+failure'
+
+        case _:
+            pass
+
+    return parms
+
+
+

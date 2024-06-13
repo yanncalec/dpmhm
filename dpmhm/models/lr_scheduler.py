@@ -9,7 +9,7 @@ References:
 # import tensorflow as tf
 # import numpy as np
 # from tensorflow import keras
-from tensorflow.keras.optimizers.schedules import LearningRateSchedule
+from keras.optimizers.schedules import LearningRateSchedule
 from math import pi, cos
 
 class WarmupCosineDecay(LearningRateSchedule):

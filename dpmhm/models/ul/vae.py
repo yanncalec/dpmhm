@@ -2,7 +2,7 @@
 """
 
 import tensorflow as tf
-from tensorflow.keras import layers, models, backend as K
+from keras import layers, models, backend as K
 from math import pi
 from dataclasses import dataclass
 from .. import AbstractConfig

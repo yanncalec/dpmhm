@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 
 @dataclass
 class AbstractConfig(ABC):
-    """Abstract class of configuration.
+    """Abstract class for model configuration.
     """
     input_shape:tuple  	# Dimension of input feature (data format: channel last)
     batch_size:int = 256

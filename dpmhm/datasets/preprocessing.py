@@ -6,10 +6,10 @@ The original dataset is channel first and becomes channel last after preprocessi
 """
 
 import numpy as np
-import tensorflow as tf
 # import scipy
-# from keras import layers, models, ops
-from tensorflow.keras import layers, models, ops
+import tensorflow as tf
+from keras import layers, models, ops
+# from tensorflow.keras import layers, models, ops
 from tensorflow.data import Dataset
 
 import logging
@@ -21,16 +21,16 @@ def get_mapping_supervised(labels:list, *, feature_field:str='feature', label_fi
 
     This processing model performs the following transformations on a dataset:
     - conversion of label from string to integer
-    - conversion from the format of channel first to channel last
+    - conversion from the format of channel-first to channel-last
 
-    After transformation, the dataset is in the format `(data,label)`.
+    After transformation, the dataset is in the format `(data, label)` where `label` is now integer and `data` is in channel-last format.
 
     Usage
     -----
     ```python
     func = get_mapping_supervised(labels)
     ds = ds.map(func, num_parallel_calls=tf.data.AUTOTUNE)
-    ds = ds.map(lambda x,y: (tf.ensure_shape(x, dimx), y),
+    ds = ds.map(lambda x,y: (tf.ensure_shape(x, dimx), y)
     ```
 
     Note
@@ -45,7 +45,11 @@ def get_mapping_supervised(labels:list, *, feature_field:str='feature', label_fi
         vocabulary=labels,
         # output_mode='one_hot'
     )
-    return lambda x: (tf.transpose(x[feature_field], [1,2,0]), tf.cast(label_layer(x[label_field]), tf.int32))
+    func = lambda x: (
+            tf.transpose(x[feature_field], [1,2,0]),
+            tf.cast(label_layer(x[label_field]), tf.int32)
+            )
+    return func
 
 
 def nested_type_spec(sp:dict) -> dict:
@@ -70,25 +74,24 @@ def keras_model_supervised(ds:Dataset, labels:list=None, normalize:bool=False, *
     - normalization of data
     - conversion from the format of channel first to channel last
 
-    Args
-    ----
-    ds:
+    Parameters
+    ----------
+    ds
         input dataset. The feature field is supposed channel-first.
-    labels:
+    labels
         list of string labels for lookup. If not given the labels will be automatically determined from the dataset.
-    normalize:
+    normalize
         if True, estimate the mean and variance by channel and apply the normalization.
-    shape:
+    shape
         restore shape information of the feature
-    feature_field:
+    feature_field
         name of the field of feature
-    label_field:
+    label_field
         name of the field of label
 
     Returns
     -------
-    model:
-        Keras preprocessing model that can be applied on a dataset as `ds.map(lambda x: model(x))`
+    A Keras preprocessing model that can be applied on a dataset as `ds.map(lambda x: model(x))`
     """
     # For nested dataset
     # Gotcha: in Keras 3, nested input type is no more supported by `keras.models.Model()`.

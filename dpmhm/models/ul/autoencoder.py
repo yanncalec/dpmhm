@@ -2,7 +2,7 @@
 """
 
 import tensorflow as tf
-from tensorflow.keras import layers, models, regularizers
+from keras import layers, models, regularizers
 from dataclasses import dataclass
 from ..custom import TConv2D, TDense
 from .. import AbstractConfig
@@ -33,10 +33,9 @@ class Config(AbstractConfig):
 class CAES(models.Model):
     """Convolution Auto-Encoder stacks.
 
-
     Notes
     -----
-    Shape (H,W) of the input tensor must be power of 2.
+    Shape `(H,W)` of the input tensor must be power of 2.
     """
     def __init__(self, c:Config):
         self._config = c
@@ -179,7 +178,8 @@ class CAES_1D(models.Model):
 class CAES_ws(models.Model):
     """Convolution Auto-Encoder stacks with weight sharing.
 
-    Notes:
+    Notes
+    -----
     - The model fails to train with `decoder.trainable=False`.
     - MSE much larger than that of no weight sharing.
     """

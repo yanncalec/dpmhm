@@ -142,8 +142,8 @@ class Fraunhofer151(tfds.core.GeneratorBasedBuilder):
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
         def _get_split_dict(datadir):
             return {
-                'train': datadir.glob('*D.csv'),
-                'test': datadir.glob('*E.csv'),
+                'train': datadir.rglob('*D.csv'),
+                'test': datadir.rglob('*E.csv'),
             }
 
         if dl_manager._manual_dir.exists():  # prefer to use manually downloaded data
@@ -154,14 +154,7 @@ class Fraunhofer151(tfds.core.GeneratorBasedBuilder):
             raise FileNotFoundError()
         return {sp: self._generate_examples(files, sp) for sp, files in _get_split_dict(datadir).items()}
 
-        # return {
-        #     'train': self._generate_examples(datadir, 'train'),
-        #     'test': self._generate_examples(datadir, 'test'),
-        # }
-
     def _generate_examples(self, files, split):
-        # assert path.exists()
-
         for fp in files:
             metadata = {
                 # 'SamplingRate': 4096,
