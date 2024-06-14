@@ -50,24 +50,30 @@ except:
     TFDS_DATA_DIR = Path(os.path.expanduser('~/tensorflow_datasets'))
 
 
+def get_dataset_list():
+    """Get the full list of supported datasets.
+    """
+    return list(cli._DATASET_DICT.values())
+
+
 def install(ds:str, *, data_dir:str=None, download_dir:str=None, extract_dir:str=None, manual_dir:str=None, dl_kwargs:dict={}, **kwargs) -> Dataset:
     """Install a dataset.
 
-    Args
-    ----
-    ds:
+    Parameters
+    ----------
+    ds
         name of the dataset to be installed.
-    data_dir:
+    data_dir
         location of tensorflow datasets, by default the environment variable `TFDS_DATA_DIR.
-    download_dir:
+    download_dir
         location of download folder, by default `data_dir/dpmhm/downloads/ds`.
-    extract_dir:
+    extract_dir
         location of extraction folder, by default `data_dir/dpmhm/extracted/ds`.
-    manual_dir:
+    manual_dir
         location of manually downloaded & extracted files.
-    dl_kwargs:
+    dl_kwargs
         keyword arguments for `tfds.download.DownloadManager()`
-    kwargs:
+    kwargs
         other keyword arguments to `tfds.load()`
 
     Returns
@@ -124,9 +130,9 @@ def install(ds:str, *, data_dir:str=None, download_dir:str=None, extract_dir:str
 def extract_zenodo_urls(url:str) -> list:
     """Extract from a Zenodo page the urls containing downloadable files.
 
-    Args
-    ----
-    url:
+    Parameters
+    ----------
+    url
         url of a Zenodo page, e.g. https://zenodo.org/record/3727685/ or https://sandbox.zenodo.org/record/1183527/
 
     Returns
@@ -153,27 +159,23 @@ def extract_zenodo_urls(url:str) -> list:
     return urls
 
 
-def load_compact(ds_name:str, split:str|list, **kwargs):
-    from .transformer import DatasetCompactor
-
-    ds0 = tfds.load(ds_name, split=split)
-
-    compactor = DatasetCompactor(
-        ds0, **kwargs
-    )
-
-    return compactor
-
-
 def query_parameters(ds_name:str) -> dict:
-    """Query the parameters of a dataset for the preprocessing pipeline.
+    """Query the parameters of a dataset.
     """
 
-    parms = {'signal':dict(), 'keys':dict(), 'filters':dict(), 'type':None,}
+    parms = {
+        'signal':dict(),
+        'sampling_rate': None,
+        'keys':dict(),
+        'filters':dict(),
+        'type':None,
+        }
 
     match ds_name.upper():
         case 'CWRU':
             parms['signal'] = {'DE':1, 'FE':1, 'BA':1}
+            parms['split'] = ['train']
+            parms['sampling_rate'] = [12000, 48000]
             parms['keys'] = {
                     'FaultLocation': {'None', 'DriveEnd', 'FanEnd'},
                     'FaultComponent': {'None', 'InnerRace', 'Ball', 'OuterRace6', 'OuterRace3', 'OuterRace12'},
@@ -181,11 +183,11 @@ def query_parameters(ds_name:str) -> dict:
                 }
             parms['filters'] = {'LoadForce': {0, 1, 2, 3}}
             parms['type'] = 'initiated'
-
         case 'DIRG':
             parms['signal'] = {'A1':3, 'A2':3}
+            parms['split'] = ['vibration', 'endurance']
+            parms['sampling_rate'] = [51200, 102400]
             parms['keys'] = {
-                    'FaultLocation': {'None', 'DriveEnd', 'FanEnd'},
                     'FaultComponent': {'Roller', 'InnerRing'},
                     'FaultSize': {0, 150, 250, 450}
                 }
@@ -194,9 +196,10 @@ def query_parameters(ds_name:str) -> dict:
                 'NominalLoadForce': {0, 1000, 1400, 1800}
             }
             parms['type'] = 'initiated+failure'
-
         case 'FEMTO':
             parms['signal'] = {'vibration':2, 'temperature':1}
+            parms['split'] = ['train', 'test', 'full_test']
+            parms['sampling_rate'] = {'vibration':25600, 'temperature':10}
             parms['keys'] = {
                 'ID': {
                     'Bearing1_3': 5730,
@@ -216,13 +219,14 @@ def query_parameters(ds_name:str) -> dict:
                 'RotatingSpeed': {1800, 1650, 1500},
             }
             parms['type'] = 'failure'
-
         case 'FRAUNHOFER151':
             parms['signal'] = {
                 'Measured_RPM': 1,
                 'V_in': 1,
                 'Vibration': 3
             }
+            parms['split'] = ['train']
+            parms['sampling_rate'] = [4096]
             parms['keys'] = {
                 # 'FileName': {'?D.csv', '?E.csv'},
                 'Label': {'Normal', 'Unbalanced'},
@@ -230,11 +234,14 @@ def query_parameters(ds_name:str) -> dict:
                 'LoadRadius': {14., 18.5, 23.},
             }
             parms['type'] = 'failure'
-
         case 'FRAUNHOFER205':
             parms['signal'] = {
                 'Vibration': 1,
                 'AcousticEmission': 1
+            }
+            parms['sampling_rate'] = {
+                'Vibration': 8192,
+                'AcousticEmission': 390625
             }
             parms['keys'] = {
                 'FaultComponent': {'Ball', 'InnerRace', 'OuterRace', 'None'},
@@ -244,7 +251,51 @@ def query_parameters(ds_name:str) -> dict:
                 'RotatingSpeed': {600, 1000, 1400, 1800, 2200},
             }
             parms['type'] = 'initiated'
-
+        case 'IMS':
+            parms['signal'] = {
+                'dataset1': ['B1C1', 'B1C2', 'B2C1', 'B2C2', 'B3C1', 'B3C2', 'B4C1', 'B4C2'],
+                'dataset2': ['B1C1', 'B2C1', 'B3C1', 'B4C1'],
+                'dataset3': ['B1C1', 'B2C1', 'B3C1', 'B4C1'],
+            }
+            parms['split'] = ['dataset1', 'dataset2', 'dataset3']
+            parms['sampling_rate'] = 20480
+            parms['type'] = 'failure'
+        case 'MAFAULDA':
+            parms['signal'] = {
+                'tachometer': 1,
+                'underhang': 3,
+                'overhang': 3,
+                'microphone': 1
+            }
+            parms['split'] = ['normal', 'horizontal-misalignment', 'vertical-misalignment', 'imbalance', 'underhang', 'overhang']
+            parms['sampling_rate'] = 50000
+            parms['keys'] = {
+                'FaultName': ['normal', 'imbalance', 'horizontal-misalignment', 'vertical-misalignment', 'overhang', 'underhang'],
+                'FaultSize':{
+                    'normal': 'normal',
+                    'horizontal-misalignment': [0.5, 1.0, 1.5, 2.0],
+                    'vertical-misalignment': [0.51, 0.63, 1.27, 1.40, 1.78, 1.90],
+                    'underhang': (['none', 'outer_race', 'cage_fault', 'ball_fault'], [0, 6, 20, 35]),
+                    'overhang': (['none', 'outer_race', 'cage_fault', 'ball_fault'], [0, 6, 20, 35])
+                }
+            }
+            parms['filters'] = {
+                'NominalRPM': None
+            }
+            parms['type'] = 'initiated'
+        case 'OTTAWA':
+            parms['signal'] = {
+                'channels': 2
+            }
+            parms['split'] = ['train']
+            parms['sampling_rate'] = 200000
+            parms['keys'] = {
+                'FaultComponent': {'None', 'InnerRace', 'OuterRace', 'Ball', 'Combination'}
+            }
+            parms['filters'] = {
+                'RotatingSpeed':  {'Increasing', 'Decreasing', 'Increasing-Decreasing', 'Decreasing-Increasing'}
+            }
+            parms['type'] = 'initiated'
         case 'PADERBORN':
             parms['signal'] = {
                 'vibration': 1,
@@ -252,6 +303,7 @@ def query_parameters(ds_name:str) -> dict:
                 'mechanic': 3,
                 'temperature': 1
             }
+            parms['split'] = ['healthy', 'artificial', 'lifetime']
             parms['keys'] = {
                 'FaultComponent': {'None', 'Inner Ring', 'Outer Ring', 'Inner Ring+Outer Ring'},
                 'FaultExtend': {0, 1, 2, 3},
@@ -261,11 +313,55 @@ def query_parameters(ds_name:str) -> dict:
             parms['filters'] = {
             }
             parms['type'] = 'initiated+failure'
+        case 'PHMAP2021':
+            parms['signal'] = {
+                'vibration': 2
+            }
+            parms['split'] = ['train']
+            parms['sampling_rate'] = 10544
+            parms['keys'] = {'Normal', 'Unbalance', 'Looseness', 'High', 'Bearing'}
+            parms['type'] = 'initiated'
 
+        case 'SEUC':
+            parms['signal'] = {
+                'motor':1, 'parallel':3, 'planetary':3, 'torque':1
+            }
+            parms['split'] = ['gearbox', 'bearing']
+            parms['sampling_rate'] = None
+            parms['keys'] = {
+                'gearbox': {'Chipped', 'Missing', 'Root', 'Surface', 'None'},
+                'bearing': {'Ball', 'Inner', 'Outer', 'Combination', 'None'},
+            }
+            parms['filters'] = {'LoadForce'}
+            parms['type'] = 'initiated'
+        case 'XJTU':
+            parms['signal'] = {'vibration': 2}
+            parms['split'] = ['condition1', 'condition2', 'condition3']
+            parms['sampling_rate'] = 25600
+            parms['keys'] = {
+                'FaultComponent': ['Inner', 'Ball', 'Cage', 'Outer', 'Inner+Outer', 'Inner+Ball+Cage+Outer'],
+                'Lifetime': None
+            }
+            parms['filters'] = {'BearingID', 'OperatingCondition'}
+            parms['type'] = 'failure'
+        # case '':
+        #     parms['signal'] = {}
+        #     parms['sampling_rate'] = {}
+        #     parms['keys'] = {}
+        #     parms['filters'] = {}
+        #     parms['type'] = ''
         case _:
-            pass
+            raise NameError(f"Unknown dataset: {ds_name}")
 
     return parms
 
 
+# def load_compact(ds_name:str, split:str|list, **kwargs):
+#     from .transformer import DatasetCompactor
+#     ds0 = tfds.load(ds_name, split=split)
+#     parms = query_parameters(ds_name)
+#     compactor = DatasetCompactor(
+#         ds0, **kwargs
+#     )
+#     return compactor
 

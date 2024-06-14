@@ -41,7 +41,6 @@ Notes
 =====
 - Two test sets (for the task of classification and regression) were also provided along with the original datset, but cannot be downloaded. See:
     https://www.kaggle.com/c/phmap21-regression-task/data
-- Extract all files and check that all filenames follows the pattern `train_xxx_Yyy.csv`. In fact, some files may be automatically renamed during the download.
 """
 
 # import os

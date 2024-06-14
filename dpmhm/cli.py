@@ -8,6 +8,7 @@ import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 
+# List of supported dataset
 _DATASET_DICT = {
     'cwru': 'CWRU',
     'dcase2020': 'Dcase2020',
@@ -26,9 +27,6 @@ _DATASET_DICT = {
     'xjtu': 'XJTU'
 }
 
-
-def get_dataset_list():
-	return list(_DATASET_DICT.values())
 
 def import_dataset_module(ds:str):
     dsl = ds.lower()
@@ -90,7 +88,7 @@ def _info(ds:str, *, url:bool=False):
             print(get_info(ds))
     else:
         print("Installable datasets:\n")
-        for ds in get_dataset_list():
+        for ds in _DATASET_DICT.values():
             print(ds)
 
 dpmhm_datasets.add_command(_info)

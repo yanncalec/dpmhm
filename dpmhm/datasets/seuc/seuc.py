@@ -57,14 +57,6 @@ Notes
 References
 ==========
 - Highly Accurate Machine Fault Diagnosis Using Deep Transfer Learning, Shao et al., 2019.
-
-Installation
-============
-Download and unzip all files into a folder `LOCAL_DIR`, from terminal run
-
-```sh
-$ tfds build SEUC --imports dpmhm.datasets.seuc --manual_dir LOCAL_DIR
-```
 """
 
 from pathlib import Path

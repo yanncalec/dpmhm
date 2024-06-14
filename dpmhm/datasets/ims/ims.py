@@ -32,7 +32,7 @@ Original Dataset
 
 Notes
 =====
-- The original dataset contains a folder named `4th_test`, which corresponds actually to the 3rd test. This has been corrected in the zip file uploaded to Zenodo.
+- The original dataset contains a folder named `4th_test`, which corresponds actually to the 3rd test. This has been modified in the zip file.
 """
 
 

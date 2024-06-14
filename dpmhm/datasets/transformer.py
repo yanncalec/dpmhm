@@ -399,7 +399,7 @@ class WindowSlider(AbstractDatasetTransformer):
     This class performs the sliding window view with downsampling on a feature-transformed dataset. Window views are time-frequency patches of a complete spectral feature. It is obtained by sliding a small window along the time-frequency axes.
     """
 
-    def __init__(self, dataset:Dataset, *, window_size:tuple|int, hop_size:tuple|int=None):
+    def __init__(self, dataset:Dataset, *, window_size:tuple|int, hop_size:tuple|int=None, no_meta:bool=True):
         """
         Parameters
         ----------
@@ -409,6 +409,8 @@ class WindowSlider(AbstractDatasetTransformer):
             size of sliding window
         hop_size
             size of hop between two positions
+        no_meta
+            do not contain the field `metadata` in the transformed dataset
 
         Returns
         -------
@@ -422,9 +424,16 @@ class WindowSlider(AbstractDatasetTransformer):
         self._dataset_origin = dataset
         self._window_size = window_size
         self._hop_size = hop_size
+        self._no_meta = no_meta
 
     def build(self):
-        return self.to_windows(self._dataset_origin, self._window_size, self._hop_size)
+        @tf.function
+        def _drop_meta(X):
+            return {'feature': X['feature'], 'label': X['label']}
+
+        ds = self.to_windows(self._dataset_origin, self._window_size, self._hop_size)
+
+        return ds.map(_drop_meta, num_parallel_calls=tf.data.AUTOTUNE) if self._no_meta else ds
 
     # @property
     # def full_label_dict(self) -> dict:
