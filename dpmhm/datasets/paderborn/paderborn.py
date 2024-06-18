@@ -69,6 +69,8 @@ Features
 
 References
 ==========
+https://mb.uni-paderborn.de/fileadmin-mb/kat/PDF/Veroeffentlichungen/20160703_PHME16_CM_bearing.pdf
+
 - Lessmeier, Christian; Kimotho, J. Kimotho; Zimmer, Detmar; Sextro, Walter:
 A Benchmark Data Set for Data-Driven Classification, European Conference of the Prognostics and Health Management Society (PHM Society), Bilbao (Spain), 05.-08.07.2016.  (pdf)
 - ISO 15243:2017 Rolling bearings — Damage and failures — Terms, characteristics and causes
@@ -109,7 +111,6 @@ _METAINFO = pd.read_csv(Path(__file__).parent / 'metainfo.csv', index_col=0, kee
 # _DATA_URLS = ('http://groups.uni-paderborn.de/kat/BearingDataCenter/' + _METAINFO.index+'.rar').tolist()
 
 _DATA_URLS = [
-    # 'https://sandbox.zenodo.org/record/1184342/files/paderborn.zip'
     'https://zenodo.org/records/11610142/files/paderborn.zip?download=1'
 ]
 

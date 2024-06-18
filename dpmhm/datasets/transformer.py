@@ -297,8 +297,8 @@ class DatasetCompactor(AbstractDatasetTransformer):
             """
             flag = True
             for ch in self._channels:
-                if tf.size(X['signal'][ch]) == 0:  # to infer the size in graph mode
-                # if tf.equal(tf.size(X['signal'][ch]), 0):
+                # if tf.size(X['signal'][ch]) == 0:  # to infer the size in graph mode
+                if tf.equal(tf.size(X['signal'][ch]), 0):
                 # if X['signal'][ch].shape == 0:  # raise strange "shape mismatch error"
                 # if len(X['signal'][ch]) == 0:  # raise TypeError
                     flag = False
@@ -467,12 +467,12 @@ class SpecAugment(AbstractDatasetTransformer):
 
     1. crop a random rectangle patch of the spectrogram
     2. randomly flip the time axis
-    3. randomly blur the spectrogram
-    4. randomly fade along the time axis
+    3. randomly fade along the time axis
+    4. randomly blur the spectrogram
 
     These augmentations are applied in order and independently with probability (for step 2,3,4, step 1 is always applied).
     """
-    def __init__(self, dataset:Dataset, *, output_shape:tuple=(64,64), crop_kwargs:dict={}, flip_kwargs:dict={'prob':0.5, 'axis':-1}, blur_kwargs:dict={'sigma':1., 'prob':0.5}, fade_kwargs:dict={'ratio':0.5, 'prob':0.5}, **kwargs):
+    def __init__(self, dataset:Dataset, *, output_shape:tuple=(64,64), crop_kwargs:dict={}, flip_kwargs:dict={'prob':0.5, 'axis':-1}, blur_kwargs:dict={'sigma':1., 'prob':0.1}, fade_kwargs:dict={'ratio':0.5, 'prob':0.5}, **kwargs):
         # print(dataset.__transformer__)
         assert dataset.__transformer__ is FeatureExtractor
 
@@ -502,7 +502,7 @@ class SpecAugment(AbstractDatasetTransformer):
 
         # _fade = lambda x: randomly(fade_kwargs['prob'])(fade)(x, fade_kwargs['ratio'])
 
-        self.spec_aug = lambda x: _fade(_blur(_flip(_crop(x))))
+        self.spec_aug = lambda x: _blur(_fade(_flip(_crop(x))))
 
     def build(self):
         @tf.function

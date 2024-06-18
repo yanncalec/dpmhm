@@ -23,12 +23,14 @@ import tensorflow as tf
 import tensorflow_models as tfm
 # import tensorflow_probability as tfp
 
-from tensorflow import keras, linalg
-from tensorflow.keras import models, layers, regularizers, callbacks, losses
-from tensorflow.keras.applications import resnet
+# from tensorflow import keras, linalg
+import keras
+from keras import models, layers, regularizers, callbacks, losses
+from keras.applications import resnet
 
 from dpmhm.models.lr_scheduler import WarmupCosineDecay
 from dpmhm.models.losses import NT_Xent
+from .. import AbstractConfig
 
 import logging
 logger = logging.getLogger(__name__)
@@ -41,15 +43,15 @@ logger = logging.getLogger(__name__)
 # use instead:
 # losses.cosine_similarity(tf.expand_dims(X,1), Y)
 
-# Test:
+# Test in eager mode
 # V1 = tf.stack([losses.cosine_similarity(x, Y) for x in X])
 # V2 = losses.cosine_similarity(tf.expand_dims(X,1), Y)
 # V1-V2 is all zero
 # """
 
 @dataclass
-class Config:
-    input_shape:tuple = (224, 224)
+class Config(AbstractConfig):
+    # input_shape:tuple = (224, 224)
     batch_size:int = 256  # 256 to 8192
     epochs:int = 100
     training_steps:int = 1000

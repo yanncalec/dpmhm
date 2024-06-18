@@ -49,11 +49,34 @@ def randomly(p:float):
 #         return X
 
 
-def random_crop(X:np.ndarray, output_shape:tuple, *, area_ratio:tuple=(0.01, 1.), aspect_ratio:tuple=(3/4, 4/3), channel_axis:int=None, max_attempts:int=1000, seed:int=None, **kwargs) -> tuple:
-    """Randomly crop an image to small patch.
+    """Randomly crop an image.
 
     See also:
     https://www.tensorflow.org/api_docs/python/tf/image/sample_distorted_bounding_box
+    """
+def random_crop(X:np.ndarray, output_shape:tuple, *, area_ratio:tuple=(0.01, 1.), aspect_ratio:tuple=(3/4, 4/3), channel_axis:int=None, max_attempts:int=100, seed:int=None, **kwargs) -> tuple:
+    """Randomly crop an image.
+
+    Parameters
+    ----------
+    X
+        Input image in channel first format.
+    output_shape
+        Desired output shape.
+    area_ratio, optional
+        _description_, by default (0.01, 1.)
+    aspect_ratio, optional
+        _description_, by default (3/4, 4/3)
+    channel_axis, optional
+        _description_, by default None
+    max_attempts, optional
+        _description_, by default 1000
+    seed, optional
+        _description_, by default None
+
+    Returns
+    -------
+        _description_
     """
     # # sanity check
     # assert (3 >= X.ndim >= 2) and (X.ndim == len(output_shape))
@@ -66,40 +89,38 @@ def random_crop(X:np.ndarray, output_shape:tuple, *, area_ratio:tuple=(0.01, 1.)
     r = output_shape[0]/output_shape[1]
     # output_aspect_ratio = (min(r, 1/r), max(r, 1/r))
     sr_min, sr_max = min(aspect_ratio)*min(r, 1/r), max(aspect_ratio)*max(r, 1/r)
+    ar_min, ar_max = min(area_ratio), max(area_ratio)
 
-    # while not valid_crop:
     for _ in range(max_attempts):
-        hp = random.randint(0, X.shape[-2]-output_shape[1])
-        wp = random.randint(0, X.shape[-1]-output_shape[0])
+        hp = random.randint(0, X.shape[-2]-1)
+        wp = random.randint(0, X.shape[-1]-1)
+        # hp = random.randint(0, X.shape[-2]-output_shape[1])
+        # wp = random.randint(0, X.shape[-1]-output_shape[0])
+        dh = random.randint(1, X.shape[-2]-hp)
+        dw = random.randint(1, X.shape[-1]-wp)
 
-        if area_ratio is None:
-            dh, dw = output_shape
-            valid_crop = True
-            valid_crop = (sr_min<=(dh/dw)<=sr_max) and (hp+dh<X.shape[-2]) and (wp+dw<X.shape[-1])
-        else:
-            ar_min, ar_max = min(area_ratio), max(area_ratio)
-            dh = random.randint(0, X.shape[-2]-hp)
-            dw = random.randint(0, X.shape[-1]-wp)
-            valid_crop = (ar_min<=(dh*dw/x_area)<=ar_max) and (sr_min<=(dh/dw)<=sr_max) # and (hp+dh<X.shape[-2]) and (wp+dw<X.shape[-1])
+        cr_min, cr_max = min(dh/dw, dw/dh), max(dh/dw, dw/dh)
+        valid_crop = (ar_min<=(dh*dw/x_area)<=ar_max) and (sr_min<=cr_min) and (cr_max<=sr_max)
 
         if valid_crop:
             # print('OK')
-            sl = [slice(None)]*X.ndim
+            sl = [slice(None)] * X.ndim
             sl[-1] = slice(wp, wp+dw)
             sl[-2] = slice(hp, hp+dh)
             # patch = X[:,hp:(hp+dh), wp:(wp+dw)]
-            patch = X[tuple(sl)]
-            # return transform.resize(patch, output_shape, **kwargs), (hp, dh), (wp, dw)  # output_shape must have the same dimension as X
-            return transform.resize_local_mean(patch, output_shape, channel_axis=channel_axis), (hp, dh), (wp, dw)
-            # break
+            patch, ht, wt = X[tuple(sl)], (hp, dh), (wp, dw)
+            break
     else:
-        return X, None, None
+        patch, ht, wt = X, None, None
+
+    # return transform.resize(patch, output_shape, **kwargs), ht, wt  # output_shape must have the same dimension as X
+    return transform.resize_local_mean(patch, output_shape, channel_axis=channel_axis), ht, wt
 
 
 def fade(X:np.ndarray, ratio:float=0.5, axis:int=-1) -> np.ndarray:
     f = np.linspace(1., ratio, X.shape[axis])
-    rs = [1]*X.ndim; rs[axis]=-1
-    return X*f.reshape(rs)
+    rs = [1] * X.ndim; rs[axis]=-1
+    return X * f.reshape(rs)
 
 
 # def blur(X:np.ndarray):

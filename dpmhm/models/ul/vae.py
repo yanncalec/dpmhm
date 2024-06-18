@@ -2,6 +2,7 @@
 """
 
 import tensorflow as tf
+import keras
 from keras import layers, models, backend as K
 from math import pi
 from dataclasses import dataclass
@@ -19,7 +20,7 @@ class Config(AbstractConfig):
     use_bias:bool = False
 
     def optimizer(self):
-        return tf.keras.optimizers.Adam()
+        return keras.optimizers.Adam()
 
 
 class Gaussian_VAE(models.Model):

@@ -31,6 +31,7 @@ beautifulsoup4 = "^4.12.3"
 scikit-image = "^0.23.2"
 
 pywavelets = "^1.6.0"
+torch = "^2.3.1"
 [tool.poetry.group.docs]
 optional = true
 

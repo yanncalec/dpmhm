@@ -44,7 +44,7 @@ def extract_by_category(ds:Dataset, labels:list, *, key:str='label') -> dict:
 	ds
 		dataset that can either have a dictionary structure which 	contains a label field, or a tuple structure `(data, label)`.
 	labels
-		categories to be extracted.
+		categories (all distinct) to be extracted.
 	key
 		name of the label field of `ds`
 
@@ -53,11 +53,11 @@ def extract_by_category(ds:Dataset, labels:list, *, key:str='label') -> dict:
 	A dictionary containing sub-dataset of each category.
 	"""
 	dp = {}
-	for l in set(labels):
+	for l in labels:  # set(labels)
 		if type(ds.element_spec) is dict:  # dictionary structure
 			dp[l] = ds.filter(lambda x: tf.equal(x[key],l))
 		else:  # otherwise must be a tuple structure
-			dp[l] = ds.filter(lambda x: tf.equal(x[1],l))
+			dp[l] = ds.filter(lambda x,y: tf.equal(y,l))
 
 	return dp
 
@@ -250,15 +250,16 @@ def split_dataset(ds:Dataset, splits:dict={'train':0.7, 'val':0.2, 'test':0.1}, 
 
 	return dp
 
-def restore_shape(ds:Dataset, index:int=0, shape:tuple[int]=None) -> Dataset:
-	"""Restore the shape of a tuple dataset.
+
+def restore_shape(ds:Dataset, key:int|str=None, shape:tuple[int]=None) -> Dataset:
+	"""Restore the shape of a dataset.
 
 	Parameters
 	----------
 	ds
-		dataset of tuple type
-	index
-		data field index of the element
+		input dataset
+	key
+		data field name or index. For example, use `key=0` for a tuple dataset `(feature, label)`, and `key='feature'` for a nested dataset containing the field `'feature'`. If not set, `None` is used assuming a flat dataset `ds`.
 	shape
 		shape to be restored, if not provided it will be inferred from the dataset.
 
@@ -268,9 +269,91 @@ def restore_shape(ds:Dataset, index:int=0, shape:tuple[int]=None) -> Dataset:
 
 	https://github.com/tensorflow/tensorflow/issues/64177
 	"""
-
 	if shape is None:
-		shape = list(ds.take(1).as_numpy_iterator())[0][0].shape
+		try:
+			shape = list(ds.take(1).as_numpy_iterator())[0].shape
+		except:
+			shape = list(ds.take(1).as_numpy_iterator())[0][key].shape
 
-	return ds.map(lambda x,y: (tf.ensure_shape(x, shape), y), num_parallel_calls=tf.data.AUTOTUNE)
+	@tf.function
+	def _mapper(X):
+		try:
+			Y = tf.ensure_shape(X, shape)
+		except:
+			Y = X.copy()
+			Y[key] = tf.ensure_shape(Y[key], shape)  # will create an extra dimension if `key=None`
+		return Y
+	# if key is None:
+	# 	if shape is None:
+	# 		shape = list(ds.take(1).as_numpy_iterator())[0].shape
 
+	# 	@tf.function
+	# 	def _mapper(X):
+	# 		Y = tf.ensure_shape(X, shape)
+	# 		return Y
+	# else:
+	# 	if shape is None:
+	# 		shape = list(ds.take(1).as_numpy_iterator())[0][key].shape
+
+	# 	@tf.function
+	# 	def _mapper(X):
+	# 		Y = X.copy()
+	# 		Y[key] = tf.ensure_shape(Y[key], shape)
+	# 		return Y
+
+	return ds.map(_mapper, num_parallel_calls=tf.data.AUTOTUNE)
+	# return ds.map(lambda x,y: (tf.ensure_shape(x, shape), y), num_parallel_calls=tf.data.AUTOTUNE)
+
+
+def restore_cardinality(ds:Dataset, card:int=None) -> Dataset:
+	"""Restore the cardinality of a dataset.
+	"""
+	if card is None:
+		card = get_dataset_size(ds)
+
+	return ds.apply(tf.data.experimental.assert_cardinality(card))
+
+
+def constant_dataset(cst:float=None) -> Dataset:
+	def _gen():
+		while True:
+			yield cst
+
+	return Dataset.from_generator(_gen, output_types=tf.float32, output_shapes=())
+
+
+def twins_dataset_ssl(ds0, key:str='feature', stack:bool=False, fake_label:bool=True):
+	"""Make a twins dataset for self-supervised learning.
+
+	Parameters
+	----------
+	ds0
+		Input dataset.
+	key, optional
+		Name of the data field in `ds0`, by default 'feature'
+	stack, optional
+		Stack one copy on top of the other to make a single tensor, by default False
+	fake_label, optional
+		Add a fake label to the output dataset, by default True
+	"""
+
+	# To channel last format
+	ds1 = restore_shape(
+		ds0.map(lambda x: tf.transpose(x[key], [1,2,0]), num_parallel_calls=tf.data.AUTOTUNE),
+	)
+	input_shape = ds1.element_spec.shape
+
+	# Paired dataset
+	ds2 = tf.data.Dataset.zip(ds1, ds1)
+	# ds2 = tf.data.Dataset.zip(ds1, ds1, ds1)  # or even more...
+
+	if stack:
+		ds2 = ds2.map(lambda x,y: tf.stack([x,y]))
+
+	if fake_label:
+		ds2 = tf.data.Dataset.zip(
+			ds2,
+			constant_dataset()
+		)
+
+	return ds2, input_shape
