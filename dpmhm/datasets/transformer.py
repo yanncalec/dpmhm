@@ -432,8 +432,11 @@ class WindowSlider(AbstractDatasetTransformer):
             return {'feature': X['feature'], 'label': X['label']}
 
         ds = self.to_windows(self._dataset_origin, self._window_size, self._hop_size)
+        # ds = utils.restore_shape(ds, 'feature', self.data_dim)
 
-        return ds.map(_drop_meta, num_parallel_calls=tf.data.AUTOTUNE) if self._no_meta else ds
+        if self._no_meta:
+            ds = ds.map(_drop_meta, num_parallel_calls=tf.data.AUTOTUNE)
+        return ds
 
     # @property
     # def full_label_dict(self) -> dict:
