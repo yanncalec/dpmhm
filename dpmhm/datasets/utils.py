@@ -36,7 +36,7 @@ def get_dataset_size(ds:Dataset) -> int:
 	return count
 
 
-def extract_by_category(ds:Dataset, labels:list, *, key:str='label') -> dict:
+def extract_by_category(ds:Dataset, labels:list, *, key:int|str='label') -> dict:
 	"""Extract from a dataset the sub-datasets corresponding to the given categories.
 
 	Parameters
@@ -46,7 +46,7 @@ def extract_by_category(ds:Dataset, labels:list, *, key:str='label') -> dict:
 	labels
 		categories (all distinct) to be extracted.
 	key
-		name of the label field of `ds`
+		name or index of the label field for `ds` of nested or tuple structure
 
 	Returns
 	-------
@@ -57,7 +57,7 @@ def extract_by_category(ds:Dataset, labels:list, *, key:str='label') -> dict:
 		if type(ds.element_spec) is dict:  # dictionary structure
 			dp[l] = ds.filter(lambda x: tf.equal(x[key],l))
 		else:  # otherwise must be a tuple structure
-			dp[l] = ds.filter(lambda x,y: tf.equal(y,l))
+			dp[l] = ds.filter(lambda *x: tf.equal(x[key],l))
 
 	return dp
 
@@ -214,7 +214,7 @@ def random_split_dataset(ds:Dataset, splits:dict, *, shuffle_size:int=None, ds_s
 	return dp
 
 
-def split_dataset(ds:Dataset, splits:dict={'train':0.7, 'val':0.2, 'test':0.1}, *, labels:list=None, **kwargs):
+def split_dataset(ds:Dataset, splits:dict={'train':0.7, 'val':0.2, 'test':0.1}, *, labels:list=None, key:str|int='label', **kwargs):
 	"""Randomly split a dataset globally or per category.
 
 	Parameters
@@ -240,7 +240,7 @@ def split_dataset(ds:Dataset, splits:dict={'train':0.7, 'val':0.2, 'test':0.1}, 
 	if labels is None:
 		dp = random_split_dataset(ds, splits, **kwargs)
 	else:
-		ds = extract_by_category(ds, labels)
+		ds = extract_by_category(ds, labels, key=key)
 		dp = {}
 		for n, (k,v) in enumerate(ds.items()):
 			try:
@@ -258,7 +258,7 @@ def split_dataset(ds:Dataset, splits:dict={'train':0.7, 'val':0.2, 'test':0.1}, 
 	return dp
 
 
-def restore_shape(ds:Dataset, key:str|int=None, shape:tuple[int]=None) -> Dataset:
+def restore_shape(ds:Dataset, *, key:str|int=None, shape:tuple[int]=None) -> Dataset:
 	"""Restore the shape of a dataset.
 
 	Parameters

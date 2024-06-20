@@ -16,6 +16,15 @@ import logging
 Logger = logging.getLogger(__name__)
 
 
+def get_label_mapping(labels:list) -> dict:
+    label_layer = layers.StringLookup(
+    # num_oov_indices=0,   # force zero-based integer
+    vocabulary=labels,
+    # output_mode='one_hot'
+    )
+    return  {k:int(label_layer(k)) for k in labels}
+
+
 def get_mapping_supervised(labels:list, *, feature_field:str='feature', label_field:str='label') -> callable:
     """Get a preprocessing mapping for supervised training.
 
@@ -45,10 +54,12 @@ def get_mapping_supervised(labels:list, *, feature_field:str='feature', label_fi
         vocabulary=labels,
         # output_mode='one_hot'
     )
+
     func = lambda x: (
             tf.transpose(x[feature_field], [1,2,0]),
             tf.cast(label_layer(x[label_field]), tf.int32)
             )
+
     return func
 
 

@@ -365,3 +365,44 @@ def query_parameters(ds_name:str) -> dict:
 #     )
 #     return compactor
 
+from . import transformer, feature
+
+def spectral_window_pipeline(
+        ds_name:str, spectral_feature:callable, *,
+        split:str='all',
+        compactor_kwargs:dict={},
+        window_kwargs:dict={}
+        ):
+    """Pipeline of preprocessing for loading data in form of spectral windows.
+
+    Parameters
+    ----------
+    ds_name
+        name of the dataset
+    spectral_feature
+        spectral feature extractor
+    split, optional
+        split to load, by default 'all'
+    compactor_kwargs
+        keyword arguments to `DatasetCompactor` initializer
+    window_kwargs
+        keyword arguments to `WindowSlider` initializer
+    """
+    ds0 = tfds.load(ds_name, split=split)
+
+    compactor = transformer.DatasetCompactor(
+        ds0,
+        **compactor_kwargs
+    )
+
+    extractor = transformer.FeatureExtractor(
+        compactor.dataset, spectral_feature
+        )
+    window = transformer.WindowSlider(
+        extractor.dataset,
+        **window_kwargs
+        )
+
+    # labels = list(compactor.full_label_dict.keys())  # need the whole list of labels
+
+    return window.dataset, compactor.full_label_dict
