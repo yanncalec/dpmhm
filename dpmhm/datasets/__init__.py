@@ -367,13 +367,14 @@ def query_parameters(ds_name:str) -> dict:
 
 from . import transformer, feature
 
-def spectral_window_pipeline(
-        ds_name:str, spectral_feature:callable, *,
-        split:str='all',
-        compactor_kwargs:dict={},
-        window_kwargs:dict={}
-        ):
-    """Pipeline of preprocessing for loading data in form of spectral windows.
+
+def spectral_pipeline(
+    ds_name:str, spectral_feature:callable, *,
+    split:str='all',
+    compactor_kwargs:dict={},
+    **kwargs
+):
+    """Pipeline of preprocessing for loading data in form of spectrogram.
 
     Parameters
     ----------
@@ -385,10 +386,8 @@ def spectral_window_pipeline(
         split to load, by default 'all'
     compactor_kwargs
         keyword arguments to `DatasetCompactor` initializer
-    window_kwargs
-        keyword arguments to `WindowSlider` initializer
     """
-    ds0 = tfds.load(ds_name, split=split)
+    ds0 = tfds.load(ds_name, split=split, **kwargs)
 
     compactor = transformer.DatasetCompactor(
         ds0,
@@ -398,11 +397,19 @@ def spectral_window_pipeline(
     extractor = transformer.FeatureExtractor(
         compactor.dataset, spectral_feature
         )
+
+    # labels = list(compactor.full_label_dict.keys())  # need the whole list of labels
+    return extractor, compactor, int(ds0.cardinality())
+
+
+def spectral_window_pipeline(*args, window_kwargs:dict, **kwargs):
+    """Pipeline of preprocessing for loading data in form of spectral windows.
+    """
+    extractor, compactor, _ = spectral_pipeline(*args, **kwargs)
+
     window = transformer.WindowSlider(
         extractor.dataset,
         **window_kwargs
         )
-
-    # labels = list(compactor.full_label_dict.keys())  # need the whole list of labels
 
     return window.dataset, compactor.full_label_dict

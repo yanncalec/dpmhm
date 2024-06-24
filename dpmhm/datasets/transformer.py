@@ -422,6 +422,7 @@ class WindowSlider(AbstractDatasetTransformer):
         """
         assert dataset.__transformer__ is FeatureExtractor
         self._dataset_origin = dataset
+        self._n_channels = dataset.element_spec['feature'].shape[0]
         self._window_size = window_size
         self._hop_size = hop_size
         self._no_meta = no_meta
@@ -436,6 +437,8 @@ class WindowSlider(AbstractDatasetTransformer):
 
         if self._no_meta:
             ds = ds.map(_drop_meta, num_parallel_calls=tf.data.AUTOTUNE)
+
+        # return utils.restore_shape(ds)
         return ds
 
     # @property
@@ -474,12 +477,21 @@ class SpecAugment(AbstractDatasetTransformer):
     4. randomly blur the spectrogram
 
     These augmentations are applied in order and independently with probability (for step 2,3,4, step 1 is always applied).
+
+    The input and output dataset are both channel-first.
     """
-    def __init__(self, dataset:Dataset, *, output_shape:tuple=(64,64), crop_kwargs:dict={}, flip_kwargs:dict={'prob':0.5, 'axis':-1}, blur_kwargs:dict={'sigma':1., 'prob':0.1}, fade_kwargs:dict={'ratio':0.5, 'prob':0.5}, **kwargs):
-        # print(dataset.__transformer__)
-        assert dataset.__transformer__ is FeatureExtractor
+    def __init__(self, dataset:Dataset, *,
+                 output_shape:tuple=(64,64),
+                 crop_kwargs:dict={},
+                 flip_kwargs:dict={'axis':-1, 'prob':0.},
+                 blur_kwargs:dict={'sigma':1., 'prob':0.},
+                 fade_kwargs:dict={'ratio':0.5, 'prob':0.},
+                 **kwargs):
+        # Type check turned off in order to take dataset after processing like `restore_cardinality()`:
+        # assert dataset.__transformer__ is FeatureExtractor
 
         self._dataset_origin = dataset
+        self._n_channels = dataset.element_spec['feature'].shape[0]
         self._output_shape = output_shape
 
         def _crop(x):
@@ -520,7 +532,11 @@ class SpecAugment(AbstractDatasetTransformer):
 
             return Y
 
-        return self._dataset_origin.map(_mapper, num_parallel_calls=tf.data.AUTOTUNE)
+        return utils.restore_shape(
+            self._dataset_origin.map(_mapper, num_parallel_calls=tf.data.AUTOTUNE),
+            key='feature',
+            shape=(self._n_channels, *self._output_shape)
+        )
 
 """
 ```python

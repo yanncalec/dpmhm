@@ -325,15 +325,15 @@ def constant_dataset(cst:float=None) -> Dataset:
 	return Dataset.from_generator(_gen, output_types=tf.float32, output_shapes=())
 
 
-def twins_dataset_ssl(ds0, key:str='feature', stack:bool=False, fake_label:bool=True):
+def twins_dataset_ssl(ds, key:str='feature', *, stack:bool=False, fake_label:bool=True):
 	"""Make a twins dataset for self-supervised learning.
 
 	Parameters
 	----------
-	ds0
-		Input dataset.
+	ds
+		Input dataset, nested of flat.
 	key, optional
-		Name of the data field in `ds0`, by default 'feature'
+		Name of the data field in `ds` if `ds` is nested, by default 'feature'.
 	stack, optional
 		Stack one copy on top of the other to make a single tensor, by default False
 	fake_label, optional
@@ -341,9 +341,13 @@ def twins_dataset_ssl(ds0, key:str='feature', stack:bool=False, fake_label:bool=
 	"""
 
 	# To channel last format
-	ds1 = restore_shape(
-		ds0.map(lambda x: tf.transpose(x[key], [1,2,0]), num_parallel_calls=tf.data.AUTOTUNE),
-	)
+	if isinstance(ds.element_spec, dict):
+		ds1 = ds.map(lambda x: tf.transpose(x[key], [1,2,0]), num_parallel_calls=tf.data.AUTOTUNE)
+	else:
+		ds1 = ds.map(lambda x: tf.transpose(x, [1,2,0]), num_parallel_calls=tf.data.AUTOTUNE)
+
+	ds1 = restore_shape(ds1)
+
 	input_shape = ds1.element_spec.shape
 
 	# Paired dataset
