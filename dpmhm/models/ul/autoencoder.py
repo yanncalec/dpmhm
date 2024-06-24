@@ -1,11 +1,12 @@
 """Classes of Auto-Encoder.
 """
 
-import tensorflow as tf
+import keras
 from keras import layers, models, regularizers
+
 from dataclasses import dataclass
 from ..custom import TConv2D, TDense
-from .. import AbstractConfig
+from ..config import AbstractConfig
 
 
 @dataclass
@@ -27,7 +28,7 @@ class Config(AbstractConfig):
     activity_regularizer:float = 0.  # if >0 apply L1 regularization in the dense layer (sparse AE)
 
     def optimizer(self):
-        return tf.keras.optimizers.Adam()
+        return keras.optimizers.Adam()
 
 
 class CAES(models.Model):

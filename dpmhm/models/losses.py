@@ -1,19 +1,18 @@
 """Some loss functions.
 """
 
-# import sys
-import tensorflow as tf
-from tensorflow import linalg
+import keras
+from keras import losses, ops
+
+# import tensorflow as tf
+# from tensorflow import linalg
 # from tensorflow.keras import models, layers, regularizers, callbacks, losses
-from keras import losses
 # from tensorflow.keras.applications import resnet
 
-# import numpy as np
 
+"""NT-Xent
 
-##### NT_Xent #####
-"""
-Used in: SimCLR, CPC...
+Used in e.g. SimCLR, CPC.
 
 References
 ----------
@@ -21,10 +20,9 @@ References
 2. Sohn, K. Improved deep metric learning with multi-class n-pair loss objective. In Advances in neural information processing systems, pp. 1857–1865, 2016.
 3. Oord, A. v. d., Li, Y., and Vinyals, O. Representation learning with contrastive predictive coding. arXiv preprint arXiv:1807.03748, 2018.
 4. Wu, Z., Xiong, Y., Yu, S. X., and Lin, D. Unsupervised feature learning via non-parametric instance discrimination. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition, pp. 3733–3742, 2018.
-"""
 
-# Notes on the implementation
-"""
+Notes
+-----
 Iteration over a tensor is not allowed in graph mode:
 [losses.cosine_similarity(x, Y) for x in X], X has shape `(batch, dim)`
 
@@ -37,48 +35,36 @@ V2 = losses.cosine_similarity(tf.expand_dims(X,1), Y)
 V1-V2 is all zero
 """
 
-def NT_Xent(X, Y, tau:float):
-    """Normalized temperature-scaled cross entropy loss.
+def NT_Xent(zi, zj, tau:float=0.5, axis:int=-1) -> float:
+    """Normalized Temperature-scaled Cross Entropy Loss.
 
-    Args
-    ----
-    X, Y:
-        2d tensors with the first dimension being the batch.
+    We modify the original definition by excluding also the term of index `j` from the denominator. This is closer to the initial aim of NT-Xent to pull together positive pairs (between `i` and `j`) while pushing apart negative pairs (not including `j`).
 
-    This is eq. (1) of the original paper of SimCLR [1].
+    Parameters
+    ----------
+    zi
+        Anchor samples
+    zj
+        Augmented samples
+    tau, optional
+        Temperature, by default 0.5. A small temperature implies a sharper distribution in the feature space.
+    axis, optional
+        Axis of feature, by default -1
     """
-    # Note: cosine_similarity(x,x)==-1
-    B = tf.cast(tf.shape(X)[0], tf.float32)  # batch size
-    # Original version:
-    S = tf.reduce_sum(-losses.cosine_similarity(X, Y)) / tau
-    Nx = NT_Xent_norm_vec(X, Y) / tau
-    return -(S - tf.reduce_logsumexp(Nx)) / B
-    # # Modified version:
-    # S = tf.reduce_sum(losses.cosine_similarity(X, Y)) / tau
-    # Nx = - NT_Xent_norm_vec(X, Y) / tau
-    # return (S - tf.reduce_logsumexp(Nx)) / B
+    # Cosine similarity
+    # between anchor - anchor
+    Sii = -losses.cosine_similarity(zi, zi, axis=axis) / tau
+    # # or equivalently
+    # zi = ops.normalize(zi, axis=axis)
+    # Sii = ops.matmul(zi, ops.transpose(zi)) / tau
+    #
+    # between anchor - augmented
+    Sij = -losses.cosine_similarity(zi, zj, axis=axis) / tau
+    # # or equivalently
+    # zj = ops.normalize(zj, axis=axis)
+    # Sij = ops.matmul(zi, ops.transpose(zj)) / tau
 
+    P = ops.diag(Sij)
+    N = Sii - ops.diag(Sii) + Sij - ops.diag(Sij)
 
-def NT_Xent_sym(X, Y, tau:float):
-    """Normalized temperature-scaled Cross entropy loss, symmetrized version.
-    """
-    B = tf.cast(tf.shape(X)[0], tf.float32)  # batch size
-    S = tf.reduce_sum(losses.cosine_similarity(X, Y)) / tau
-    Nx = - NT_Xent_norm_vec(X, Y) / tau
-    Ny = - NT_Xent_norm_vec(Y, X) / tau
-    return (S - tf.reduce_logsumexp(Nx+Ny)) / B
-
-
-def NT_Xent_norm_vec(X, Y, full:bool=False):
-    """Compute the normalization vector of the NT-Ext loss.
-    """
-    if full:
-        Nx = tf.reduce_sum(-losses.cosine_similarity(tf.expand_dims(X,1), Y), axis=-1)
-    else:  # original version
-        Sx = -losses.cosine_similarity(X[:,None,:], Y[None,:,:])  # ~(batch x, batch y)
-        # Sx = -losses.cosine_similarity(tf.expand_dims(X,1), Y)  # same same
-        # Nx = tf.reduce_sum(tf.linalg.set_diag(Sx,tf.zeros(tf.shape(X)[1])), axis=-1)
-        Sx -= linalg.diag(linalg.diag_part(Sx))
-        Nx = tf.reduce_sum(Sx, axis=-1)
-    return Nx
-
+    return ops.sum(ops.logsumexp(N, axis=axis) - P)

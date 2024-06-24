@@ -1,4 +1,4 @@
-"""Classes of Variational Auto-Encoder.
+"""TODO: Classes of Variational Auto-Encoder.
 """
 
 import tensorflow as tf
@@ -6,7 +6,7 @@ import keras
 from keras import layers, models, backend as K
 from math import pi
 from dataclasses import dataclass
-from .. import AbstractConfig
+from ..config import AbstractConfig
 
 
 @dataclass

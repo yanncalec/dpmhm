@@ -21,7 +21,7 @@ References
 # import tensorflow as tf
 from keras import layers, models #, regularizers
 from dataclasses import dataclass
-from .. import AbstractConfig
+from ..config import AbstractConfig
 
 
 @dataclass
