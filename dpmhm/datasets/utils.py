@@ -284,14 +284,15 @@ def restore_shape(ds:Dataset, *, key:str|int=None, shape:tuple[int]=None) -> Dat
 	# print(shape, key)
 
 	@tf.function
-	def _mapper(X):
-		try:
-			# flat dataset
-			Y = tf.ensure_shape(X, shape)
-		except:
-			# nested dataset
-			Y = X.copy()
-			Y[key] = tf.ensure_shape(X[key], shape)
+	def _mapper_flat(X):
+		# flat dataset
+		return tf.ensure_shape(X, shape)
+
+	@tf.function
+	def _mapper_dict(X):
+		# nested dataset
+		Y = X.copy()
+		Y[key] = tf.ensure_shape(X[key], shape)
 		return Y
 
 	@tf.function
@@ -304,8 +305,10 @@ def restore_shape(ds:Dataset, *, key:str|int=None, shape:tuple[int]=None) -> Dat
 
 	if type(ds.element_spec) is tuple:
 		return ds.map(_mapper_tuple, num_parallel_calls=tf.data.AUTOTUNE)
+	if type(ds.element_spec) is dict:
+		return ds.map(_mapper_dict, num_parallel_calls=tf.data.AUTOTUNE)
 	else:
-		return ds.map(_mapper, num_parallel_calls=tf.data.AUTOTUNE)
+		return ds.map(_mapper_flat, num_parallel_calls=tf.data.AUTOTUNE)
 
 
 def restore_cardinality(ds:Dataset, card:int=None) -> Dataset:
