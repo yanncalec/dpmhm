@@ -79,10 +79,10 @@ class CAES(models.Model):
         self.encoder = models.Sequential(layers_encoder, name='encoder')
 
         layers_decoder = [
-            layers.Input(shape=self.encoder.layers[-1].output_shape[1:], name='input_dec'),
+            layers.Input(shape=self.encoder.layers[-1].output.shape[1:], name='input_dec'),
             # Block fc
-            layers.Dense(self.encoder.layers[-2].output_shape[-1], activation=activation, activity_regularizer=regularizers.L1(a_reg), name='fc1_dec') if a_reg > 0 else layers.Dense(self.encoder.layers[-2].output_shape[-1], activation=activation, name='fc1_dec'),
-            layers.Reshape(self.encoder.layers[-3].output_shape[1:], name='reshape'),
+            layers.Dense(self.encoder.layers[-2].output.shape[-1], activation=activation, activity_regularizer=regularizers.L1(a_reg), name='fc1_dec') if a_reg > 0 else layers.Dense(self.encoder.layers[-2].output.shape[-1], activation=activation, name='fc1_dec'),
+            layers.Reshape(self.encoder.layers[-3].output.shape[1:], name='reshape'),
 
             # Block 3
             layers.BatchNormalization(name='bn3_dec'),
@@ -103,7 +103,7 @@ class CAES(models.Model):
         self.decoder = models.Sequential(layers_decoder, name='decoder')
         # self.decoder.build()
 
-        self.autoencoder = models.Sequential(layers_encoder+layers_decoder, name='auto-encoder')
+        # self.autoencoder = models.Sequential(layers_encoder+layers_decoder, name='auto-encoder')
         # self.build(input_shape=(None, *input_shape))
 
     def call(self, x):
@@ -146,12 +146,12 @@ class CAES_1D(models.Model):
         self.encoder = models.Sequential(layers_encoder, name='encoder')
 
         layers_decoder = [
-            layers.Input(shape=self.encoder.layers[-1].output_shape[1:], name='input_dec'),
+            layers.Input(shape=self.encoder.layers[-1].output.shape[1:], name='input_dec'),
             # Block fc
-            layers.Dense(self.encoder.layers[-2].output_shape[-1], activation=activation,
+            layers.Dense(self.encoder.layers[-2].output.shape[-1], activation=activation,
             # activity_regularizer=regularizers.L1(1e-5),
             name='fc1_dec'),
-            layers.Reshape(self.encoder.layers[-3].output_shape[1:], name='reshape'),
+            layers.Reshape(self.encoder.layers[-3].output.shape[1:], name='reshape'),
 
             # Block 3
             layers.UpSampling1D(strides, name='ups3_dec'),
@@ -221,7 +221,7 @@ class CAES_ws(models.Model):
         self.encoder = models.Sequential(layers_encoder, name='encoder')
 
         layers_decoder = [
-            layers.Input(shape=self.encoder.layers[-1].output_shape[1:], name='input_dec'),
+            layers.Input(shape=self.encoder.layers[-1].output.shape[1:], name='input_dec'),
             # Block fc
             TDense(self.encoder.get_layer('fc1_enc'), name='fc1_dec'),
             layers.Reshape(self.encoder.get_layer('flatten').input_shape[1:], name='reshape'),

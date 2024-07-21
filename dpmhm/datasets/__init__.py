@@ -304,6 +304,7 @@ def query_parameters(ds_name:str) -> dict:
                 'temperature': 1
             }
             parms['split'] = ['healthy', 'artificial', 'lifetime']
+            parms['sampling_rate'] = [64000, 64000, 4000, 1]
             parms['keys'] = {
                 'FaultComponent': {'None', 'Inner Ring', 'Outer Ring', 'Inner Ring+Outer Ring'},
                 'FaultExtend': {0, 1, 2, 3},
@@ -386,6 +387,12 @@ def spectral_pipeline(
         split to load, by default 'all'
     compactor_kwargs
         keyword arguments to `DatasetCompactor` initializer
+    kwargs
+        other keyword arguments to `tfds.load()`
+
+    Returns
+    -------
+    extractor, compactor, ds_size
     """
     ds0 = tfds.load(ds_name, split=split, **kwargs)
 
@@ -402,14 +409,102 @@ def spectral_pipeline(
     return extractor, compactor, int(ds0.cardinality())
 
 
-def spectral_window_pipeline(*args, window_kwargs:dict, **kwargs):
-    """Pipeline of preprocessing for loading data in form of spectral windows.
+def spectral_window_pipeline(ds_name:str, sr:int, *,
+              split:str='all', channels:list[str]=[], keys:list[str]=[],
+              nf:int=512, tw:float=None, hs:float=None, ws:int=128,
+              normalize:bool=True,
+              labels:bool=False):
+    """Simple pipeline of data extraction for sliding window.
+
+    Parameters
+    ----------
+    ds_name
+        name of dataset
+    sr
+        original sampling rate
+    split
+        active split of dataset
+    channels
+        list of active channels
+    nf
+        number of frequency bins
+    tw
+        time window in second for spectrogram
+    hs
+        hop size in window for spectrogram
+    ws
+        sliding window size in frequency and time axis
     """
-    extractor, compactor, _ = spectral_pipeline(*args, **kwargs)
+    if tw is None:
+        tw = nf / sr
+    if hs is None:
+        hs = tw / 4
+
+    _func = lambda x, sr: feature.spectral_features(
+        x, sr, 'spectrogram',
+        time_window=tw,
+        hop_step=hs,
+        n_fft=nf,
+        normalize=normalize, to_db=True)[0]
+
+    compactor_kwargs = dict(
+        resampling_rate=None,
+        channels=channels,
+        keys=keys,
+        split_channel=True
+    )
+
+    # wl = ws * hs  # time length of spectrogram patches
+    window_kwargs = dict(
+        window_size=(ws, ws), # full bandwidth
+        hop_size=(ws//2, ws//2),
+    )
+
+    extractor, compactor, _ = spectral_pipeline(
+        ds_name,
+        split=split,
+        spectral_feature=_func,
+        compactor_kwargs=compactor_kwargs,
+        shuffle_files=True
+    )
 
     window = transformer.WindowSlider(
         extractor.dataset,
         **window_kwargs
         )
+    dw = window.dataset
 
-    return window.dataset, compactor.full_label_dict
+    # dw = dpmhm.datasets.spectral_window_pipeline(
+    #     ds_name,
+    #     split=split,
+    #     spectral_feature=_func,
+    #     compactor_kwargs=compactor_kwargs,
+    #     window_kwargs=window_kwargs,
+    #     shuffle_files=True
+    # )
+
+    if labels:
+        return dw, compactor.full_label_dict
+    else:
+        return dw
+
+
+
+# def spectral_window_pipeline(*args, window_kwargs:dict, **kwargs):
+#     """Pipeline of preprocessing for loading data in form of spectral windows.
+
+#     Parameters
+#     ----------
+#     args, kwargs
+#         positional and keyword arguments for `spectral_pipeline()`.
+#     window_kwargs
+#         keyword arguments for `transformer.WindowSlider`
+#     """
+#     extractor, compactor, _ = spectral_pipeline(*args, **kwargs)
+
+#     window = transformer.WindowSlider(
+#         extractor.dataset,
+#         **window_kwargs
+#         )
+
+#     return window.dataset, compactor.full_label_dict

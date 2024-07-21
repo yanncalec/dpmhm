@@ -257,6 +257,44 @@ def split_dataset(ds:Dataset, splits:dict={'train':0.7, 'val':0.2, 'test':0.1}, 
 
 	return dp
 
+def restore_shape_flat(ds:Dataset, shape:tuple[int]=None) -> Dataset:
+	@tf.function
+	def _mapper(X):
+		# flat dataset
+		return tf.ensure_shape(X, shape)
+
+	if shape is None:
+		shape = list(ds.take(1).as_numpy_iterator())[0].shape
+
+	return ds.map(_mapper, num_parallel_calls=tf.data.AUTOTUNE)
+
+def restore_shape_tuple(ds:Dataset, key:int=0, shape:tuple[int]=None) -> Dataset:
+	@tf.function
+	def _mapper(*X):
+		# tuple dataset
+		# This code looks suspicious but actually works...
+		Y = list(X)
+		Y[key] = tf.ensure_shape(X[key], shape)
+		return Y  # automatically converted back to tuple
+
+	if shape is None:
+		shape = list(ds.take(1).as_numpy_iterator())[0][key].shape
+
+	return ds.map(_mapper, num_parallel_calls=tf.data.AUTOTUNE)
+
+def restore_shape_dict(ds:Dataset, key:str, shape:tuple[int]=None) -> Dataset:
+	@tf.function
+	def _mapper(X):
+		# nested dataset
+		Y = X.copy()
+		Y[key] = tf.ensure_shape(X[key], shape)
+		return Y
+
+	if shape is None:
+		shape = list(ds.take(1).as_numpy_iterator())[0][key].shape
+
+	return ds.map(_mapper, num_parallel_calls=tf.data.AUTOTUNE)
+
 
 def restore_shape(ds:Dataset, *, key:str|int=None, shape:tuple[int]=None) -> Dataset:
 	"""Restore the shape of a dataset.
@@ -276,39 +314,12 @@ def restore_shape(ds:Dataset, *, key:str|int=None, shape:tuple[int]=None) -> Dat
 
 	https://github.com/tensorflow/tensorflow/issues/64177
 	"""
-	if shape is None:
-		try:
-			shape = list(ds.take(1).as_numpy_iterator())[0].shape
-		except:
-			shape = list(ds.take(1).as_numpy_iterator())[0][key].shape
-	# print(shape, key)
-
-	@tf.function
-	def _mapper_flat(X):
-		# flat dataset
-		return tf.ensure_shape(X, shape)
-
-	@tf.function
-	def _mapper_dict(X):
-		# nested dataset
-		Y = X.copy()
-		Y[key] = tf.ensure_shape(X[key], shape)
-		return Y
-
-	@tf.function
-	def _mapper_tuple(*X):
-		# tuple dataset
-		# This code looks suspicious but actually works...
-		Y = list(X)
-		Y[key] = tf.ensure_shape(X[key], shape)
-		return Y  # automatically converted back to tuple
-
 	if type(ds.element_spec) is tuple:
-		return ds.map(_mapper_tuple, num_parallel_calls=tf.data.AUTOTUNE)
+		return restore_shape_tuple(ds, key, shape)
 	if type(ds.element_spec) is dict:
-		return ds.map(_mapper_dict, num_parallel_calls=tf.data.AUTOTUNE)
+		return restore_shape_dict(ds, key, shape)
 	else:
-		return ds.map(_mapper_flat, num_parallel_calls=tf.data.AUTOTUNE)
+		return restore_shape_flat(ds, shape)
 
 
 def restore_cardinality(ds:Dataset, card:int=None) -> Dataset:
@@ -334,7 +345,7 @@ def twins_dataset_ssl(ds, key:str='feature', *, stack:bool=False, fake_label:boo
 	Parameters
 	----------
 	ds
-		Input dataset, nested of flat.
+		Input dataset, nested of flat, in channel first format.
 	key, optional
 		Name of the data field in `ds` if `ds` is nested, by default 'feature'.
 	stack, optional

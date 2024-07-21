@@ -4,7 +4,7 @@ import pywt
 
 ## Feature extractor
 
-def spectral_features(x:np.ndarray, sampling_rate:int, feature_method:str, *, time_window:float, hop_step:float, n_fft:int=None, normalize:bool=False, feature_kwargs:dict={}, **kwargs):
+def spectral_features(x:np.ndarray, sampling_rate:int, feature_method:str, *, time_window:float, hop_step:float, n_fft:int=None, standardize:bool=True, normalize:bool=False, feature_kwargs:dict={}, **kwargs):
     """Compute the spectral features of a multichannel waveform using the library `librosa`.
 
     Parameters
@@ -21,8 +21,10 @@ def spectral_features(x:np.ndarray, sampling_rate:int, feature_method:str, *, ti
         time step of the sliding STFT window, in second
     n_fft
         size of FFT, by default automatically determined
+    standardize
+        whether to standardize the input array
     normalize
-        whether to normalize the input array
+        whether to normalize the output array into [0,1]
     feature_kwargs
         keyword arguments for the method defined by `feature_method`, see: https://librosa.org/doc/main/feature.html.
     kwargs
@@ -45,7 +47,7 @@ def spectral_features(x:np.ndarray, sampling_rate:int, feature_method:str, *, ti
         n_fft = 2**(int(np.ceil(np.log2(win_length))))
         # n_fft = 2**(int(np.floor(np.log2(win_length))))
 
-    if normalize:
+    if standardize:
         y = (x-x.mean())/x.std()
     else:
         y = x
@@ -75,6 +77,9 @@ def spectral_features(x:np.ndarray, sampling_rate:int, feature_method:str, *, ti
         Sxx = librosa.feature.mfcc(y=y, sr=sr, n_fft=n_fft, win_length=win_length, hop_length=hop_length, **feature_kwargs)
     else:
         raise NameError(f'Unknown feature transform method: {feature_method}')
+
+    if normalize:
+        Sxx = (Sxx - Sxx.min()) / (Sxx.max() - Sxx.min() + 1e-8)
 
     return Sxx, (win_length, hop_length, n_fft)
 

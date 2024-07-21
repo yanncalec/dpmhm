@@ -31,6 +31,7 @@ from keras import models, layers, regularizers, callbacks, losses
 from dpmhm.models.losses import NT_Xent
 # from dpmhm.models.lr_scheduler import WarmupCosineDecay
 # from ..config import AbstractConfig
+from ..ul import autoencoder
 from ..pretrained import get_base_encoder
 
 
@@ -74,8 +75,13 @@ class SimCLR(models.Model):
         # self.loss_tracker = keras.metrics.Mean(name='loss')
         # self.mae_metric = keras.metrics.MeanAbsoluteError(name="mae")
 
-        self._encoder = get_base_encoder(input_shape, name, **kwargs)
-        self._encoder.trainable = True
+        try:
+            self._encoder = get_base_encoder(input_shape, name, **kwargs)
+        except:
+            cfg = autoencoder.Config(input_shape=input_shape)
+            self._encoder = autoencoder.CAES(cfg).encoder
+
+        # self._encoder.trainable = True
 
         self._projector = models.Sequential([
             # A dense layer applies only on the last dimension while preserving all other dimensions as batch.

@@ -32,7 +32,7 @@ plt.imshow(Y[0])
 def randomly(p:float):
     def wrapper(func):
         def _func(X, *args, **kwargs):
-            if random.random() < p:
+            if random.random() <= p:
                 return func(X, *args, **kwargs)
             else:
                 return X
@@ -54,7 +54,7 @@ def randomly(p:float):
     See also:
     https://www.tensorflow.org/api_docs/python/tf/image/sample_distorted_bounding_box
     """
-def random_crop(X:np.ndarray, output_shape:tuple, *, fixed_shape:bool=False, area_ratio:tuple=(0.01, 1.), aspect_ratio:tuple=(3/4, 4/3), channel_axis:int=None, max_attempts:int=100, seed:int=None, **kwargs) -> tuple:
+def random_crop(X:np.ndarray, output_shape:tuple, *, prob:float=0., area_ratio:tuple=(0.1, 1.), aspect_ratio:tuple=(3/4, 4/3), channel_axis:int=None, max_attempts:int=100, seed:int=None, **kwargs):
     """Randomly crop an image.
 
     Parameters
@@ -63,22 +63,14 @@ def random_crop(X:np.ndarray, output_shape:tuple, *, fixed_shape:bool=False, are
         Input image in channel first format.
     output_shape
         Desired output shape.
-    fixed_shape
-        if True randomly crop a fixed patch of output shape from `X`, and all other parameters will be ignored.
+    prob
+        probability to randomly crop a fixed patch of output shape from `X`, with all other parameters being ignored.
     area_ratio, optional
-        _description_, by default (0.01, 1.)
+        range of the area ratio of crop to the full image, by default (0.01, 1.)
     aspect_ratio, optional
-        _description_, by default (3/4, 4/3)
-    channel_axis, optional
-        _description_, by default None
+        range of the aspect ratio of the shape of the crop, by default (3/4, 4/3)
     max_attempts, optional
-        _description_, by default 1000
-    seed, optional
-        _description_, by default None
-
-    Returns
-    -------
-        _description_
+        maximum number of attemps, by default 1000
     """
     # # sanity check
     # assert (3 >= X.ndim >= 2) and (X.ndim == len(output_shape))
@@ -86,7 +78,7 @@ def random_crop(X:np.ndarray, output_shape:tuple, *, fixed_shape:bool=False, are
     # # assert X.ndim == len(output_shape) == 3 and X.shape[0] == output_shape[0]
     random.seed(seed)
 
-    if fixed_shape:
+    if random.random() <= prob:
         dh, dw = output_shape
         # assert all([d1>=d2 for d1, d2 in zip(X.shape, output_shape)])
         assert X.shape[-1] >= dh and X.shape[-2] >= dw

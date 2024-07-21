@@ -466,7 +466,7 @@ class WindowSlider(AbstractDatasetTransformer):
         return self._data_dim
 
 
-class SpecAugment(AbstractDatasetTransformer):
+class SpecAugmentBase(AbstractDatasetTransformer):
     """Spectrogram augmentation of a dataset.
 
     This class performs random augmentations on a feature dataset:
@@ -482,7 +482,7 @@ class SpecAugment(AbstractDatasetTransformer):
     """
     def __init__(self, dataset:Dataset, *,
                  output_shape:tuple=(64,64),
-                 crop_kwargs:dict={},
+                 crop_kwargs:dict={'prob':0.5},
                  flip_kwargs:dict={'axis':-1, 'prob':0.},
                  blur_kwargs:dict={'sigma':1., 'prob':0.},
                  fade_kwargs:dict={'ratio':0.5, 'prob':0.},
@@ -519,6 +519,9 @@ class SpecAugment(AbstractDatasetTransformer):
 
         self.spec_aug = lambda x: _blur(_fade(_flip(_crop(x))))
 
+
+class SpecAugment(SpecAugmentBase):
+    # def __init__(*args, **kwargs)
     def build(self):
         @tf.function
         def _mapper(X):
@@ -537,6 +540,44 @@ class SpecAugment(AbstractDatasetTransformer):
             key='feature',
             shape=(self._n_channels, *self._output_shape)
         )
+
+
+class SpecAugmentTwins(SpecAugmentBase):
+    """Make a spec-augmented twins dataset for self-supervised learning.
+
+    The twins dataset has element `(x1, x2)` with `x1, x2` coming from the spec-augmentation of a common `x`. Here both `x` and `x1, x2` are in channel-last format.
+    """
+    def build(self):
+        @tf.function
+        def _mapper(X):
+            Y = X.copy()
+            Y1 = tf.py_function(
+                func=self.spec_aug,
+                inp=[X['feature']],
+                Tout=_DTYPE
+            )
+            tf.reshape(Y1, (-1, *self._output_shape))
+
+            Y2 = tf.py_function(
+                func=self.spec_aug,
+                inp=[X['feature']],
+                Tout=_DTYPE
+            )
+            tf.reshape(Y2, (-1, *self._output_shape))
+
+            return (Y1, Y2)
+
+        ds = self._dataset_origin.map(_mapper, num_parallel_calls=tf.data.AUTOTUNE)
+        ds = utils.restore_shape(
+            ds, key=0,
+            shape=(self._n_channels, *self._output_shape)
+        )
+        ds = utils.restore_shape(
+            ds, key=1,
+            shape=(self._n_channels, *self._output_shape)
+        )
+        return ds
+
 
 """
 ```python
