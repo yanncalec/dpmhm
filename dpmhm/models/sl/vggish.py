@@ -20,47 +20,14 @@ References
 
 # import tensorflow as tf
 from keras import layers, models #, regularizers
-from dataclasses import dataclass
-from ..config import AbstractConfig
 
-
-@dataclass
-class Config(AbstractConfig):
-    """Global parameters for VGGish.
+def VGG11(input_shape:tuple, n_classes:int, *, kernel_size:tuple=(3,3), activation:str='relu', activation_classifier:str=None,
+padding:str='same', pool_size:tuple=(2,2), strides:tuple=(2,2), n_embedding:int=128) -> models.Model:
+    """ConvNet model A or VGG 11 layers.
 
     See also:
     https://github.com/tensorflow/models/blob/master/research/audioset/vggish/params.py
     """
-    # Number of classes
-    n_classes:int = None
-
-    # Dimension of embedding
-    n_embedding:int = 128
-
-    # Parameters of ConvNet
-    kernel_size:tuple = (3,3)
-    activation:str = None
-    activation_classifier:str = None
-    padding:str = 'same' # 'valid' or 'same'
-    pool_size:tuple = (2,2)
-    strides:tuple = (2,2)
-
-    def optimizer(self):
-        pass
-
-
-def VGG11(c:Config) -> models.Model:
-    """ConvNet model A or VGG 11 layers.
-    """
-    input_shape = c.input_shape
-    kernel_size = c.kernel_size
-    activation = c.activation
-    activation_classifier = c.activation_classifier
-    padding = c.padding
-    strides = c.strides
-    pool_size = c.pool_size
-    output_dim = c.n_embedding
-    n_classes = c.n_classes
 
     _layers = [
         layers.Input(shape=input_shape, name='input'),
@@ -86,7 +53,7 @@ def VGG11(c:Config) -> models.Model:
         layers.Flatten(name='flatten'),
         layers.Dense(4096, activation=activation, name='fc1_1'),
         layers.Dense(4096, activation=activation, name='fc1_2'),
-        layers.Dense(output_dim, activation=None, name='embedding'),
+        layers.Dense(n_embedding, activation=None, name='embedding'),
 
         # Block classifier
         # layers.Dense(100, activation='relu', name='projector'),
@@ -96,18 +63,19 @@ def VGG11(c:Config) -> models.Model:
     return models.Sequential(layers=_layers, name='VGGish-A')
 
 
-def VGG13(c:Config) -> models.Model:
+def VGG13(input_shape:tuple, n_classes:int, *, kernel_size:tuple=(3,3), activation:str='relu', activation_classifier:str=None,
+padding:str='same', pool_size:tuple=(2,2), strides:tuple=(2,2), n_embedding:int=128) -> models.Model:
     """ConvNet model B or VGG 13 layers.
     """
-    input_shape = c.input_shape
-    kernel_size = c.kernel_size
-    activation = c.activation
-    activation_classifier = c.activation_classifier
-    padding = c.padding
-    strides = c.strides
-    pool_size = c.pool_size
-    output_dim = c.n_embedding
-    n_classes = c.n_classes
+    # input_shape = c.input_shape
+    # kernel_size = c.kernel_size
+    # activation = c.activation
+    # activation_classifier = c.activation_classifier
+    # padding = c.padding
+    # strides = c.strides
+    # pool_size = c.pool_size
+    # output_dim = c.n_embedding
+    # n_classes = c.n_classes
 
     _layers = [
         layers.Input(shape=input_shape, name='input'),
@@ -135,7 +103,7 @@ def VGG13(c:Config) -> models.Model:
         layers.Flatten(name='flatten'),
         layers.Dense(4096, activation=activation, name='fc1_1'),
         layers.Dense(4096, activation=activation, name='fc1_2'),
-        layers.Dense(output_dim, activation=None, name='embedding'),
+        layers.Dense(n_embedding, activation=None, name='embedding'),
 
         # Block classifier
         # layers.Dense(100, activation='relu', name='projector'),

@@ -411,8 +411,7 @@ def spectral_pipeline(
 
 def spectral_window_pipeline(ds_name:str, sr:int, *,
               split:str='all', channels:list[str]=[], keys:list[str]=[],
-              nf:int=512, tw:float=None, hs:float=None, ws:int=128,
-              normalize:bool=True,
+              n_fft:int=512, ws:int=128, normalize:bool=True,
               labels:bool=False):
     """Simple pipeline of data extraction for sliding window.
 
@@ -425,26 +424,26 @@ def spectral_window_pipeline(ds_name:str, sr:int, *,
     split
         active split of dataset
     channels
-        list of active channels
-    nf
+        list of active channels, if not given all channels will be extracted simultaneously
+    keys
+        filter keys for supervised label
+    nfft
         number of frequency bins
-    tw
-        time window in second for spectrogram
-    hs
-        hop size in window for spectrogram
     ws
         sliding window size in frequency and time axis
+    normalize
+        if True the spectrogram's value will be rescaled into [0,1]
+    labels
+        if True return also the supervised labels
     """
-    if tw is None:
-        tw = nf / sr
-    if hs is None:
-        hs = tw / 4
+    tw = n_fft / sr
+    hs = tw / 4
 
     _func = lambda x, sr: feature.spectral_features(
         x, sr, 'spectrogram',
         time_window=tw,
         hop_step=hs,
-        n_fft=nf,
+        n_fft=n_fft,
         normalize=normalize, to_db=True)[0]
 
     compactor_kwargs = dict(
@@ -454,18 +453,17 @@ def spectral_window_pipeline(ds_name:str, sr:int, *,
         split_channel=True
     )
 
+    extractor, compactor, _ = spectral_pipeline(
+        ds_name, _func,
+        split=split,
+        compactor_kwargs=compactor_kwargs,
+        shuffle_files=True
+    )
+
     # wl = ws * hs  # time length of spectrogram patches
     window_kwargs = dict(
         window_size=(ws, ws), # full bandwidth
         hop_size=(ws//2, ws//2),
-    )
-
-    extractor, compactor, _ = spectral_pipeline(
-        ds_name,
-        split=split,
-        spectral_feature=_func,
-        compactor_kwargs=compactor_kwargs,
-        shuffle_files=True
     )
 
     window = transformer.WindowSlider(

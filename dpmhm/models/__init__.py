@@ -3,4 +3,4 @@
 
 from .sl import vggish
 from .ul import autoencoder
-from .ssl import simclr
+from .ssl import simclr, moco

@@ -4,31 +4,7 @@
 import keras
 from keras import layers, models, regularizers
 
-from dataclasses import dataclass
 from ..custom import TConv2D, TDense
-from ..config import AbstractConfig
-
-
-@dataclass
-class Config(AbstractConfig):
-    """Global parameters for AE.
-    """
-    # Dimension of hidden representation
-    n_embedding:int = 128
-
-    # Parameters of ConvNet
-    kernel_size:tuple = (3,3)
-    activation:str = 'relu'
-    padding:str = 'same' # 'valid' or 'same'
-    pool_size:tuple = (2,2)
-    strides:tuple = (2,2)
-    # use_bias:bool = False
-
-    # Regularization
-    activity_regularizer:float = 0.  # if >0 apply L1 regularization in the dense layer (sparse AE)
-
-    def optimizer(self):
-        return keras.optimizers.Adam()
 
 
 class CAES(models.Model):
@@ -38,21 +14,10 @@ class CAES(models.Model):
     -----
     Shape `(H,W)` of the input tensor must be power of 2.
     """
-    def __init__(self, c:Config):
-        self._config = c
-        input_shape = c.input_shape  # n_bands, n_frames, c.n_channels
-        kernel_size = c.kernel_size
-        activation = c.activation
-        padding = c.padding
-        strides = c.strides
-        pool_size = c.pool_size
-        n_embedding  = c.n_embedding
-        a_reg = c.activity_regularizer
-
+    def __init__(self, input_shape:tuple, *, kernel_size:tuple=(3,3), activation:str='relu', padding:str='same', pool_size:tuple=(2,2), strides:tuple=(2,2), n_embedding:int=128, a_reg:float=0.):
         super().__init__()
 
         # Use more blocks and larger kernel size to get more smoothing in the reconstruction.
-
         layers_encoder = [
             layers.Input(shape=input_shape, name='input_enc'),
             # Block 1
@@ -113,16 +78,7 @@ class CAES(models.Model):
 class CAES_1D(models.Model):
     """Convolution Auto-Encoder stacks for signal.
     """
-    def __init__(self, c:Config):
-        self._config = c
-        input_shape = c.input_shape  # n_bands, n_frames, c.n_channels
-        kernel_size = c.kernel_size
-        activation = c.activation
-        padding = c.padding
-        strides = c.strides
-        pool_size = c.pool_size
-        n_embedding  = c.n_embedding
-
+    def __init__(self, input_shape:tuple, *, kernel_size:tuple=(3,3), activation:str='relu', padding:str='same', pool_size:tuple=(2,2), strides:tuple=(2,2), n_embedding:int=128):
         super().__init__()
 
         layers_encoder = [
@@ -184,16 +140,7 @@ class CAES_ws(models.Model):
     - The model fails to train with `decoder.trainable=False`.
     - MSE much larger than that of no weight sharing.
     """
-    def __init__(self, c:Config):
-        self._config = c
-        input_shape = c.input_shape
-        kernel_size = c.kernel_size
-        activation = c.activation
-        padding = c.padding
-        strides = c.strides
-        pool_size = c.pool_size
-        n_embedding  = c.n_embedding
-
+    def __init__(self, input_shape:tuple, *, kernel_size:tuple=(3,3), activation:str='relu', padding:str='same', pool_size:tuple=(2,2), strides:tuple=(2,2), n_embedding:int=128):
         super().__init__()
 
         layers_encoder = [
