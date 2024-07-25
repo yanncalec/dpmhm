@@ -33,6 +33,8 @@ class MoCo_Callback(callbacks.Callback):
     https://keras.io/api/callbacks/base_callback/
     """
     def on_train_batch_end(self, batch, logs=None):
+        # Tricky workout:
+        # EMA Variables must be initialized here, after the model has been built. If initialized in the method `on_train_begin()`, it will not get the right number of weights.
         try:
             # Update the value of variables
             for v, w in zip(self._variables, self.model._online.weights):
@@ -42,31 +44,33 @@ class MoCo_Callback(callbacks.Callback):
                 [self.model._ema.average(v) for v in self._variables]
             )
         except:
-            # Variables must be initialized here, after the model has been built. If initialized in the method `on_train_begin()`, it will not get the right number of weights. `EMA` is a tensorflow functionality, so it must use `tf.Variable`, not `keras.Variable`.
+            # Initialization of EMA instance. This should happen only once after the first train on a batch.
+            logger.info("Create the EMA instance...")
+            # `EMA` is a tensorflow functionality, so it must use `tf.Variable`, not `keras.Variable`.
             self._variables = [tf.Variable(v) for v in self.model._online.weights]  # in Keras `.weights` is identical to `.variables`
             self.model._ema.apply(self._variables)  # create a shadow copy
 
 
 class MoCo(models.Model):
-    def __init__(self, input_shape:tuple, *, sim:bool=False, output_dim:int=256, tau:float=0.1, momentum:float=0.999, memsize:int=100, name:str='VGG16', encoder_kwargs:dict={}):
+    def __init__(self, input_shape:tuple, *, output_dim:int=256, tau:float=0.1, sim:bool=False, momentum:float=0.999, memsize:int=100, name:str='VGG16', encoder_kwargs:dict={}):
         """Initializer for MoCo.
 
         Parameters
         ----------
         input_shape
             shape of the input data in channel last format
-        sim, optional
-            use cosine similarity based InfoNCE loss, by default False
         output_dim, optional
             dimension of projector's output, by default 256
         tau, optional
             temperature, by default 0.1
+        sim, optional
+            use cosine similarity based InfoNCE loss, by default False
         momentum, optional
             momentum for updating the target network, by default 0.999
         memsize, optional
             size of the memory, by default 100
         name, optional
-            name of pretrained baseline encoder, by default 'VGG16'
+            name of pretrained Keras model for the baseline encoder, by default 'VGG16'
         encoder_kwargs, optional
             keyword arguments for the baseline encoder, by default {}
         """
@@ -96,7 +100,9 @@ class MoCo(models.Model):
             layers.Flatten(name='flatten'),
             layers.Dense(1024, activation='relu', name='fc1'),
             layers.BatchNormalization(),
-            layers.Dense(output_dim, activation='relu', name='fc2'),
+            layers.Dense(256, activation='relu', name='fc2'),
+            layers.BatchNormalization(),
+            layers.Dense(output_dim, activation=None, name='fc3'),
         ], name='projector')
 
         self._online = models.Sequential([
@@ -121,6 +127,7 @@ class MoCo(models.Model):
     #     )
 
     def call(self, inputs, training=True):
+        # query and key (positive) instances
         xq, xk = inputs  # treated as an iterator, not allowed in graph mode
         yq = self._online(xq, training=training)
         yk = self._target(xk, training=training)
@@ -133,7 +140,7 @@ class MoCo(models.Model):
         )
 
         # `call` function must not have any side effect. To save inner states, we must use `.assign()` available for a Keras variable.
-        # Do not use the incremental
+        # Do not use the incremental update scheme for the memory, fix its size instead.
         self._memory.assign(
             ops.take(
                 ops.concatenate([yk, self._memory], axis=0),

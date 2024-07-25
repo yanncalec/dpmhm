@@ -74,7 +74,17 @@ def NT_Xent(zi, zj, tau:float=0.1) -> float:
     return ops.sum(ops.logsumexp(N, axis=-1) - P)
 
 
-def InfoNCE(X, Y, K, tau:float=0.5):
+"""Info-NCE
+
+Used in MoCo.
+
+References
+----------
+1. Chen, X., Fan, H., Girshick, R., He, K., 2020. Improved Baselines with Momentum Contrastive Learning. https://doi.org/10.48550/arXiv.2003.04297
+2. He, K., Fan, H., Wu, Y., Xie, S., Girshick, R., 2020. Momentum Contrast for Unsupervised Visual Representation Learning. Presented at the Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 9729–9738.
+"""
+
+def InfoNCE(X, Y, K, tau:float=0.1):
     """Information Noise-Contrastive Estimation loss.
 
     Parameters
@@ -115,7 +125,7 @@ def InfoNCE(X, Y, K, tau:float=0.5):
     )
 
 
-def InfoNCE_sim(X, Y, K, tau:float=0.5):
+def InfoNCE_sim(X, Y, K, tau:float=0.1):
     """InfoNCE based on cosine similarity"""
     # X and Y have the same shape: no need for broadcast. Result has shape `(batch,)`. If X and K are both 2d array and have different first dimension, broadcast will be needed.
     S = -losses.cosine_similarity(X, Y, axis=-1) / tau
@@ -123,7 +133,7 @@ def InfoNCE_sim(X, Y, K, tau:float=0.5):
     # X and K don't have the same shape: broadcast needed. Result has shape `(batch, memsize)`.
     N = -losses.cosine_similarity(ops.expand_dims(X, 1), K, axis=-1) /  tau
 
-    # For mysterious reasons, the following independent statement creates and extra dimension.
+    # For mysterious reasons, the following independent statement creates an extra dimension.
     # G = ops.concatenate([ops.expand_dims(S,1), N], axis=-1),  # has shape `(1, batch, memsize+1)`
 
     return ops.sum(

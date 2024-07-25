@@ -51,18 +51,20 @@ logger = logging.getLogger(__name__)
 class SimCLR(models.Model):
     """SimCLR.
     """
-    def __init__(self, input_shape, *, name:str='VGG16', tau:float=0.01, encoder_kwargs:dict={}):
+    def __init__(self, input_shape, *, output_dim:int=256, tau:float=0.1, name:str='VGG16', encoder_kwargs:dict={}):
         """
         Parameters
         ----------
         input_shape
             shape of the input
-        name, optional
-            name of pretrained Keras model, by default 'VGG16'
+        output_dim, optional
+            dimension of projector's output, by default 256
         tau, optional
-            temperature, by default 1.0
-        kwargs
-            keyword arguments to the Keras pretrain model in `keras.applications`
+            temperature, by default 0.1
+        name, optional
+            name of pretrained Keras model for the baseline encoder, by default 'VGG16'
+        encoder_kwargs, optional
+            keyword arguments for the baseline encoder, by default {}
         """
         super().__init__()
         self._input_shape = input_shape
@@ -82,8 +84,8 @@ class SimCLR(models.Model):
             layers.Dense(1024, activation='relu', name='fc1'),
             layers.BatchNormalization(),
             layers.Dense(256, activation='relu', name='fc2'),
-            # layers.BatchNormalization(),
-            # layers.Dense(64, activation=None, name='fc3'),
+            layers.BatchNormalization(),
+            layers.Dense(output_dim, activation=None, name='fc3'),
         ], name='projector')
 
         self._online = models.Sequential([

@@ -1,6 +1,6 @@
 """Collection of machine learning models.
 """
 
-from .sl import vggish
-from .ul import autoencoder
-from .ssl import simclr, moco
+from .sl import *
+from .ul import *
+from .ssl import *
