@@ -9,6 +9,9 @@ from keras import losses, ops
 # from tensorflow.keras import models, layers, regularizers, callbacks, losses
 # from tensorflow.keras.applications import resnet
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 """NT-Xent
 
@@ -35,7 +38,7 @@ V2 = losses.cosine_similarity(tf.expand_dims(X,1), Y)
 V1-V2 is all zero
 """
 
-def NT_Xent(zi, zj, tau:float=0.1, axis:int=-1) -> float:
+def NT_Xent(zi, zj, tau:float=0.1) -> float:
     """Normalized Temperature-scaled Cross Entropy Loss.
 
     We modify the original definition by excluding also the term of index `j` from the denominator. This is closer to the initial aim of NT-Xent to pull together positive pairs (between `i` and `j`) while pushing apart negative pairs (not including `j`).
@@ -43,7 +46,7 @@ def NT_Xent(zi, zj, tau:float=0.1, axis:int=-1) -> float:
     Parameters
     ----------
     zi
-        Anchor samples
+        Anchor samples, with the last axis for feature
     zj
         Augmented samples
     tau, optional
@@ -53,13 +56,14 @@ def NT_Xent(zi, zj, tau:float=0.1, axis:int=-1) -> float:
     """
     # Cosine similarity
     # between anchor - anchor
-    Sii = -losses.cosine_similarity(zi, zi, axis=axis) / tau
+    # negative sign is necessary because of the definition of cosine similarity.
+    Sii = -losses.cosine_similarity(zi, zi, axis=-1) / tau
     # # or equivalently
     # zi = ops.normalize(zi, axis=axis)
     # Sii = ops.matmul(zi, ops.transpose(zi)) / tau
     #
     # between anchor - augmented
-    Sij = -losses.cosine_similarity(zi, zj, axis=axis) / tau
+    Sij = -losses.cosine_similarity(zi, zj, axis=-1) / tau
     # # or equivalently
     # zj = ops.normalize(zj, axis=axis)
     # Sij = ops.matmul(zi, ops.transpose(zj)) / tau
@@ -67,10 +71,10 @@ def NT_Xent(zi, zj, tau:float=0.1, axis:int=-1) -> float:
     P = ops.diag(Sij)
     N = Sii - ops.diag(Sii) + Sij - ops.diag(Sij)
 
-    return ops.sum(ops.logsumexp(N, axis=axis) - P)
+    return ops.sum(ops.logsumexp(N, axis=-1) - P)
 
 
-def InfoNCE(X, Y, K, tau:float=0.5, axis:int=-1):
+def InfoNCE(X, Y, K, tau:float=0.5):
     """Information Noise-Contrastive Estimation loss.
 
     Parameters
@@ -80,33 +84,55 @@ def InfoNCE(X, Y, K, tau:float=0.5, axis:int=-1):
     Y
         Positive sample, of shape `(batch, feature)`.
     K
-        Key samples, of shape `(memlen, batch, feature)
+        Key samples, of shape `(memsize, feature)
     tau, optional
         Temperature. A small temperature implies a sharper distribution in the feature space.
-    axis, optional
-        Axis of feature, by default -1
+
+    Note
+    ----
+
     """
-    assert ops.shape(X) == ops.shape(Y) and ops.shape(X) == ops.shape(K)[1:]
-    S = -losses.cosine_similarity(X, Y, axis=axis) / tau  # X and Y have the same dimension, no need for broadcast. Result has shape `batch`.
-    # If X and K are both 2d array and have different first dimension, broadcast will be needed.
-    # N = -losses.cosine_similarity(ops.expand_dims(X,1), K, axis=axis) /  tau  # has shape `(batch, memlen x batch)`
-    N = -losses.cosine_similarity(X, K, axis=axis) /  tau  # has shape `(memlen, batch)`
-    # S = S[:,None]  # has shape `(batch, 1)`
-    # S = tf.reshape(S, [-1,1])
-    # print(X.shape, K.shape)
-    # `K` alone has the same result as `tf.expand_dims(K,0)`
-    # print(ops.shape(S), ops.shape(N))
-    return -ops.sum(
+    # assert ops.equal(ops.shape(X), ops.shape(Y)) and ops.equal(ops.shape(X)[1], ops.shape(K)[1])
+    S = ops.sum(X * Y, axis=-1) / tau
+
+    # Equivalent
+    # N = ops.sum(X * ops.expand_dims(K,1), axis=-1) /  tau  # (memsize, batch)
+    # return ops.sum(
+    #     losses.sparse_categorical_crossentropy(
+    #         ops.cast(ops.zeros_like(S), dtype=int),
+    #         ops.transpose(ops.concatenate([ops.expand_dims(S, 0), N], axis=0)),
+    #         axis=-1, from_logits=True
+    #     )
+    # )
+
+    N = ops.sum(ops.expand_dims(X,1) * K, axis=-1) /  tau
+    return ops.sum(
         losses.sparse_categorical_crossentropy(
-            ops.zeros_like(S),  # batch size
-            ops.transpose(ops.vstack([ops.expand_dims(S,0), N])),  # has shape `(batch, memlen+1)`
-            from_logits=True
+            ops.cast(ops.zeros_like(S), dtype=int),
+            ops.concatenate([ops.expand_dims(S, 1), N], axis=-1),
+            axis=-1, from_logits=True
+        )
+    )
+
+
+def InfoNCE_sim(X, Y, K, tau:float=0.5):
+    """InfoNCE based on cosine similarity"""
+    # X and Y have the same shape: no need for broadcast. Result has shape `(batch,)`. If X and K are both 2d array and have different first dimension, broadcast will be needed.
+    S = -losses.cosine_similarity(X, Y, axis=-1) / tau
+
+    # X and K don't have the same shape: broadcast needed. Result has shape `(batch, memsize)`.
+    N = -losses.cosine_similarity(ops.expand_dims(X, 1), K, axis=-1) /  tau
+
+    # For mysterious reasons, the following independent statement creates and extra dimension.
+    # G = ops.concatenate([ops.expand_dims(S,1), N], axis=-1),  # has shape `(1, batch, memsize+1)`
+
+    return ops.sum(
+        losses.sparse_categorical_crossentropy(
+            ops.cast(ops.zeros_like(S), dtype=int),
+            ops.concatenate([ops.expand_dims(S,1), N], axis=-1),  # has dimension `(batch, memsize+1)`
+            axis=-1, from_logits=True
         )
     )
     # equivalent to:
-    # return -ops.sum(S - tf.reduce_logsumexp(tf.concat([S, N], axis=-1), axis=-1))
+    # return -ops.sum(S - ops.logsumexp(G, axis=-1))
 
-"""
-tf.reduce_logsumexp(?, axis=-1) is equivalent to
-tf.math.log(tf.reduce_sum(tf.math.exp(?), axis=-1))
-"""

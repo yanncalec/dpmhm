@@ -13,19 +13,12 @@ ToDo:
 # import sys
 import tensorflow as tf
 
-from keras import ops, models, layers, regularizers, callbacks, losses
-# from keras.applications import resnet
-# from dataclasses import dataclass
+import keras
+from keras import ops, models, layers, callbacks
 
-# from queue import Queue
-from collections import deque
-
-# import numpy as np
-
-from ..losses import InfoNCE
+from ..losses import InfoNCE, InfoNCE_sim
 from ..ul import autoencoder
 from ..pretrained import get_base_encoder
-from ..config import AbstractConfig
 
 import logging
 logger = logging.getLogger(__name__)
@@ -34,49 +27,64 @@ logger = logging.getLogger(__name__)
 # For EMA:
 # https://www.tensorflow.org/api_docs/python/tf/train/ExponentialMovingAverage
 
-# @dataclass
-# class Config(AbstractConfig):
-#     # batch_size:int = 256
-#     tau:float = 0.01  # temperature
-#     maxlen:int = 1000  # size of the memory bank
-#     name:str = 'VGG16'  # name of the base encoder 'ResNet50', 'CNN'
-#     encoder_kwargs:dict = {}  # keyword parameters
-
-#     def optimizer(self):
-#         # https://www.tensorflow.org/addons/api_docs/python/tfa/optimizers/SGDW
-#         import tensorflow_addons as tfa
-#         return tfa.optimizers.SGDW(weight_decay=1e-4, learning_rate=0.03, momentum=0.9)
-
 
 class MoCo_Callback(callbacks.Callback):
     """
     https://keras.io/api/callbacks/base_callback/
     """
-    def on_train_begin(self, logs=None):
-        # Convert Keras variables to Tensorflow variables, needed by EMA
-        self._tf_variables = [tf.Variable(v) for v in self.model._online.weights]  # in Keras `.weights` is identical to `.variables`
-        self.model._ema.apply(self._tf_variables)  # create a shadow copy
-
-    def on_epoch_end(self, epoch, logs=None):
-    # def on_train_batch_end(self, batch, logs=None):
-        # Update the value of variables
-        for v, w in zip(self._tf_variables, self.model._online.weights):
-            v.assign(w)
-        # EMA update of the target network
-        self.model._target.set_weights(
-            [self.model._ema.average(v) for v in self._tf_variables]
-        )
+    def on_train_batch_end(self, batch, logs=None):
+        try:
+            # Update the value of variables
+            for v, w in zip(self._variables, self.model._online.weights):
+                v.assign(w)
+            # EMA update of the target network
+            self.model._target.set_weights(
+                [self.model._ema.average(v) for v in self._variables]
+            )
+        except:
+            # Variables must be initialized here, after the model has been built. If initialized in the method `on_train_begin()`, it will not get the right number of weights. `EMA` is a tensorflow functionality, so it must use `tf.Variable`, not `keras.Variable`.
+            self._variables = [tf.Variable(v) for v in self.model._online.weights]  # in Keras `.weights` is identical to `.variables`
+            self.model._ema.apply(self._variables)  # create a shadow copy
 
 
 class MoCo(models.Model):
-    def __init__(self, input_shape:tuple, *, tau:float=0.1, momentum:float=0.999, maxlen:int=100, name:str='VGG16', encoder_kwargs:dict={}):
+    def __init__(self, input_shape:tuple, *, sim:bool=False, output_dim:int=256, tau:float=0.1, momentum:float=0.999, memsize:int=100, name:str='VGG16', encoder_kwargs:dict={}):
+        """Initializer for MoCo.
+
+        Parameters
+        ----------
+        input_shape
+            shape of the input data in channel last format
+        sim, optional
+            use cosine similarity based InfoNCE loss, by default False
+        output_dim, optional
+            dimension of projector's output, by default 256
+        tau, optional
+            temperature, by default 0.1
+        momentum, optional
+            momentum for updating the target network, by default 0.999
+        memsize, optional
+            size of the memory, by default 100
+        name, optional
+            name of pretrained baseline encoder, by default 'VGG16'
+        encoder_kwargs, optional
+            keyword arguments for the baseline encoder, by default {}
+        """
         super().__init__()
         self._input_shape = input_shape
+        self._output_dim = output_dim  # output dimension of the final projection layer
         self._tau = tau
+        self._memsize = memsize
 
-        self._memory = deque(maxlen=maxlen)  # queue of preceding encoded mini-batches
-        # self.loss_tracker = keras.metrics.Mean(name='loss')
-        # self.mae_metric = keras.metrics.MeanAbsoluteError(name="mae")
+        self._memory = keras.Variable(
+            ops.zeros((self._memsize, self._output_dim)),
+            trainable=False
+        )
+
+        if sim:
+            self._loss = lambda X,Y,K: InfoNCE_sim(X, Y, K, self._tau)
+        else:
+            self._loss = lambda X,Y,K: InfoNCE(X, Y, K, self._tau)
 
         try:
             self._encoder = get_base_encoder(input_shape, name, **encoder_kwargs)
@@ -88,9 +96,7 @@ class MoCo(models.Model):
             layers.Flatten(name='flatten'),
             layers.Dense(1024, activation='relu', name='fc1'),
             layers.BatchNormalization(),
-            layers.Dense(256, activation='relu', name='fc2'),
-            # layers.BatchNormalization(),
-            # layers.Dense(64, activation=None, name='fc3'),
+            layers.Dense(output_dim, activation='relu', name='fc2'),
         ], name='projector')
 
         self._online = models.Sequential([
@@ -104,64 +110,35 @@ class MoCo(models.Model):
         # self._ema_rate = momentum
         self._ema = tf.train.ExponentialMovingAverage(momentum)
 
-    # @tf.function
+    # def build(self, input_shape):
+    #     batch_size = input_shape[0][0]
+    #     # output_dim = self._online.output_shape[-1]  # not available yet
+    #     self._memsize = batch_size * self._maxlen
+    #     # Variable initialization doesn't play well here with Jax
+    #     self._memory = keras.Variable(
+    #         ops.zeros((self._memsize, self._output_dim)),
+    #         trainable=False
+    #     )
+
     def call(self, inputs, training=True):
         xq, xk = inputs  # treated as an iterator, not allowed in graph mode
         yq = self._online(xq, training=training)
         yk = self._target(xk, training=training)
-        # print(ops.mean(yq), ops.mean(yk))
-
-        try:
-            # tensor of memory, has shape `(memlen, batch, feature)`
-            mk = ops.stack(list(self._memory), axis=0)  # must convert to list first
-            # assert ops.size(mk) > 0
-        except Exception as msg:  # memory is empty
-            logger.error(msg)
-            mk = ops.expand_dims(yk, 0)
+        # logger.info(f"call: {ops.shape(yq)}, {ops.shape(yk)}")
 
         self.add_loss(
-            InfoNCE(yq, yk, mk, self._tau)
+            # Torch backend:
+            # use `ops.copy()` to avoid the runtime error "... is at version 1; expected version 0 instead".
+            self._loss(yq, yk, ops.copy(self._memory))
         )
-        # Note: by default a deque object (with `append()` and `pop`) is LIFO. Use `appendleft` to make it FIFO.
-        self._memory.append(yk)
-        # no need to explicitly apply `pop()`, this is automatically handled by `deque`.
-        # print('Length of the memory:', len(self._memory))
+
+        # `call` function must not have any side effect. To save inner states, we must use `.assign()` available for a Keras variable.
+        # Do not use the incremental
+        self._memory.assign(
+            ops.take(
+                ops.concatenate([yk, self._memory], axis=0),
+                range(self._memsize), axis=0
+            )
+        )
 
         return yq, yk
-
-    # def train_step(self, inputs):
-    #     # print(f"Eager execution mode: {tf.executing_eagerly()}")
-    #     # https://keras.io/guides/customizing_what_happens_in_fit
-    #     with tf.GradientTape() as tape:
-    #         yq, yk = self.call(inputs)
-    #         try:
-    #             mk = tf.concat(list(self._memory), axis=0)  # must convert to list first
-    #             # # However, the following doesn't work properly
-    #             # mk = tf.stack(self._memory)[:,-1]
-    #             assert tf.size(mk) > 0
-    #         except:  # memory is empty
-    #             mk = ops.copy(yk)
-    #         loss = self._loss_func(yq, yk, mk)
-    #         # loss += self._loss_func(yk, yk, mk)
-    #         # loss = tf.reduce_sum(InfoNCE(yq, yq, mk, self._temperature))
-
-    #     # Note: by default a deque object (with `append()` and `pop`) is LIFO. Use `appendleft` to make it FIFO.
-    #     self._memory.append(yk)
-    #     # no need to explicitly apply `pop()`, this is automatically handled by `deque`.
-    #     # print('Length of the memory:', len(self._memory))
-
-    #     # Compute gradients
-    #     gradients = tape.gradient(loss, self.trainable_variables)
-    #     # Update weights
-    #     self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-
-    #     # # Update metrics (includes the metric that tracks the loss)
-    #     # self.compiled_metrics.update_state(y, y_pred)
-    #     # # Return a dict mapping metric names to current value
-    #     # return {m.name: m.result() for m in self.metrics}
-
-    #     # Compute our own metrics
-    #     self.loss_tracker.update_state(loss)
-    #     # self.mae_metric.update_state(y, y_pred)
-    #     # return {'loss': self.loss_tracker.result(), "mae": self.mae_metric.result()}
-    #     return {'loss': self.loss_tracker.result()}
