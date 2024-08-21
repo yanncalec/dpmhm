@@ -72,10 +72,10 @@ Features
     'temperature': 10
     },
 - 'metadata':
-    - 'ID': ['Bearing1','Bearing2','Bearing3']
+    - 'ID': ['Bearing1','Bearing2','Bearing3'], paired with `RotatingSpeed` and `LoadForce`
     - 'OriginalSplit': ['Learning_set', 'Test_set', 'Full_Test_Set']
-    - 'RotatingSpeed'
-    - 'LoadForce'
+    - 'RotatingSpeed': [1800, 1650, 1500], paired with the field `LoadForce`
+    - 'LoadForce': [4000, 4200, 5000]
 
 Notes
 =====
@@ -103,6 +103,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import pandas as pd
+import re
 # from scipy.io import loadmat
 from datetime import datetime
 
@@ -116,10 +117,6 @@ P. Nectoux, R. Gouriveau, K. Medjaher, E. Ramasso, B. Morello, N. Zerhouni, C. V
 _DATA_URLS = [
     'https://github.com/Lucky-Loek/ieee-phm-2012-data-challenge-dataset/archive/refs/heads/master.zip'
 ]
-
-# _DATA_URLS = [
-#     'https://sandbox.zenodo.org/record/1183585/files/femto.zip'
-# ]
 
 # Date of experiment
 _DATE = {
@@ -207,10 +204,12 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
                     'ID': tf.string,  # ID of the bearing, also its operating conditions
                     'RotatingSpeed': tf.uint32,
                     'LoadForce': tf.uint32,
-                    # 'RemainingUsefulLife': tf.float32,  # Time of the run-to-failure experiment
+                    'RemainingUsefulLife': tf.float32,  # Time of the run-to-failure experiment
+                    'TimeElapsed': tf.float32,
                     'OriginalSplit': tf.string,  # Original split
                     'FileName': tf.string,  # Original filename with path
                     'Dataset': tf.string,
+                    'Bearing':tf.string
                 }
             }),
             supervised_keys=None,
@@ -265,6 +264,17 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
                 _sr = 10
             else:
                 continue
+            
+            directory_path = os.path.dirname(fp)
+            x_values = []
+            for filename in os.listdir(directory_path):
+                if filename.startswith('acc_') and filename.endswith('.csv'):
+                    x_str = filename[len('acc_'):-len('.csv')]
+                    x = int(x_str)
+                    x_values.append(x)
+
+            time=int(re.findall(r'(\w+)_(\d+)\.csv', fname)[0][1])*10
+            rul=max(x_values)*10-time
 
             bid = fp.parts[-2]  # bearing experiment id, e.g. 'Bearing1_x'
             gid = bid.split('_')[0]  # bearing group id, e.g. 'Bearing1'
@@ -281,10 +291,12 @@ class FEMTO(tfds.core.GeneratorBasedBuilder):
                 'ID': bid,
                 'RotatingSpeed': _RPM[gid],
                 'LoadForce': _LOAD[gid],
-                # 'RemainingUsefulLife': rul,
+                'RemainingUsefulLife': rul,
+                'TimeElapsed':time,
                 'OriginalSplit': split,
                 'FileName': os.path.join(*fp.parts[-2:]),  # full path file name
                 'Dataset': 'FEMTO',
+                'Bearing':bid,
             }
 
             yield hash(frozenset(metadata.items())), {
